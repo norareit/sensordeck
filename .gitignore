@@ -1,0 +1,12 @@
+# Private planning notes
+initial-plan.md
+
+# Third-party themes used for local testing only, never publish
+local-themes/
+
+# IDE settings
+.idea/
+
+node_modules/
+dist/
+*.log
