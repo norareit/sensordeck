@@ -353,7 +353,7 @@ R13).
 
 ### The end-to-end tests
 
-- [ ] Write `e2e/commander_test.go`, `//go:build linux`, with the fake controller made by `fakecommander.New` on the
+- [x] Write `e2e/commander_test.go`, `//go:build linux`, with the fake controller made by `fakecommander.New` on the
   roots of the fake screen (R20, R21, R23):
     - `sensors` with `fullTree` and `Add(9, 10)`: the exact output of `TestSensorsListsTheReadingsOfTheHost` followed
       by `commander.1.temp\t37.3\t°C\n` and `commander.2.temp\t22.7\t°C\n`, an empty standard error, status 0, the
@@ -365,7 +365,7 @@ R13).
       once `WaitWrites` has seen six writes, SIGINT; the status is 1, the standard output empty, the standard error
       `sensordeck: interrupted\n`, the process ended within 3 seconds of the signal, the seventh and last write is
       step 8, and the mode is hardware
-- [ ] Check that the existing tests of `e2e/sensors_test.go` and `e2e/run_test.go` pass with their outputs unchanged
+- [x] Check that the existing tests of `e2e/sensors_test.go` and `e2e/run_test.go` pass with their outputs unchanged
   (R20)
 
 ### Access and documents
