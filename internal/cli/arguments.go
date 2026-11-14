@@ -54,7 +54,9 @@ func parseNumber(text string) (uint64, bool) {
 		return 0, false
 	}
 	number, err := strconv.ParseUint(digits, base, 64)
-	return number, err == nil
+	// A number too large for 64 bits is still a number. ParseUint gives the largest value then, which every range
+	// check refuses with the error of its field.
+	return number, err == nil || errors.Is(err, strconv.ErrRange)
 }
 
 // allDigits rejects the signs, spaces and underscores that strconv would otherwise tolerate or reject unevenly.

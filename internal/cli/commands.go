@@ -42,8 +42,8 @@ func (current *session) open() (transport, func(), error) {
 	return used, func() { _ = opened.Close() }, nil
 }
 
-func (current *session) say(format string, arguments ...any) {
-	_, _ = fmt.Fprintf(current.env.stdout, format+"\n", arguments...)
+func (current *session) say(line string) {
+	_, _ = fmt.Fprintln(current.env.stdout, line)
 }
 
 func (current *session) devicesCommand() *cobra.Command {
@@ -61,7 +61,7 @@ func (current *session) devicesCommand() *cobra.Command {
 				return nil
 			}
 			for _, line := range lines {
-				current.say("%s", line)
+				current.say(line)
 			}
 			return nil
 		},
@@ -87,7 +87,7 @@ func (current *session) clockCommand() *cobra.Command {
 			if err := opened.Write(report); err != nil {
 				return err
 			}
-			current.say("clock sent: %s", moment.Format(clockLayout))
+			current.say("clock sent: " + moment.Format(clockLayout))
 			return nil
 		},
 	}
@@ -113,7 +113,7 @@ func (current *session) valuesCommand() *cobra.Command {
 					return err
 				}
 			}
-			current.say("values sent: %d, reports written: %d", len(values), len(reports))
+			current.say(fmt.Sprintf("values sent: %d, reports written: %d", len(values), len(reports)))
 			return nil
 		},
 	}
@@ -138,15 +138,15 @@ func (current *session) uploadCommand() *cobra.Command {
 			progress := func(stage smartmonitor.Stage, block, count int) {
 				blocks = count
 				if stage == smartmonitor.StageData {
-					current.say("data block %d of %d", block, count)
+					current.say(fmt.Sprintf("data block %d of %d", block, count))
 					return
 				}
-				current.say("%s", stage)
+				current.say(stage.String())
 			}
 			if err := smartmonitor.Upload(opened, theme, current.env.sleep, progress); err != nil {
 				return err
 			}
-			current.say("upload complete: %d bytes in %d data blocks", len(theme), blocks)
+			current.say(fmt.Sprintf("upload complete: %d bytes in %d data blocks", len(theme), blocks))
 			return nil
 		},
 	}
@@ -234,9 +234,9 @@ func (current *session) receive(opened smartmonitor.Transport, seconds int) erro
 		if err != nil {
 			return err
 		}
-		current.say("%s", traceLine(current.elapsed(), readBody(report)))
+		current.say(traceLine(current.elapsed(), readBody(report)))
 		count++
 	}
-	current.say("reports received: %d", count)
+	current.say(fmt.Sprintf("reports received: %d", count))
 	return nil
 }
