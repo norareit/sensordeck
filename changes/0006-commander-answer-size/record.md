@@ -37,4 +37,12 @@ supersedes: 0005-commander-core-xt-probes
   checked: the real controller, which the sandbox does not have, so the check that `sensors` lists both probes on it
   is the human's. The unit has not been reviewed, so the status stays `in-progress`
 
+- 2026-11-14T23:51:41Z [OpenCode, openai/gpt-6.1-sol] as the reviewer, made a full review of
+  `0006-commander-answer-size` at `0cc799be8113cb48f40b06f273ddc8f8d3467bf0`, against merge base
+  `2786473597de9adbffafc9a6acd8e2bbbfde371c`. Returned no findings on spec conformance, plan fidelity or code quality;
+  the complete review is `.reviews/0006-commander-answer-size/review-20261114T2351.md`. Independently ran the five
+  required checks, the change check, the driver, fake and end-to-end tests with `-race`, and the driver and fake tests
+  20 times; all passed. Could not verify the physical controller, the host trace and descriptor capture, or the
+  historical pre-fix test execution. The status stays `in-progress`
+
 ## Amendments
