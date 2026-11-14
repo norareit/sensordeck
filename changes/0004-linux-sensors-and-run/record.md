@@ -46,5 +46,13 @@ timestamp: 2026-11-14T19:03:59Z
   commands, the static build, the module tidy diff and the change check, all passing; the focused GPU tests also
   passed but did not exercise their intended timeout and cancellation scenarios. Not verified: a physical screen,
   the host sensors, a real NVIDIA driver, or execution on Windows. The status stays `in-progress`
+- 2026-11-14T19:26:33Z [OpenCode, openai/gpt-6.1-sol] as the reviewer, made a delta review of
+  `changes/0004-linux-sensors-and-run` at `7893d972a98846a09d7de5fe0fbf6069545416b8`, compared against
+  `2d2ffba4e7148743aad11123d11a21c4fdba40bc`. The delta contains only the preceding review entry, with no
+  implementation or test corrections. Returned the unchanged findings S1, S2 and C1, with no new findings, in
+  `.reviews/changes/0004-linux-sensors-and-run/review-round-2-20261114T192605Z.md`. Reran the five project suite
+  commands, the static build, the module tidy diff and the change check successfully. Physical-device behavior,
+  host sensors, real NVIDIA driver output and execution on Windows remain unverified. The status stays
+  `in-progress`
 
 ## Amendments
