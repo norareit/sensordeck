@@ -11,7 +11,11 @@ import (
 	"testing"
 )
 
-const hidrawImport = "github.com/norareit/sensordeck/internal/hidraw"
+const (
+	hidrawImport       = "github.com/norareit/sensordeck/internal/hidraw"
+	linuxsensorsImport = "github.com/norareit/sensordeck/internal/linuxsensors"
+	retiredYAMLImport  = "gopkg.in/yaml.v3"
+)
 
 // goFiles walks the module and gives the path of every Go file, leaving out what is no part of the module.
 func goFiles(test *testing.T) []string {
@@ -81,7 +85,7 @@ func TestNoFileImportsC(test *testing.T) {
 }
 
 func TestLinuxCodeIsLimitedToLinux(test *testing.T) {
-	linuxOnly := []string{"internal/hidraw", "internal/fakescreen", "e2e"}
+	linuxOnly := []string{"internal/hidraw", "internal/fakescreen", "internal/linuxsensors", "internal/fakesensors", "e2e"}
 	for _, path := range goFiles(test) {
 		for _, directory := range linuxOnly {
 			if inDirectory(path, directory) && !excludedFromWindows(test, path) {
@@ -91,14 +95,24 @@ func TestLinuxCodeIsLimitedToLinux(test *testing.T) {
 	}
 }
 
-func TestOnlyLinuxFilesOfTheCommandsNameTheTransport(test *testing.T) {
+func TestOnlyLinuxFilesOfTheCommandsNameTheLinuxCode(test *testing.T) {
 	for _, path := range goFiles(test) {
 		if !inDirectory(path, "internal/cli") || excludedFromWindows(test, path) {
 			continue
 		}
 		for _, imported := range importsOf(test, path) {
-			if imported == hidrawImport {
-				test.Errorf("%s imports the Linux transport and is part of a Windows build", path)
+			if imported == hidrawImport || imported == linuxsensorsImport {
+				test.Errorf("%s imports %s and is part of a Windows build", path, imported)
+			}
+		}
+	}
+}
+
+func TestNoFileImportsTheArchivedYAMLPackage(test *testing.T) {
+	for _, path := range goFiles(test) {
+		for _, imported := range importsOf(test, path) {
+			if imported == retiredYAMLImport {
+				test.Errorf("%s imports %s, which is archived", path, imported)
 			}
 		}
 	}

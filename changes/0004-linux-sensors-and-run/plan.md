@@ -596,7 +596,7 @@ is ever run.
 
 - [x] `feature-0004 Extract the reading of a named file and the check of a clock report`
 - [x] `feature-0004 Add the metric names and the config`
-- [ ] `feature-0004 Add the Linux sources of the sensors`
+- [x] `feature-0004 Add the Linux sources of the sensors`
 - [ ] `feature-0004 Add the command sensors`
 - [ ] `feature-0004 Add the command run`
 - [ ] `feature-0004 Add the end-to-end tests of sensors and run`
