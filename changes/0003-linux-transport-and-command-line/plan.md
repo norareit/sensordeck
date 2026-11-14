@@ -1027,20 +1027,20 @@ copy of `build.Default` with `GOOS` set to `windows` and its `MatchFile(dir, nam
 
 ### The executable
 
-- [ ] Add `github.com/spf13/cobra` at v1.10.2 with `go get` (R2, D7)
-- [ ] In `arguments_test.go`, test `parseValues`: `1=0x1234 255=1` gives the two pairs; `010=1` gives tag 10;
+- [x] Add `github.com/spf13/cobra` at v1.10.2 with `go get` (R2, D7)
+- [x] In `arguments_test.go`, test `parseValues`: `1=0x1234 255=1` gives the two pairs; `010=1` gives tag 10;
   `0x1F=0XFFFF` gives tag 31 and value 65535; no arguments; `1`, `1=2=3`, `=1`, `1=`, `-1=1`, `+1=1`, ` 1=1`, `0x=1`,
   `0b1=1` and `1=1.0`, each the error naming the argument in double quotes; `256=1`, the tag error; `1=65536`, the
   value error; and a number of 30 digits, the error of the form (R20, R32)
-- [ ] Test `parseRawBytes`: `03 01 15`, `030115` and `0301 15` give the same report of `03 01 15` and 61 of `0x00`;
+- [x] Test `parseRawBytes`: `03 01 15`, `030115` and `0301 15` give the same report of `03 01 15` and 61 of `0x00`;
   `ab` and `AB` give `0xAB`; no arguments; `0x03`, `3`, an empty argument and `0g`, each the error of pairs; 64 bytes
   in three arguments accepted; 65 bytes refused with `raw takes at most 64 bytes, got 65` (R35, R32)
-- [ ] Test `parseSeconds`: `1`, `5` and `05` accepted; `0`, `-1`, `1.5`, `x`, the empty text and a number of 30
+- [x] Test `parseSeconds`: `1`, `5` and `05` accepted; `0`, `-1`, `1.5`, `x`, the empty text and a number of 30
   digits refused with the text of R22 (R22, R32)
-- [ ] In `trace_test.go`, with a fake transport and a fixed `elapsed`, test the six line forms of R23, and the two
+- [x] In `trace_test.go`, with a fake transport and a fixed `elapsed`, test the six line forms of R23, and the two
   example lines of the spec to the character, with 412 microseconds for the reset report written and 1.503377 seconds
   for the ACK read; that `Close` writes nothing; and that the calls reach the inner transport unchanged (R23)
-- [ ] In `commands_test.go`, with the fake environment of the Approach, test: no command and `--help`, which write to
+- [x] In `commands_test.go`, with the fake environment of the Approach, test: no command and `--help`, which write to
   stdout a help naming `devices`, `clock`, `values`, `upload`, `listen`, `raw`, `--device` and `--trace`, with status
   0, and no `completion` command; `values --help` with status 0; an unknown command and an unknown option, each one
   line `sensordeck: ...` on stderr with no usage text and status 1; `--device x values 1=1` and
@@ -1051,46 +1051,46 @@ copy of `build.Default` with `GOOS` set to `windows` and its `MatchFile(dir, nam
   character and with an answer `0x43` to the ymodem command, giving stdout up to `ymodem command` and the error text
   of R21; `listen --seconds 1` with two reports queued, giving two read lines and `reports received: 2`; and
   `raw 03 01 15` with one report queued. Every command that opened the transport closed it (R15 to R22, R35)
-- [ ] Write `arguments.go`, `trace.go`, `main.go`, `commands.go`, `device_linux.go` and `device_other.go` in
+- [x] Write `arguments.go`, `trace.go`, `main.go`, `commands.go`, `device_linux.go` and `device_other.go` in
   `internal/cli` as the Approach says, so the tests pass (R3, R4, R15 to R24, R35, D7, D8, D9, D16, D17, D23, D24)
-- [ ] Write `layout_test.go` in the root as the Approach says, and `main.go` with `package main` and the one call of
+- [x] Write `layout_test.go` in the root as the Approach says, and `main.go` with `package main` and the one call of
   `cli.Main` (R1, R4, D5)
-- [ ] Run `go mod tidy` and check that `go.mod` keeps `go 1.27` with no `toolchain` line, and has cobra and x/sys as
+- [x] Run `go mod tidy` and check that `go.mod` keeps `go 1.27` with no `toolchain` line, and has cobra and x/sys as
   its only direct requirements (R2)
-- [ ] Commit: `feature-0003 Add the executable and its commands`
+- [x] Commit: `feature-0003 Add the executable and its commands`
 
 ### The end-to-end tests
 
-- [ ] Write `e2e/main_test.go` with `TestMain` and the helper `run` as the Approach says, `//go:build linux` on the
+- [x] Write `e2e/main_test.go` with `TestMain` and the helper `run` as the Approach says, `//go:build linux` on the
   first line (R33, D19)
-- [ ] In `e2e/commands_test.go`, `//go:build linux` on the first line, write the cases of R33: `devices` with no
+- [x] In `e2e/commands_test.go`, `//go:build linux` on the first line, write the cases of R33: `devices` with no
   screen, with one on `hidraw3` and with two on `hidraw2` and `hidraw10`, each with the exact stdout, stderr and
   status 0
-- [ ] `values 1=0x1234 255=1`, the 65 bytes of R20 arriving and the line of R20, and 21 pairs, two reports arriving,
+- [x] `values 1=0x1234 255=1`, the 65 bytes of R20 arriving and the line of R20, and 21 pairs, two reports arriving,
   the first with count 20 and the second with count 1 (R33)
-- [ ] `values 1` with no screen: stdout empty, stderr
+- [x] `values 1` with no screen: stdout empty, stderr
   `sensordeck: invalid argument "1": want <tag>=<value>` and status 1 (R33)
-- [ ] `clock`: the time before and after the run, bytes 0 to 2 `03 01 15`, byte 10 `0x64`, bytes 11 to 63 `0x00`, and
+- [x] `clock`: the time before and after the run, bytes 0 to 2 `03 01 15`, byte 10 `0x64`, bytes 11 to 63 `0x00`, and
   bytes 3 to 9 a time in `time.Local` between the start truncated to the second and the end, with byte 9 its ISO
   weekday (R33)
-- [ ] `--trace upload <theme>` of the theme of 2500 bytes where byte *i* is *i* modulo 256, against a screen on
+- [x] `--trace upload <theme>` of the theme of 2500 bytes where byte *i* is *i* modulo 256, against a screen on
   `hidraw3` with `MoveAfter(1, 7)` and the ACK rules of the Approach: status 0, the stdout of R21 to the character,
   the bytes that arrived being `0x00` and each expected report in order, and on stderr 60 lines with `>`, 6 with `<`
   and 2 with `* reopen` and nothing else, each matching R23 in its prefix of 12 characters and its 64 groups, and the
   write lines carrying the expected reports in order (R33)
-- [ ] `--trace upload <theme>` against a screen with `MoveAfter(1, 7)` and `AnswerAfter(2, 0x43)`: status 1, stdout
+- [x] `--trace upload <theme>` against a screen with `MoveAfter(1, 7)` and `AnswerAfter(2, 0x43)`: status 1, stdout
   ending with `ymodem command\n`, the last line of stderr
   `sensordeck: upload failed at the ymodem command: unexpected answer 0x43`, a trace line `< 43 ...`, and exactly
   130 bytes arrived (R33)
-- [ ] `listen --seconds 1` with two reports sent before the run: two read lines with those reports,
+- [x] `listen --seconds 1` with two reports sent before the run: two read lines with those reports,
   `reports received: 2`, status 0 (R33)
-- [ ] `raw 03 01 15` with `AnswerAfter(1, <report starting 0x43>)`: the 65 bytes of R35 arrived, stdout one read line
+- [x] `raw 03 01 15` with `AnswerAfter(1, <report starting 0x43>)`: the 65 bytes of R35 arrived, stdout one read line
   with that report and `reports received: 1`, status 0 (R33)
-- [ ] Two screens: `values 1=1` without `--device`, the error of R11 with both lines and status 1; with
+- [x] Two screens: `values 1=1` without `--device`, the error of R11 with both lines and status 1; with
   `--device <node of the second>`, the report arriving at the second and nothing at the first (R33)
-- [ ] Add a comment at the top of `e2e/commands_test.go` that lists what the suite leaves out and where it is covered,
+- [x] Add a comment at the top of `e2e/commands_test.go` that lists what the suite leaves out and where it is covered,
   as R34 says (R34)
-- [ ] Commit: `feature-0003 Add the end-to-end tests`
+- [x] Commit: `feature-0003 Add the end-to-end tests`
 
 ### The udev rule and the documents
 
@@ -1133,5 +1133,5 @@ copy of `build.Default` with `GOOS` set to `windows` and its `MatchFile(dir, nam
 - [x] `feature-0003 Report the stages of the upload and name the passed time limit`
 - [x] `feature-0003 Add the fake screen and the hidraw transport`
 - [x] `feature-0003 Add the executable and its commands`
-- [ ] `feature-0003 Add the end-to-end tests`
+- [x] `feature-0003 Add the end-to-end tests`
 - [ ] `feature-0003 Add the udev rule and document the transport`
