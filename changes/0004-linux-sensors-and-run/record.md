@@ -62,5 +62,23 @@ timestamp: 2026-11-14T19:03:59Z
   commands, the static build, the module tidy diff and the change check successfully. Physical-device behavior,
   host sensors, real NVIDIA driver output and execution on Windows remain unverified. The status stays
   `in-progress`
+- 2026-11-14T19:30:19Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, corrected S1 of the reviews in `.reviews/0004-linux-sensors-and-run/`, accepted by the orchestrating
+  session under the delegation in `AGENTS.md`, in `c8389a3`: `cpuTemperatures` now tests whether the metric of a sensor is
+  wanted before it reads the input, so a config that maps only `cpu.clock` reads no k10temp input. The regression test
+  makes the Tctl and Tccd1 inputs named pipes, which block a read, and fails with the old code
+- 2026-11-14T19:30:19Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, corrected S2, accepted by the orchestrating session under the delegation in `AGENTS.md`, in `c8389a3`: the
+  clock deadline of a round is measured from the time the round actually starts, and the grid stays the schedule only.
+  The approach in `plan.md` is corrected to say so, because the nominal time of a round that follows a long one is
+  earlier than its real start. The new fake-time test (reopening at 2.5s, a round of 1.6s ending at 62.6s) fails with
+  the old code and passes
+- 2026-11-14T19:30:19Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, corrected C1, accepted by the orchestrating session under the delegation in `AGENTS.md`, in `c8389a3`: the fake
+  `nvidia-smi` script runs with the PATH the test had, so it can start `sleep`, while the lookup of the program under
+  test still finds only the fake, which a test asserts. The markers use a shell builtin. The tests of the time limit
+  with a child holding the output, of the stop signal and of the not-run case now assert that the program started,
+  that it did not run to its end, and that the time is at least the limit or the stop; a test shows that the marker
+  detects a run
+- 2026-11-14T19:30:19Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, ran the suite on the tree of `c8389a3`: `go test -count=1 ./...` including the end-to-end suite, `go vet ./...`,
+  `gofmt -l .`, and the build and vet with `GOOS=windows GOARCH=amd64` passed or reported nothing. Not checked: a real
+  device, a real `nvidia-smi`, and execution on Windows. The status stays `in-progress`
 
 ## Amendments
