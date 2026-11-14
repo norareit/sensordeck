@@ -1,6 +1,7 @@
 package smartmonitor
 
 import (
+	"errors"
 	"fmt"
 	"time"
 )
@@ -16,11 +17,15 @@ const (
 	answerNAK byte = 0x15
 )
 
+// ErrReadTimeout is the error of a Read whose time limit passed.
+var ErrReadTimeout = errors.New("no report arrived within the time limit")
+
 // Transport is what the upload needs of the outside world.
 type Transport interface {
 	// Write sends one report.
 	Write(report Report) error
-	// Read returns one report, or an error once the time limit has passed.
+	// Read returns one report, or an error once the time limit has passed, for which errors.Is(err, ErrReadTimeout)
+	// is true. For every other error it is false.
 	Read(timeout time.Duration) (Report, error)
 	// Reopen lets go of the device as it was opened and tries once to open it again.
 	Reopen() error
@@ -78,34 +83,45 @@ func (uploadError *UploadError) Unwrap() error {
 }
 
 // Upload sends the theme to the device. The pause function is called with the length of every pause, and is how the
-// upload waits.
-func Upload(transport Transport, theme []byte, pause func(time.Duration)) error {
-	steps := []func() *UploadError{
-		func() *UploadError { return writeOnly(transport, []Report{ResetCommand()}, StageReset) },
-		func() *UploadError { return reopen(transport, pause, StageReopenAfterReset) },
-		func() *UploadError {
+// upload waits. The progress function is called once for each stage and once for each data block, before the first
+// call on the transport for it, with the stage, the sequence number of the data block counted from 1, which is 0 at
+// every other stage, and the count of data blocks of the theme.
+func Upload(transport Transport, theme []byte, pause func(time.Duration), progress func(stage Stage, block, blocks int)) error {
+	blocks := dataBlocks(theme)
+	steps := []struct {
+		stage Stage
+		run   func() *UploadError
+	}{
+		{StageReset, func() *UploadError { return writeOnly(transport, []Report{ResetCommand()}, StageReset) }},
+		{StageReopenAfterReset, func() *UploadError { return reopen(transport, pause, StageReopenAfterReset) }},
+		{StageYmodemCommand, func() *UploadError {
 			return sendItem(transport, []Report{YmodemCommand()}, StageYmodemCommand, 0)
-		},
-		func() *UploadError {
+		}},
+		{StageHeader, func() *UploadError {
 			return sendItem(transport, toReports(headerBlock(len(theme))), StageHeader, 0)
-		},
-		func() *UploadError { return sendDataBlocks(transport, theme) },
-		func() *UploadError {
+		}},
+		{StageData, func() *UploadError { return sendDataBlocks(transport, blocks, progress) }},
+		{StageEndOfTransmission, func() *UploadError {
 			return sendItem(transport, toReports(endOfTransmission()), StageEndOfTransmission, 0)
-		},
-		func() *UploadError { return writeOnly(transport, toReports(closingBlock()), StageClosing) },
-		func() *UploadError { return reopen(transport, pause, StageReopenAfterUpload) },
+		}},
+		{StageClosing, func() *UploadError { return writeOnly(transport, toReports(closingBlock()), StageClosing) }},
+		{StageReopenAfterUpload, func() *UploadError { return reopen(transport, pause, StageReopenAfterUpload) }},
 	}
 	for _, step := range steps {
-		if err := step(); err != nil {
+		// The data blocks report themselves one by one, inside their step.
+		if step.stage != StageData {
+			progress(step.stage, 0, len(blocks))
+		}
+		if err := step.run(); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func sendDataBlocks(transport Transport, theme []byte) *UploadError {
-	for position, block := range dataBlocks(theme) {
+func sendDataBlocks(transport Transport, blocks [][]byte, progress func(stage Stage, block, blocks int)) *UploadError {
+	for position, block := range blocks {
+		progress(StageData, position+1, len(blocks))
 		if err := sendItem(transport, toReports(block), StageData, position+1); err != nil {
 			return err
 		}

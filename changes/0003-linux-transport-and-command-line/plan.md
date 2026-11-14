@@ -325,6 +325,279 @@ copy of `build.Default` with `GOOS` set to `windows` and its `MatchFile(dir, nam
 
 ## Tasks
 
+### The fake screen
+
+`internal/fakescreen` makes a pseudo terminal pair for each screen with `golang.org/x/sys/unix`, which the trial for
+this plan confirmed in the sandbox: a report sent to the master before the node is opened is kept and read later, a
+read of at most 64 bytes on the node gives one report of 64, a read deadline on the node works, the bytes pass
+unchanged in both directions once the slave is raw, a read after the master is closed gives `io.EOF`, and a regular
+file refuses a read deadline with `os.ErrNoDeadline`.
+
+```go
+type Fake struct {
+	SysfsRoot string // <temp>/sys
+	DevRoot   string // <temp>/dev
+	// unexported: the test, a mutex, the screens
+}
+
+func New(test testing.TB) *Fake // makes <temp>/sys/class/hidraw and <temp>/dev, and closes every pty in test.Cleanup
+func (fake *Fake) Add(number int, name, serial string) *Screen
+
+type Screen struct{ /* unexported */ }
+
+func (screen *Screen) Node() string                                    // <DevRoot>/hidraw<number>, where it is now
+func (screen *Screen) Send(report smartmonitor.Report)                 // writes the 64 bytes to the master now
+func (screen *Screen) SendBytes(data []byte)                           // writes the bytes as given, for a short report
+func (screen *Screen) AnswerAfter(count int, report smartmonitor.Report) // sends the report once the count-th written report has arrived
+func (screen *Screen) MoveAfter(count int, number int)                 // moves the screen once the count-th written report has arrived
+func (screen *Screen) Move(number int)                                 // takes the screen away and brings it back as hidraw<number>
+func (screen *Screen) Remove()                                         // takes the screen away for good
+func (screen *Screen) Received() []byte                                // every byte written to the node, over all moves
+```
+
+How each part works:
+
+* **Making a pty.** Open `/dev/ptmx` with `os.OpenFile(path, os.O_RDWR|syscall.O_NOCTTY, 0)`, unlock it with
+  `unix.IoctlSetPointerInt(fd, unix.TIOCSPTLCK, 0)` and get its number with `unix.IoctlGetInt(fd, unix.TIOCGPTN)`.
+  The file descriptor is reached only through `SyscallConn().Control`, never through `Fd()`, because `Fd()` puts the
+  file into blocking mode and a blocked read could then not be ended by `Close`
+* **Raw mode.** The fake opens the slave `/dev/pts/<n>` itself and keeps it open for as long as the screen is there,
+  without ever reading from it. The kernel resets the termios of a pty slave on its last close, so holding it keeps
+  the raw settings when the transport closes and opens the node. On that held slave it sets with `TCGETS` and
+  `TCSETS`: `Iflag` without `IGNBRK|BRKINT|PARMRK|ISTRIP|INLCR|IGNCR|ICRNL|IXON`, `Oflag` without `OPOST`, `Lflag`
+  without `ECHO|ECHONL|ICANON|ISIG|IEXTEN`, `Cflag` without `CSIZE|PARENB` and with `CS8`, `VMIN` 1 and `VTIME` 0
+* **Sysfs and the node.** `Add` writes `<SysfsRoot>/class/hidraw/hidraw<number>/device/uevent` with the six lines of
+  the example in the spec, `HID_NAME` and `HID_UNIQ` holding the name and serial given, and makes
+  `<DevRoot>/hidraw<number>` a symbolic link to the slave
+* **Receiving.** One goroutine per pty reads the master into a buffer of the screen, under a mutex, and records the
+  time of the last arrival. After each read it counts the complete reports, the length of everything received
+  divided by 65, and carries out each rule of `AnswerAfter` and `MoveAfter` whose count has been reached, once. The
+  goroutine ends when its read fails, which closing the master causes
+* **Moving and removing.** `Move` deletes the sysfs directory and the link of the old number, closes the old master
+  and the held slave, makes a new pty, sysfs entry and link under the new number, and starts a reader on it. The
+  received bytes and the count of reports carry on. `Remove` does the first half only. Both are safe to call from
+  the reader goroutine, which is where `MoveAfter` calls `Move`
+* **Reading back.** `Received` waits until no byte has arrived for 200 milliseconds, polling every 20 milliseconds,
+  and returns a copy. That covers both the transport tests in the same process and the end-to-end tests after the
+  executable has ended
+* **Failure.** Every failure to make a pty, a file or a link is `test.Fatalf`, so the tests fail and are not skipped
+  (R29)
+
+### The Linux transport
+
+`internal/hidraw/discover.go`:
+
+```go
+type Screen struct {
+	Node            string
+	Vendor, Product uint16
+	Name, Serial    string
+}
+
+func (screen Screen) Line() string // R15: "<node>\t%04x:%04x\t<name or ->\t<serial or ->"
+func Discover(sysfsRoot, devRoot string) ([]Screen, error)
+```
+
+`Discover` reads `<sysfsRoot>/class/hidraw` with `os.ReadDir`. A directory that does not exist,
+`errors.Is(err, fs.ErrNotExist)`, gives nil and no error, and any other error is returned wrapped with the path. An
+entry counts when its name is `hidraw` followed by one or more decimal digits, all of them digits. For each entry it
+reads `device/uevent` with `os.ReadFile`, passes over the entry on any error, and hands the content to the pure
+function `parseUevent(content string) (screen Screen, ok bool)`, which splits it into lines, each at its first `=`,
+and accepts the `HID_ID` line only when it has exactly three fields that `strconv.ParseUint(field, 16, 32)` reads, with
+bus 3 and the IDs of R5. The result is sorted by the number of the entry name with `slices.SortFunc` on a slice the
+function made itself (R8, R9). The discovery never opens a node (R10).
+
+`internal/hidraw/transport.go`:
+
+```go
+type Transport struct {
+	open func() (*os.File, error) // the way it was opened first, used again by Reopen
+	file *os.File                 // nil while no node is open
+}
+
+func OpenDiscovered(sysfsRoot, devRoot string) (*Transport, error)
+func OpenPath(path string) (*Transport, error)
+func (transport *Transport) Write(report smartmonitor.Report) error
+func (transport *Transport) Read(timeout time.Duration) (smartmonitor.Report, error)
+func (transport *Transport) Reopen() error
+func (transport *Transport) Close() error
+```
+
+* `openDiscovered(sysfsRoot, devRoot)` runs `Discover`, and gives the error `no supported screen found` for none and
+  `more than one supported screen is connected, name one with --device:` followed by `"\n"` and the `Line` of each
+  screen joined by `"\n"` for several. With one it calls `openNode` on its node. `OpenDiscovered` and the `open` of
+  its `Transport` are both this function, so a Reopen does the discovery anew (R11, R12, D14)
+* `openNode(path)` opens the path with `os.OpenFile(path, os.O_RDWR|syscall.O_NOCTTY, 0)`. `O_NOCTTY` matters only for
+  the fake, whose node is a terminal that must not become the controlling terminal of the process, and changes
+  nothing on a hidraw node. Then it calls `file.SetReadDeadline(time.Time{})`; when that fails it closes the file and
+  returns `cannot open <path>: the node does not support a time limit for reading: <error>`, with `%w` (R13, D10)
+* `openError(path string, err error) error` makes the errors of R14 as a value of an unexported type whose `Unwrap`
+  gives `err`. Its text takes the inner error of a `*fs.PathError` where `err` is one, so that the path is not
+  written twice. The type is what lets the text be exact while `errors.Is` still reaches the error of the system
+* `Write` builds a 65 byte buffer, `0x00` and the report, and fails when no node is open, on the error of the write,
+  and when fewer than 65 bytes were taken (R12)
+* `Read` fails when no node is open, sets the read deadline to `time.Now().Add(timeout)`, and reads into a buffer of
+  64 bytes. `errors.Is(err, os.ErrDeadlineExceeded)` gives `smartmonitor.ErrReadTimeout`. Any other error, `io.EOF`
+  included, which is what a read of no bytes gives, is wrapped with the path and not with `ErrReadTimeout`. The bytes
+  read are copied into a zero `Report`, which fills a short read up with `0x00` (R12, D11)
+* `Reopen` closes the open file, ignoring the error of closing, sets `file` to nil, calls `open` and keeps the file it
+  gives, so a failed Reopen leaves no node and a later one tries again (R12)
+* `Close` closes the file when there is one and sets it to nil
+
+`OpenDiscovered` and `OpenPath` return `nil, err` on failure, and the caller in `internal/cli` must return a nil
+interface in that case and not the nil pointer, so that its check of the error is the only check.
+
+### The command line
+
+`internal/cli` is built around an environment that `Main` fills from the process and the unit tests fill with fakes:
+
+```go
+type transport interface {
+	smartmonitor.Transport
+	Close() error
+}
+
+type environment struct {
+	stdout, stderr io.Writer
+	sysfsRoot      string
+	devRoot        string
+	now            func() time.Time
+	sleep          func(time.Duration)
+	listScreens    func(sysfsRoot, devRoot string) ([]string, error)
+	openTransport  func(sysfsRoot, devRoot, device string) (transport, error)
+}
+
+func Main() int                                   // reads os.Args[1:], os.Stdout, os.Stderr, the two variables of R24, time.Now, time.Sleep and the platform functions, and calls run
+func run(args []string, env environment) int
+```
+
+`Main` is the one place where the variables of R24 are read; an empty value means `/sys` or `/dev` (R24, D17).
+
+The platform functions live in two files:
+
+* `device_linux.go`, `//go:build linux`: `listScreens` calls `hidraw.Discover` and returns the `Line` of each screen;
+  `openTransport` calls `hidraw.OpenPath(device)` when `device` is not empty and `hidraw.OpenDiscovered` otherwise
+  (R4, R11)
+* `device_other.go`, `//go:build !linux`: both return `fmt.Errorf("%s is not supported yet", runtime.GOOS)` (R3)
+
+`run` takes `start := env.now()`, builds the root command and executes it with `SetArgs(args)`, `SetOut(stdout)` and
+`SetErr(stderr)`. On an error it writes `sensordeck: <error>\n` to stderr and returns 1, otherwise 0 (R16, D8). The
+root command has `Use: "sensordeck"`, a short description, `SilenceErrors` and `SilenceUsage` set,
+`CompletionOptions.DisableDefaultCmd` set, no `Run`, so that cobra writes the help to stdout with status 0 when no
+command is given, and the two persistent flags `--device` (string) and `--trace` (bool), each with a usage text
+(R16, R17, D7). Each of the six commands has a short description.
+
+Each command's `RunE` first checks its arguments, and `upload` reads its file, then calls a helper `open` that calls
+`env.openTransport` with the value of `--device`, wraps the result in the tracing transport when `--trace` is set,
+and defers `Close` (R18, D23). `devices` calls `env.listScreens` and never `open` (R15).
+
+`arguments.go` holds the pure parsers, each giving the error texts of the spec word for word:
+
+* `parseValues(args []string) ([]smartmonitor.Value, error)`, with `parseNumber(text string) (uint64, bool)` that
+  accepts one or more decimal digits or `0x`/`0X` and one or more hexadecimal digits and nothing else, and reads them
+  with `strconv.ParseUint` in base 10 or 16 and bit size 64, so that leading zeros stay decimal (R20, D24). A number
+  too large for 64 bits is no number. The range checks follow, the tag first
+* `parseRawBytes(args []string) (smartmonitor.Report, error)` (R35)
+* `parseSeconds(text string) (int, error)`: one or more decimal digits read with `strconv.Atoi`, 1 or more, and an
+  error of `Atoi` is the same error text (R22). `--seconds` is a string flag, default `5` on `listen` and `1` on
+  `raw`, so that the text of the error is ours and not that of pflag
+
+`trace.go` holds:
+
+```go
+func traceLine(elapsed time.Duration, body string) string // fmt.Sprintf("%12.6f %s", elapsed.Seconds(), body)
+func readBody(report smartmonitor.Report) string         // "< " + fmt.Sprintf("% X", report[:])
+
+type tracingTransport struct {
+	inner   transport
+	out     io.Writer
+	elapsed func() time.Duration
+}
+```
+
+with `Write`, `Read`, `Reopen` writing the six line forms of R23 after the inner call returns, and `Close` passing
+through without a line (R23, D16). The listening commands write `traceLine(elapsed(), readBody(report))` to stdout for
+each report, so the read line of R22 and R35 is the same function as the read line of the trace. `elapsed` is
+`func() time.Duration { return env.now().Sub(start) }`.
+
+The commands, in `commands.go`:
+
+* `clock`: `cobra.NoArgs`; `moment := env.now()`, `EncodeClock(moment)`, one write, `clock sent: ` and
+  `moment.Format("2006-01-02 15:04:05")` (R19)
+* `values`: `parseValues`, `EncodeValues`, the writes, the line of R20 (R20)
+* `upload`: `cobra.ExactArgs(1)`; `os.ReadFile`, with `cannot read the theme file <path>: <error>` where the error is
+  the inner error of the `*fs.PathError`, as for R14; then `smartmonitor.Upload(transport, theme, env.sleep,
+  progress)` where `progress` writes the stage line of R21 and keeps `blocks`, and on success the line
+  `upload complete: <size> bytes in <blocks> data blocks`. The error of `Upload` is returned as it is (R21)
+* `listen`: `cobra.NoArgs`; `parseSeconds`, `open`, then the shared function `receive(transport, deadline, env,
+  elapsed)` with `deadline := env.now().Add(seconds)` taken after the opening, then `reports received: <count>` (R22)
+* `raw`: `parseRawBytes`, `parseSeconds`, `open`, one write, `receive` as for `listen`, `reports received: <count>`
+  (R35)
+
+`receive` loops: `remaining := deadline.Sub(env.now())`, stop when it is 0 or less, `Read(remaining)`, stop on
+`errors.Is(err, smartmonitor.ErrReadTimeout)`, return any other error, otherwise write the read line and count. So no
+read waits beyond the deadline (R22, R35).
+
+The text of `devices` with no screen, `no supported screen found`, is the same as the error of R11; the command writes
+it from a constant of its own, because the two are separate decisions that happen to read alike today.
+
+The fake transport of the unit tests of `internal/cli`, in `commands_test.go`, holds a queue of reports to read and a
+clock: a read with an empty queue moves the clock forward by its time limit and returns `ErrReadTimeout`. It records
+every write, reopen and close, and a fake `openTransport` records the device it was asked for and whether it was
+called at all.
+
+### The end-to-end tests
+
+`e2e/main_test.go` has `TestMain`, which builds the executable once into a temporary directory with
+`exec.Command("go", "build", "-o", <path>, ".")`, the working directory `..` and the environment `os.Environ()` plus
+`CGO_ENABLED=0`, and fails the whole run when the build fails. A helper `run(test, fake, args...)` runs the
+executable with the environment plus `SENSORDECK_SYSFS_ROOT=<fake.SysfsRoot>` and `SENSORDECK_DEV_ROOT=<fake.DevRoot>`,
+under a context with a time limit of 30 seconds, and returns stdout, stderr and the exit status from
+`exec.ExitError.ExitCode()` (R33, D19).
+
+The expected reports of the complete upload are taken from `smartmonitor.Upload` run in the test process against a
+recording transport that answers ACK to every read and reopens at once. Unit 0002's own tests prove that these are the
+reports of its R20, so the end-to-end test checks that the executable carries them to the node unchanged, rather than
+encoding YMODEM a second time. It also checks independently that the first report is the reset command, the second
+the ymodem command, and the third starts with `01 00 FF 69 6D 67 2E 64 61 74`.
+
+The rules of the fake for the complete upload, counted in reports as unit 0002's R20 orders them: reset is report 1,
+ymodem 2, the header 3 to 5, the data blocks 6 to 22, 23 to 39 and 40 to 56, the end of transmission 57, and the
+closing block 58 to 60. So `MoveAfter(1, <other number>)` and `AnswerAfter` with ACK at 2, 5, 22, 39, 56 and 57.
+
+### The layout test
+
+`layout_test.go` in the root package walks the module from `.` with `filepath.WalkDir`, skipping `node_modules`,
+`local-themes` and every directory whose name starts with a dot, and parses each `.go` file with
+`parser.ImportsOnly`. It checks: no file imports `C` (R1); every file under `internal/hidraw`, `internal/fakescreen`
+and `e2e` is excluded from a Windows build; and every file under `internal/cli` that imports
+`github.com/norareit/sensordeck/internal/hidraw` is excluded from a Windows build (R4). Exclusion is decided with a
+copy of `build.Default` with `GOOS` set to `windows` and its `MatchFile(dir, name)`, which reads both the
+`//go:build` line and a `_linux` suffix.
+
+## Files
+
+- `internal/smartmonitor/identity.go`, `identity_test.go`: new, the USB ID constants
+- `internal/smartmonitor/upload.go`, `upload_test.go`: `ErrReadTimeout`, the comment of `Read`, the progress function
+- `go.mod`, `go.sum`: `github.com/spf13/cobra v1.10.2` and `golang.org/x/sys v0.50.0` as direct requirements, and the
+  indirect ones that `go mod tidy` adds, which are `github.com/spf13/pflag` and `github.com/inconshreveable/mousetrap`
+- `internal/fakescreen/fakescreen.go`: new, the fake screen
+- `internal/hidraw/discover.go`, `discover_test.go`: new, the discovery and the line of R15
+- `internal/hidraw/transport.go`, `transport_test.go`: new, the transport
+- `internal/cli/main.go`: new, `Main`, `environment`, `transport`, `run` and the root command
+- `internal/cli/commands.go`, `commands_test.go`: new, the six commands and `receive`
+- `internal/cli/arguments.go`, `arguments_test.go`: new, the parsers
+- `internal/cli/trace.go`, `trace_test.go`: new, the tracing
+- `internal/cli/device_linux.go`, `device_other.go`: new, the choice of the transport
+- `main.go`, `layout_test.go`: new, the executable and the layout check
+- `e2e/main_test.go`, `e2e/commands_test.go`: new, the end-to-end tests
+- `udev/70-sensordeck.rules`: new, the rule
+- `README.md`: a new section `## Linux: access to the screen`, placed before `## Credits`
+- `docs/protocol.md`: the sections "Transport" and "Assumptions"
+- `AGENTS.md`: the subsection "Testing"
+
+## Tasks
+
 ### The package of the protocol
 
 - [ ] In `identity_test.go`, test that `VendorID` is `0x0483` and `ProductID` is `0x0065`, and write `identity.go`
@@ -481,7 +754,7 @@ copy of `build.Default` with `GOOS` set to `windows` and its `MatchFile(dir, nam
 
 ## Commit Points
 
-- [ ] `feature-0003 Report the stages of the upload and name the passed time limit`
+- [x] `feature-0003 Report the stages of the upload and name the passed time limit`
 - [ ] `feature-0003 Add the fake screen and the hidraw transport`
 - [ ] `feature-0003 Add the executable and its commands`
 - [ ] `feature-0003 Add the end-to-end tests`
