@@ -100,7 +100,13 @@ func TestClock(test *testing.T) {
 	if len(got) != 65 {
 		test.Fatalf("arrived %d bytes", len(got))
 	}
-	report := got[1:]
+	expectClockReport(test, got[1:], before, after)
+}
+
+// expectClockReport checks the 64 bytes of a clock report: the fixed bytes, a time between before and after, and the
+// weekday that belongs to it.
+func expectClockReport(test *testing.T, report []byte, before, after time.Time) {
+	test.Helper()
 	if !bytes.Equal(report[0:3], []byte{0x03, 0x01, 0x15}) || report[10] != 0x64 || !bytes.Equal(report[11:], make([]byte, 53)) {
 		test.Errorf("fixed bytes % X", report)
 	}

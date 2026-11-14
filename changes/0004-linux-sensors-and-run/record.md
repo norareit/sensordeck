@@ -1,6 +1,6 @@
 ---
 kind: feature
-status: approved
+status: in-progress
 timestamp: 2026-11-14T19:03:59Z
 ---
 
@@ -26,5 +26,7 @@ timestamp: 2026-11-14T19:03:59Z
   unit's branch, after a trial of `go.yaml.in/yaml/v3` v3.0.6, which reports a key given twice only when a mapping
   is decoded into a map, and of the time limit of a program whose child keeps its output open. The status stays
   `approved`
+- 2026-11-14T19:20:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, began the work. The status is
+  `in-progress`
 
 ## Amendments

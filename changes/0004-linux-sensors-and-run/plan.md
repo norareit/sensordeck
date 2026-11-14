@@ -404,11 +404,11 @@ is ever run.
 
 ### Preparation
 
-- [ ] In `internal/cli/commands.go`, extract `readNamedFile(description, path string)` from `readTheme`, which then
+- [x] In `internal/cli/commands.go`, extract `readNamedFile(description, path string)` from `readTheme`, which then
   calls it with `theme file`; the tests of `upload` with a missing file pass unchanged (R16)
-- [ ] In `e2e/commands_test.go`, extract the checks of `TestClock` on the 64 bytes of the report into
+- [x] In `e2e/commands_test.go`, extract the checks of `TestClock` on the 64 bytes of the report into
   `expectClockReport(test, report, before, after)`, which `TestClock` calls; the suite passes unchanged (R35)
-- [ ] Commit: `feature-0004 Extract the reading of a named file and the check of a clock report`
+- [x] Commit: `feature-0004 Extract the reading of a named file and the check of a clock report`
 
 ### The metrics and the config
 
@@ -594,7 +594,7 @@ is ever run.
 
 ## Commit Points
 
-- [ ] `feature-0004 Extract the reading of a named file and the check of a clock report`
+- [x] `feature-0004 Extract the reading of a named file and the check of a clock report`
 - [ ] `feature-0004 Add the metric names and the config`
 - [ ] `feature-0004 Add the Linux sources of the sensors`
 - [ ] `feature-0004 Add the command sensors`

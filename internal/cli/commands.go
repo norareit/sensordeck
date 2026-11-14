@@ -152,17 +152,20 @@ func (current *session) uploadCommand() *cobra.Command {
 	}
 }
 
-func readTheme(path string) ([]byte, error) {
-	theme, err := os.ReadFile(path)
+func readTheme(path string) ([]byte, error) { return readNamedFile("theme file", path) }
+
+// readNamedFile reads a file the user named, and describes a failure with the description and the path once.
+func readNamedFile(description, path string) ([]byte, error) {
+	content, err := os.ReadFile(path)
 	if err != nil {
 		// The inner error, so that the path is not written twice.
 		var pathError *fs.PathError
 		if errors.As(err, &pathError) {
 			err = pathError.Err
 		}
-		return nil, fmt.Errorf("cannot read the theme file %s: %w", path, err)
+		return nil, fmt.Errorf("cannot read the %s %s: %w", description, path, err)
 	}
-	return theme, nil
+	return content, nil
 }
 
 func (current *session) listenCommand() *cobra.Command {
