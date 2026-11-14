@@ -174,7 +174,7 @@ root" and "the proc root" are `/sys` and `/proc`, or what R13 puts in their plac
   reads the file at that path instead. When `os.UserConfigDir` fails and no `--config` is given, the error is
   `cannot find the config directory, name the file with --config: ` followed by its error. A file that cannot be read
   is the error `cannot read the config file <path>: ` followed by the error of the system, with the path written
-  once. The config is read with `gopkg.in/yaml.v3`
+  once. The config is read with `go.yaml.in/yaml/v3`
 - **R17** The file is a YAML mapping with two keys:
     - `tags`, a mapping from metric name to tag, with at least one entry. A tag is a YAML integer from 0 to 255
     - `interval`, the time between two rounds of `run`, in the syntax of Go's `time.ParseDuration`, such as `1s` or
@@ -237,9 +237,9 @@ root" and "the proc root" are `/sys` and `/proc`, or what R13 puts in their plac
 ### The executable and the module
 
 - **R25** The help of R16 of unit 0003 names the eight commands, `sensors` and `run` among them, with a short
-  description each, and the help of `run` names `--config`. `go.mod` has `gopkg.in/yaml.v3` at v3.0.1 or newer as a
-  third direct requirement besides those of R2 of unit 0003, and no others. `go mod tidy -diff` reports no difference,
-  and `CGO_ENABLED=0 go build ./...` still succeeds
+  description each, and the help of `run` names `--config`. `go.mod` has `go.yaml.in/yaml/v3` at v3.0.6 or newer as a
+  third direct requirement besides those of R2 of unit 0003, and no others. No Go file of the module imports
+  `gopkg.in/yaml.v3`. `go mod tidy -diff` reports no difference, and `CGO_ENABLED=0 go build ./...` still succeeds
 
 ### The documents
 
@@ -253,6 +253,11 @@ root" and "the proc root" are `/sys` and `/proc`, or what R13 puts in their plac
       keeps its last value
     - that `sensordeck run` sends the values until Ctrl+C or SIGTERM, sets the clock, and keeps running when the
       screen is unplugged and plugged in again
+- **R37** The status line at the top of `README.md` keeps its marker `**Status: early development.**` and no longer
+  says that nothing is usable yet. In its place it says that the screen can be driven on Linux: with the low-level
+  commands of unit 0003, with `sensordeck sensors` and with `sensordeck run`. It says that themes, Windows and the
+  service are still to come, naming all three. The sentence that the README describes what sensordeck is meant to
+  become stays, and nothing else of the opening of the README changes
 - **R27** The section "Testing" of `AGENTS.md` names the variable of R13 with the two it names, and says that the
   tests that need `nvidia-smi` put a fake one on a `PATH` they set, so that the suite never runs a real one. The five
   commands of the suite do not change
@@ -375,8 +380,16 @@ root" and "the proc root" are `/sys` and `/proc`, or what R13 puts in their plac
   log
 - **D17** The pairs of a round are ordered by tag, so that the bytes of a round are known in advance and a test can
   compare them exactly
-- **D18** `gopkg.in/yaml.v3` is the YAML package, as the human chose. It gives the position of a syntax error and
-  decodes into a tree of nodes, on which the checks of R18 work with their own texts
+- **D18** The YAML package gives the position of a syntax error and decodes into a tree of nodes, on which the checks
+  of R18 work with their own texts
+- **D19** The YAML package is `go.yaml.in/yaml/v3` and not `gopkg.in/yaml.v3`, which the request named. The repository
+  of `gopkg.in/yaml.v3` is archived and receives no fixes. `go.yaml.in/yaml/v3` is its continuation, maintained by
+  the YAML organisation, with the same API, so it is a drop-in replacement. Its newest version on the module proxy
+  when this spec was amended is v3.0.6, published on 2026-10-13, and R25 asks for that version or a newer one. The
+  orchestrating session decided this under the delegation in `AGENTS.md`
+- **D20** The status line of the README is brought up to date, R37, because with `sensors` and `run` sensordeck does
+  something useful on Linux, and a line that says nothing is usable would then be false. It was item 9 of "Beyond the
+  request", taken by the orchestrating session under the delegation in `AGENTS.md`
 
 ## Non-goals
 
@@ -413,5 +426,3 @@ root" and "the proc root" are `/sys` and `/proc`, or what R13 puts in their plac
    It costs a loop at the start and a test. Without it `run` ends with status 1, and a service manager restarts it
 8. A line in `sensors` for each metric showing the 16-bit value `run` would send. It costs a column. Without it the
    rule of R4 in the README tells the user
-9. The sentence of the README that says nothing is usable yet is brought up to date. It costs a sentence. Without it
-   the README undersells what works, while the new section shows what does

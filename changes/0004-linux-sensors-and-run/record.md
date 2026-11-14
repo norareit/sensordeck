@@ -10,5 +10,11 @@ timestamp: 2026-11-14T19:03:59Z
 
 - 2026-11-14T19:03:59Z [Claude Code, anthropic/claude-opus-5-5] as the specifier, wrote the spec. The status is
   `draft`
+- 2026-11-14T19:06:22Z [Claude Code, anthropic/claude-opus-5-5] as the specifier, amended the spec on the decisions of
+  the orchestrating session under the delegation in `AGENTS.md`: the YAML package is the maintained fork
+  `go.yaml.in/yaml/v3` at v3.0.6 or newer, the newest version on the module proxy, in place of the archived
+  `gopkg.in/yaml.v3`, in R16, R25, D18 and the new D19; item 9 of "Beyond the request", the status line of the
+  README, is taken into the unit as R37 and D20; the other eight items are declined and stay in the list. The status
+  stays `draft`
 
 ## Amendments
