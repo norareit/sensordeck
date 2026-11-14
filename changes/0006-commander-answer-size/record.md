@@ -1,6 +1,6 @@
 ---
 kind: bug
-status: draft
+status: approved
 timestamp: 2026-11-14T23:42:13Z
 supersedes: 0005-commander-core-xt-probes
 ---
@@ -22,5 +22,6 @@ supersedes: 0005-commander-core-xt-probes
   fake controller, and the bug needs no plan, as the log says. The sentence of the steps to reproduce on who made the
   trace was corrected: the human saw the defect, and the orchestrating session made the trace. Item 1 of "Beyond the
   request" is taken as R10 and item 2 is declined. The approval that follows is made under that delegation
+- 2026-11-14T23:43:39Z [human] approved the spec. The status is `approved`
 
 ## Amendments
