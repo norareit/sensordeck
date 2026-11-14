@@ -296,14 +296,14 @@ R13).
 
 ### The fake controller
 
-- [ ] Write `internal/fakecommander/fakecommander_test.go` first, writing to the node as a driver would: the eight
+- [x] Write `internal/fakecommander/fakecommander_test.go` first, writing to the node as a driver would: the eight
   commands get the eight answers of "What was observed" byte for byte, and the mode is software after step 1 and
   hardware after step 8; `SetProbes` changes the answer of step 6; each `Failure` changes the answer of the step it
   is set for as its comment says, and `NoAnswer` sends nothing within 100 milliseconds; `OnStep` runs its action after
   the write of its step and before the answer; a write on interface 1 is kept
   in `WritesOnInterfaceOne` and gets no answer; both sysfs entries hold the `HID_ID` and the `HID_PHYS` of their
   interface; `RemoveNode` leaves the entries and removes the node (R17)
-- [ ] Write `internal/fakecommander/fakecommander.go` as "The fake controller" describes, until its tests pass (R17)
+- [x] Write `internal/fakecommander/fakecommander.go` as "The fake controller" describes, until its tests pass (R17)
 
 ### The driver
 
