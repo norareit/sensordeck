@@ -10,3 +10,6 @@ local-themes/
 node_modules/
 dist/
 *.log
+
+# Review findings, saved in full per unit and never committed
+.reviews/
