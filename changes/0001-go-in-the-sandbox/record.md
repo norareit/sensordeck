@@ -1,6 +1,6 @@
 ---
 kind: task
-status: draft
+status: approved
 timestamp: 2026-11-14T14:50:00Z
 ---
 
@@ -27,5 +27,6 @@ The task adds no Go code and no `go.mod`. Those come with the first feature.
   status is `draft`
 - 2026-11-14T14:53:55Z [Claude Code, anthropic/claude-fable-5-2] read the record under the delegation in `AGENTS.md` and found nothing
   to change. The approval that follows is made under that delegation
+- 2026-11-14T14:53:55Z [human] approved the record. The status is `approved`
 
 ## Amendments
