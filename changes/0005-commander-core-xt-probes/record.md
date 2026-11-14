@@ -1,6 +1,6 @@
 ---
 kind: feature
-status: in-progress
+status: implemented
 timestamp: 2026-11-14T21:54:29Z
 ---
 
@@ -28,9 +28,9 @@ timestamp: 2026-11-14T21:54:29Z
   listing of hidraw entries and the opening of a node in `internal/hidraw` and the pseudo terminals of the fake screen
   in `internal/fakepty`, so that the driver and the fake controller repeat neither. Every task names the requirements
   it delivers, and every requirement from R1 to R23 has a task. The status stays `approved`
-- 2026-11-14T22:10:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, began the work in round 1. The status is
+- 2026-11-14T22:01:53Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, began the work in round 1. The status is
   `in-progress`
-- 2026-11-14T22:40:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, built the unit in the order of the
+- 2026-11-14T23:23:37Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, built the unit in the order of the
   plan, in nine commits from the two refactorings to the documents, with the tests of each part written before its
   code. No task was added or removed. On `3736205`, `go test -count=1 ./...`, `go vet ./...`, `gofmt -l .` (no file
   name), `GOOS=windows GOARCH=amd64 go build ./...` and `GOOS=windows GOARCH=amd64 go vet ./...` all succeeded, and
@@ -44,7 +44,7 @@ timestamp: 2026-11-14T21:54:29Z
   `.reviews/changes/0005-commander-core-xt-probes/round-1-review.md`. The five required checks, the change check and
   race-enabled driver, fake-controller and end-to-end tests passed. Could not verify the physical controller, a Windows
   runtime or the locally held trace. The status stays `in-progress`
-- 2026-11-14T23:40:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, accepted S1 of the review of round
+- 2026-11-14T23:26:43Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, accepted S1 of the review of round
   1, a finding the definition of the orchestrator for round 2 accepts and not a decision of the human. `runSequence`
   now returns before step 1 when stop is done, so a stop that arrives during discovery or opening writes nothing, and
   step 8 stays owed only once step 1 was attempted. The regression test
@@ -57,5 +57,10 @@ timestamp: 2026-11-14T21:54:29Z
   review is in `.reviews/changes/0005-commander-core-xt-probes/round-2-review.md`. The five required checks and the
   change check passed. Could not verify the physical controller, a Windows runtime or the locally held trace, and did
   not replay the pre-fix regression failure. The status stays `in-progress`
+- 2026-11-14T23:28:47Z [Claude Code, anthropic/claude-opus-5-5] under the delegation in `AGENTS.md`, decided the findings: S1 of
+  round 1 was the one blocking finding and is corrected, and round 2 returned none, so no blocking finding is open.
+  The timestamps of three entries of the implementer, which did not match their commits, were corrected to the times
+  of the commits that added them. Every task of `plan.md` is ticked, and the five commands of the suite passed on
+  `9b238d3`. The checks on the physical controller are the human's and follow the merge. The status is `implemented`
 
 ## Amendments
