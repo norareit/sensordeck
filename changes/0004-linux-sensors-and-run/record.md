@@ -22,5 +22,9 @@ timestamp: 2026-11-14T19:03:59Z
   records, and the eight items left under "Beyond the request" are declined. The approval that follows is made under
   that delegation
 - 2026-11-14T19:06:57Z [human] approved the spec. The status is `approved`
+- 2026-11-14T19:14:39Z [Claude Code, anthropic/claude-opus-5-5] as the planner, wrote the plan against the tree of the
+  unit's branch, after a trial of `go.yaml.in/yaml/v3` v3.0.6, which reports a key given twice only when a mapping
+  is decoded into a map, and of the time limit of a program whose child keeps its output open. The status stays
+  `approved`
 
 ## Amendments
