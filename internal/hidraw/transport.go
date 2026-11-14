@@ -66,17 +66,27 @@ func openDiscovered(sysfsRoot, devRoot string) (*os.File, error) {
 		strings.Join(lines, "\n"))
 }
 
-// openNode opens the node and checks that it can be given a time limit for reading, so that no read waits without
-// one. O_NOCTTY matters only for the node of a fake screen, which is a terminal that must not become the controlling
-// terminal of the process.
-func openNode(path string) (*os.File, error) {
+// OpenNode opens the node for reading and writing, without making it the controlling terminal, and checks that it
+// takes a time limit for reading, so that no read waits without one. O_NOCTTY matters only for the node of a fake
+// device, which is a terminal that must not become the controlling terminal of the process. Its error is the error
+// of the system, or the failure of that check.
+func OpenNode(path string) (*os.File, error) {
 	file, err := os.OpenFile(path, os.O_RDWR|syscall.O_NOCTTY, 0)
 	if err != nil {
-		return nil, openError(path, err)
+		return nil, err
 	}
 	if err := file.SetReadDeadline(time.Time{}); err != nil {
 		_ = file.Close()
-		return nil, fmt.Errorf("cannot open %s: the node does not support a time limit for reading: %w", path, err)
+		return nil, fmt.Errorf("the node does not support a time limit for reading: %w", err)
+	}
+	return file, nil
+}
+
+// openNode opens the node of the screen and words the failure for the user.
+func openNode(path string) (*os.File, error) {
+	file, err := OpenNode(path)
+	if err != nil {
+		return nil, openError(path, err)
 	}
 	return file, nil
 }

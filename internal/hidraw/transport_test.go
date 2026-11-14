@@ -226,3 +226,15 @@ func TestOpenErrorForOtherFailures(test *testing.T) {
 		test.Errorf("got %v", err)
 	}
 }
+
+func TestOpenNodeGivesTheErrorOfTheSystem(test *testing.T) {
+	path := filepath.Join(test.TempDir(), "missing")
+	_, err := OpenNode(path)
+	if err == nil || !errors.Is(err, fs.ErrNotExist) {
+		test.Fatalf("got %v", err)
+	}
+	var pathError *fs.PathError
+	if !errors.As(err, &pathError) || err.Error() != pathError.Error() {
+		test.Fatalf("the text is not the one of the system: %v", err)
+	}
+}

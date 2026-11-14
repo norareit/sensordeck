@@ -153,3 +153,51 @@ func TestScreenLine(test *testing.T) {
 		test.Errorf("got %q, want %q", got, want)
 	}
 }
+
+func TestListGivesTheFieldsOfAnEntry(test *testing.T) {
+	root := test.TempDir()
+	writeEntry(test, root, "hidraw4", text("HID_ID=0003:00001B1C:00000C2A\nHID_NAME=Corsair\n"+
+		"HID_PHYS=usb-0000:00:14.0-5/input0\nHID_UNIQ=ABC\n"))
+	entries, err := List(root, "/dev")
+	want := []Entry{{Number: 4, Node: "/dev/hidraw4", Bus: 3, Vendor: 0x1B1C, Product: 0x0C2A, ValidID: true,
+		Name: "Corsair", Phys: "usb-0000:00:14.0-5/input0", Serial: "ABC"}}
+	if err != nil || !reflect.DeepEqual(entries, want) {
+		test.Fatalf("got %+v, %v", entries, err)
+	}
+}
+
+func TestListKeepsAnEntryWithAMalformedID(test *testing.T) {
+	root := test.TempDir()
+	writeEntry(test, root, "hidraw0", text("HID_ID=zz\nHID_NAME=Odd\n"))
+	entries, err := List(root, "/dev")
+	if err != nil || len(entries) != 1 || entries[0].ValidID || entries[0].Name != "Odd" {
+		test.Fatalf("got %+v, %v", entries, err)
+	}
+}
+
+func TestListLeavesOutAnEntryWithoutUevent(test *testing.T) {
+	root := test.TempDir()
+	writeEntry(test, root, "hidraw0", nil)
+	entries, err := List(root, "/dev")
+	if err != nil || len(entries) != 0 {
+		test.Fatalf("got %+v, %v", entries, err)
+	}
+}
+
+func TestListOrdersByNumber(test *testing.T) {
+	root := test.TempDir()
+	for _, name := range []string{"hidraw10", "hidraw2", "hidraw1"} {
+		writeEntry(test, root, name, text("HID_ID=0003:00000001:00000002\n"))
+	}
+	entries, err := List(root, "/dev")
+	if err != nil || len(entries) != 3 || entries[0].Number != 1 || entries[1].Number != 2 || entries[2].Number != 10 {
+		test.Fatalf("got %+v, %v", entries, err)
+	}
+}
+
+func TestListWithoutTheDirectory(test *testing.T) {
+	entries, err := List(test.TempDir(), "/dev")
+	if err != nil || len(entries) != 0 {
+		test.Fatalf("got %+v, %v", entries, err)
+	}
+}

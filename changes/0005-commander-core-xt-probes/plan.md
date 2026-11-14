@@ -274,11 +274,11 @@ R13).
 
 ### The refactorings
 
-- [ ] In `internal/hidraw`, add `Entry` and `List`, and add unit tests of `List` in `discover_test.go`: the fields of
+- [x] In `internal/hidraw`, add `Entry` and `List`, and add unit tests of `List` in `discover_test.go`: the fields of
   an entry with every key, an entry with a malformed `HID_ID` kept with `ValidID` false, an entry without `uevent`
   left out, the order by number, a missing directory. Make `Discover` filter the entries of `List`. The existing
   tests of `Discover` pass unchanged (R3)
-- [ ] In `internal/hidraw/transport.go`, extract `OpenNode` from `openNode`, which keeps its errors. Add a test that
+- [x] In `internal/hidraw/transport.go`, extract `OpenNode` from `openNode`, which keeps its errors. Add a test that
   `OpenNode` on a missing path gives an error for which `errors.Is(err, fs.ErrNotExist)` holds and whose text is the
   one of the system. The existing tests of the opening pass unchanged (R4)
 - [ ] Add `internal/fakepty` with `Open(test testing.TB) (master, slave *os.File, slavePath string)`, which makes a

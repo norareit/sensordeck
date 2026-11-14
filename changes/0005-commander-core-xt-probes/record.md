@@ -1,6 +1,6 @@
 ---
 kind: feature
-status: approved
+status: in-progress
 timestamp: 2026-11-14T21:54:29Z
 ---
 
@@ -28,5 +28,7 @@ timestamp: 2026-11-14T21:54:29Z
   listing of hidraw entries and the opening of a node in `internal/hidraw` and the pseudo terminals of the fake screen
   in `internal/fakepty`, so that the driver and the fake controller repeat neither. Every task names the requirements
   it delivers, and every requirement from R1 to R23 has a task. The status stays `approved`
+- 2026-11-14T22:10:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, began the work in round 1. The status is
+  `in-progress`
 
 ## Amendments
