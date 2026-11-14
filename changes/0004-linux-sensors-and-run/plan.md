@@ -436,13 +436,13 @@ is ever run.
 
 ### The Linux sources
 
-- [ ] Write `internal/fakesensors/fakesensors.go` as the Approach says, `//go:build linux` on its first line (R28 to
+- [x] Write `internal/fakesensors/fakesensors.go` as the Approach says, `//go:build linux` on its first line (R28 to
   R30)
-- [ ] In `layout_test.go`, add `internal/linuxsensors` and `internal/fakesensors` to the directories that must be
+- [x] In `layout_test.go`, add `internal/linuxsensors` and `internal/fakesensors` to the directories that must be
   limited to Linux; make the check of the commands refuse the import of `internal/linuxsensors` as it refuses that of
   `internal/hidraw` in a file of a Windows build, and name it for both; and add a test that no Go file of the module
   imports `gopkg.in/yaml.v3` (R14, R25)
-- [ ] In `internal/linuxsensors/hwmon_test.go`, with trees of `fakesensors`, test: no `class/hwmon` directory, giving
+- [x] In `internal/linuxsensors/hwmon_test.go`, with trees of `fakesensors`, test: no `class/hwmon` directory, giving
   nothing from all three hwmon sources; `k10temp` with `Tctl` in sensor 1, `Tccd1` in sensor 3 and `Tccd2` in sensor 4,
   giving `cpu.temp`, `cpu.ccd1.temp` and `cpu.ccd2.temp` in that order; an input of `-1500`, giving -1.5; a malformed
   input `4x000`, leaving its metric out; a sensor without a label, giving nothing; two `spd5118` entries, `hwmon5` on
@@ -451,25 +451,25 @@ is ever run.
   which leaves `nvme.1.temp` out and still gives `nvme.2.temp`; an entry without a `device` link, passed over and not
   counted; an entry named `amdgpu` with `edge`, giving nothing; and a `wanted` that holds only `ram.2.temp`, giving
   that reading alone (R5 to R7, R28)
-- [ ] Test `parseMillidegrees` on `51375\n`, `-1500\n`, `40000` without a newline, and the refused `+5`, ``, `4.5`,
+- [x] Test `parseMillidegrees` on `51375\n`, `-1500\n`, `40000` without a newline, and the refused `+5`, ``, `4.5`,
   `4x000` and `1 2` (R6)
-- [ ] Write `hwmon.go` as the Approach says, so the tests pass (R5 to R7, D4, D5)
-- [ ] In `internal/linuxsensors/procstat_test.go`, with a `wait` of the test that records its duration and writes the
+- [x] Write `hwmon.go` as the Approach says, so the tests pass (R5 to R7, D4, D5)
+- [x] In `internal/linuxsensors/procstat_test.go`, with a `wait` of the test that records its duration and writes the
   second content into the tree, test: a first reading that takes two samples, waits 200 milliseconds once and gives
   the value of the two lines; a second reading after the file changed again, which uses the kept sample, does not
   wait and gives the value of the change; a growth of the total of 0, giving nothing; a line with seven counters and a
   line with a counter `1x`, giving nothing; counters whose growths give a value above 100, giving 100; a missing file,
   which gives nothing and does not wait; and a `wanted` without `cpu.util`, which reads nothing and does not wait
   (R8, R29)
-- [ ] Write `procstat.go`, so the tests pass (R8, D7)
-- [ ] In `internal/linuxsensors/cpufreq_test.go`, test three CPUs at 3000000, 4425361 and 1200000, giving 4425.361; the
+- [x] Write `procstat.go`, so the tests pass (R8, D7)
+- [x] In `internal/linuxsensors/cpufreq_test.go`, test three CPUs at 3000000, 4425361 and 1200000, giving 4425.361; the
   same with one file holding `abc`, which is passed over; a directory `cpufreq` under `cpu0x`, passed over; and no CPU
   at all, giving nothing (R9, R29)
-- [ ] In `internal/linuxsensors/meminfo_test.go`, test the two lines of the spec, giving the used and total values of
+- [x] In `internal/linuxsensors/meminfo_test.go`, test the two lines of the spec, giving the used and total values of
   R34; a file without `MemAvailable`, giving `ram.total` only; a `MemTotal` of `9x kB`, giving nothing; and a missing
   file, giving nothing (R10, R29)
-- [ ] Write `cpufreq.go` and `meminfo.go`, so the tests pass (R9, R10, D6, D8)
-- [ ] In `internal/linuxsensors/nvidiasmi_test.go`, each case with `test.Setenv("PATH", ...)` and a fake of
+- [x] Write `cpufreq.go` and `meminfo.go`, so the tests pass (R9, R10, D6, D8)
+- [x] In `internal/linuxsensors/nvidiasmi_test.go`, each case with `test.Setenv("PATH", ...)` and a fake of
   `fakesensors.NvidiaSMI`, test: `44, 17, 3256, 32607`, giving the four readings in the order of R1; a fake that exits
   with 1 unless its arguments are exactly the two of R11, giving the four readings; two lines, of which the first
   counts; `[N/A]` in the first field and `[Not Supported]` in the third, giving the other two; three fields, giving
@@ -478,12 +478,12 @@ is ever run.
   shows that it did not run; a `wanted` of two GPU metrics, for which the fake appends a line to a file at each run
   and runs once; and a time limit of 100 milliseconds with `sleep 3 & wait` as the script, where the reading gives
   nothing and returns within 1.1 seconds (R11, R12, R30)
-- [ ] Test `parseGPULine` on the line of the spec, on a line with `\n` and a second line, and on `a,b,c,d,e` (R11)
-- [ ] Write `nvidiasmi.go` as the Approach says, so the tests pass (R11, R12, D9)
-- [ ] In `internal/linuxsensors/sources_test.go`, test that `Sources` over a tree of every source, with a fake
+- [x] Test `parseGPULine` on the line of the spec, on a line with `\n` and a second line, and on `a,b,c,d,e` (R11)
+- [x] Write `nvidiasmi.go` as the Approach says, so the tests pass (R11, R12, D9)
+- [x] In `internal/linuxsensors/sources_test.go`, test that `Sources` over a tree of every source, with a fake
   `nvidia-smi`, gives the names in the order of R1 (R1)
-- [ ] Write `sources.go`, so the test passes (R1, R12)
-- [ ] Commit: `feature-0004 Add the Linux sources of the sensors`
+- [x] Write `sources.go`, so the test passes (R1, R12)
+- [x] Commit: `feature-0004 Add the Linux sources of the sensors`
 
 ### The command sensors
 
@@ -540,13 +540,13 @@ is ever run.
 
 ### The end-to-end tests
 
-- [ ] In `e2e/main_test.go`, add `runWith`, `start` and `process` as the Approach says, and set
+- [x] In `e2e/main_test.go`, add `runWith`, `start` and `process` as the Approach says, and set
   `SENSORDECK_PROC_ROOT` in the new cases (R34, R35)
-- [ ] In `e2e/sensors_test.go`, test `sensors` against the tree of R34, built with `fakesensors` on the sysfs root of
+- [x] In `e2e/sensors_test.go`, test `sensors` against the tree of R34, built with `fakesensors` on the sysfs root of
   the fake screen and a `stat` of one line that does not change, with the fake `nvidia-smi` on `PATH`: stdout exactly
   that of R15, nothing on stderr, status 0. Test it against an empty tree with an empty directory as `PATH`: empty
   stdout, `no sensor could be read` on stderr, status 0 (R34)
-- [ ] In `e2e/run_test.go`, with the config, the tree and the empty `PATH` of R35 and a screen on `hidraw3`, test:
+- [x] In `e2e/run_test.go`, with the config, the tree and the empty `PATH` of R35 and a screen on `hidraw3`, test:
   the first report a clock report through `expectClockReport` and the second exactly
   `02 02 01 00 2A 02 04 D2` and 56 bytes of `0x00`; SIGTERM once `WaitReports` of 4 is reached, giving status 0,
   stdout `running: 3 metrics every 100ms\nstopped\n` and the end within 3 seconds; `MoveAfter(2, 7)`, after which
@@ -555,10 +555,10 @@ is ever run.
   and no screen, giving the error of R18 and status 1; and no `--config` with `XDG_CONFIG_HOME` set to an empty
   temporary directory, giving `sensordeck: cannot read the config file <that directory>/sensordeck/config.yaml: no
   such file or directory` and status 1 (R35)
-- [ ] Extend the comment at the top of `e2e/commands_test.go` with what the suite leaves to the unit tests and where:
+- [x] Extend the comment at the top of `e2e/commands_test.go` with what the suite leaves to the unit tests and where:
   the clock after 60 seconds, the GPU metrics in `run`, `cpu.util`, the time limit of `nvidia-smi`, and a reopening
   that fails before it succeeds, in `internal/cli` and `internal/linuxsensors` (R36)
-- [ ] Commit: `feature-0004 Add the end-to-end tests of sensors and run`
+- [x] Commit: `feature-0004 Add the end-to-end tests of sensors and run`
 
 ### The documents
 
