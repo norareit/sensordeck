@@ -1,6 +1,6 @@
 ---
 kind: feature
-status: approved
+status: in-progress
 timestamp: 2026-11-14T14:51:19Z
 ---
 
@@ -18,5 +18,7 @@ timestamp: 2026-11-14T14:51:19Z
 - 2026-11-14T15:01:56Z [Claude Code, anthropic/claude-opus-5-5] as the planner, wrote the plan against the tree of the
   branch. Every requirement R1 to R29 has a task, and the byte examples and CRC values of R13, R14 and R16 were
   computed again and hold. The status stays `approved`
+- 2026-11-14T15:02:30Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, began the work. The status is
+  `in-progress`
 
 ## Amendments

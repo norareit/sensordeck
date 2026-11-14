@@ -57,3 +57,14 @@ The loop writes one unit at a time, and the next only once the one before it is 
 * A check that needs the physical device is the human's, and so is everything on Windows. The session asks for it and
   waits, and does not take a guess for a result
 * The delegation holds for this loop only. A session that is not running it follows `process.md` as it stands
+
+### Testing
+
+The suite of the project is three commands, and all three must succeed before work is submitted:
+
+* `go test ./...` passes
+* `go vet ./...` reports nothing
+* `gofmt -l .` prints no file name
+
+These three are the whole suite. There is no end-to-end suite yet, because there is no executable to run. The unit that
+adds the first one documents it here.
