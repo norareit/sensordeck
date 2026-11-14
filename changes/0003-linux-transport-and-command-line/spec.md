@@ -63,7 +63,7 @@ in output are two upper-case digits each, as `docs/protocol.md` writes them. `\t
   `github.com/spf13/cobra` at version 1.10.2 or newer and, when the fake screen of R29 uses it,
   `golang.org/x/sys`, and no others. `go.sum` exists, and `go mod tidy -diff` reports no difference
 - **R3** `GOOS=windows GOARCH=amd64 go build ./...` and `GOOS=windows GOARCH=amd64 go vet ./...` succeed and report
-  nothing. In such a build, each of the commands `devices`, `clock`, `values`, `upload` and `listen` fails as R16
+  nothing. In such a build, each of the commands `devices`, `clock`, `values`, `upload`, `listen` and `raw` fails as R16
   says with the message `windows is not supported yet`, where the name is the value of `runtime.GOOS`
 - **R4** The package of the protocol holds nothing of Linux and nothing of hidraw: R5 of unit 0002 still holds for
   it, with its test. The code of the commands names the package of the Linux transport only in files that a build
@@ -144,13 +144,13 @@ in output are two upper-case digits each, as `docs/protocol.md` writes them. `\t
 - **R16** Every failure of a command writes `sensordeck: ` followed by the text of the error and a newline to
   standard error, and the exit status is 1. That holds for an unknown command, an unknown option and wrong arguments
   too. The usage text is not written after a failure. `sensordeck` without a command, and `--help` on it or on any
-  command, write the help to standard output with the exit status 0, and the help names the five commands and the
+  command, write the help to standard output with the exit status 0, and the help names the six commands and the
   two options of R17 with a short description each. There is no `completion` command
 - **R17** Two options hold for every command and are accepted before and after the name of the command:
     - `--device <path>` opens the transport on that node, where it is otherwise opened by discovery
     - `--trace` writes the trace of R23 to standard error
-- **R18** The commands `clock`, `values`, `upload` and `listen` check their arguments, and `upload` reads its file,
-  before the transport is opened. With wrong arguments or an unreadable file they fail as R16 says, also when no
+- **R18** The commands `clock`, `values`, `upload`, `listen` and `raw` check their arguments, and `upload` reads its
+  file, before the transport is opened. With wrong arguments or an unreadable file they fail as R16 says, also when no
   screen is connected. They close the transport before they end
 - **R19** `sensordeck clock` takes no arguments. It writes the one report that `EncodeClock` gives for the current
   time in the local time zone, reads nothing, and writes to standard output `clock sent: ` followed by that time as
@@ -223,6 +223,21 @@ in output are two upper-case digits each, as `docs/protocol.md` writes them. `\t
   `SENSORDECK_SYSFS_ROOT` replaces the root of sysfs, `/sys`, and `SENSORDECK_DEV_ROOT` the root of the device
   nodes, `/dev`. An empty or unset variable means the default. They are read in one place where the program starts,
   and everything past it takes the roots as values
+- **R35** `sensordeck raw <hex bytes>... [--seconds N]` writes one report made of the bytes given and prints what
+  the device sends afterwards. It takes one or more arguments. Each argument is an even number of hexadecimal
+  digits, two or more, in upper or lower case, with no prefix and no separator, and stands for one byte for each
+  pair of digits. The bytes of the arguments are joined in the order given, so `raw 03 01 15`, `raw 030115` and
+  `raw 0301 15` give the same three bytes. There are 1 to 64 bytes in all, and the report is those bytes filled up
+  with `0x00` to 64. The command writes that one report, then reads input reports for N seconds, 1 without the
+  option, with the rule and the error text of R22 for N. Every report read is written to standard output as one line
+  in the format of a read line of R23, with the time counted from the start of the command. A read whose time limit
+  passed ends the reading and is no failure, no read waits beyond the end of the N seconds, and any other error of
+  a read or of the write is a failure as R16 says. At the end it writes `reports received: <count>`. So
+  `sensordeck raw 03 01 15` writes 65 bytes to the node, `00 03 01 15` followed by 61 bytes of `0x00`. The errors:
+    - no arguments: `raw needs at least one byte`
+    - an argument that is empty, has an odd number of characters or holds a character that is no hexadecimal digit:
+      `invalid argument "<argument>": want pairs of hexadecimal digits`
+    - more than 64 bytes: `raw takes at most 64 bytes, got <count of bytes>`
 
 ### The udev rule and the documents
 
@@ -271,9 +286,10 @@ in output are two upper-case digits each, as `docs/protocol.md` writes them. `\t
   a reopening with no screen, which fails, followed by one that succeeds; the two errors of opening by discovery of
   R11; and opening on a given node. The text of R14 is tested on the function that makes it, with a
   permission error given to it, because the tests may run as root, for whom no permission is denied
-- **R32** Unit tests cover the argument rules of R20 and R22 with every error named there, with `010=1` as tag 10
-  and `0x1F=0XFFFF` as tag 31 and value 65535, the line of R15, and the calls of R7 in a complete upload and in one
-  with a NAK
+- **R32** Unit tests cover the argument rules of R20, R22 and R35 with every error named there, with `010=1` as tag
+  10 and `0x1F=0XFFFF` as tag 31 and value 65535, with the three spellings of the example of R35 giving the same
+  report, with `0x03` and `3` as wrong arguments of `raw`, with 64 bytes accepted and 65 refused, the line of R15,
+  and the calls of R7 in a complete upload and in one with a NAK
 - **R33** The end-to-end tests build the executable once, with `CGO_ENABLED=0`, and run it as a process against the
   fake screen through the variables of R24. They check standard output, standard error and the exit status, and
   cover at the least:
@@ -290,6 +306,9 @@ in output are two upper-case digits each, as `docs/protocol.md` writes them. `\t
       `ymodem command`, the last line of standard error being the example of R21, the trace holding a read line
       that starts with `43`, and nothing written to the node after the ymodem report
     - `listen --seconds 1` against a fake that sends two reports: both lines, `reports received: 2`, exit status 0
+    - `raw 03 01 15` against a fake that answers the report with one report that starts with `0x43`: the 65 bytes
+      that arrive are those of R35, standard output is one read line with that report and then
+      `reports received: 1`, and the exit status is 0
     - two screens without `--device`: the error of R11 and exit status 1, and with `--device` a `values` that
       arrives at the screen named
 - **R34** What the end-to-end tests do not cover, and where it is covered instead: a reopening that fails all 20
@@ -352,7 +371,7 @@ Those this spec makes:
   repeat what the upload knows
 - **D14** A reopening by discovery follows the rule of the first opening: exactly one supported screen. With several
   screens the user has named a node, and that path is opened again as it is. If the screen comes back under another
-  number in that case, the reopening fails 20 times and the upload ends with the error of that stage. Item 4 of
+  number in that case, the reopening fails 20 times and the upload ends with the error of that stage. Item 3 of
   "Beyond the request" would follow the screen by its serial
 - **D15** The upload reads no input reports away before it starts. If the screen sends reports unasked, the first
   one is taken as an answer and the upload fails with the byte, as D12 of unit 0002 wants it. `listen` is the
@@ -374,7 +393,8 @@ Those this spec makes:
   keep the bounds of a report as hidraw does, but a read of at most 64 bytes of reports that are all 64 bytes long
   gives one report, which the trial of D10 showed. A fake therefore sends a short report only when nothing follows
   it before it is read. Setting the terminal to pass bytes unchanged needs terminal calls, for which
-  `golang.org/x/sys` may be used: it is pure Go, and the Windows transport will need the module anyway
+  `golang.org/x/sys` may be used: it is pure Go, and the Windows transport will need the module anyway. The sandbox
+  the unit is built in was checked: it has `/dev/ptmx` and can open a pseudo terminal
 - **D19** The end-to-end tests are Go tests in the module, so that `go test ./...` stays the one command that runs
   everything, and the rule of the standards to run the end-to-end tests after every change is met by it. The two
   upload tests wait in real time, about 2 seconds for the complete upload and about 1 for the failing one, because
@@ -395,6 +415,14 @@ Those this spec makes:
   usable
 - **D24** A number of `values` is decimal or `0x` hexadecimal only. Go's own parsing of a number with a prefix
   would read `010` as 8, which nobody typing a tag means
+- **D25** The command `raw` is part of the unit. It was item 3 of "Beyond the request", and the orchestrating
+  session took it under the delegation in `AGENTS.md`. The device has commands that are not known, such as the
+  brightness and reading back device information, and the check on the device after this unit is to be able to try
+  byte sequences for them, or a known command out of its usual order, without another unit in between. Its bytes are
+  pairs of hexadecimal digits without a prefix, because that is how `docs/protocol.md` and the trace write a report,
+  so that a line of either can be copied into the command. A single digit is refused rather than read as one byte,
+  because in a joined argument it cannot be told which pair lost its digit. It sends one report only: a sequence of
+  reports with answers in between is what `upload` is, and a second report is a second call
 
 ## Non-goals
 
@@ -421,22 +449,18 @@ Those this spec makes:
    line for it to standard error. It costs a function passed to the transport at opening, a line format and tests.
    Without it a short report looks in the trace like a full one that ends in zeros, and the upload works the same
    either way
-3. A command `raw <hex bytes>` that writes one report of the bytes given, filled up with `0x00`, and then prints
-   what the device sends for some seconds. It costs a command, its argument rules and tests. Without it, trying a
-   byte sequence that no command of this unit sends, such as a guess at the brightness, or the ymodem command
-   without the reset before it, needs a change to the code
-4. Reopen by the serial of the screen that was open, when several screens are connected and the serial is not
+3. Reopen by the serial of the screen that was open, when several screens are connected and the serial is not
    empty. It costs a rule for the choice and tests. Without it an upload with several screens connected needs
    `--device` and fails at the reopening if the number changes, with a clear error
-5. Have `devices` say for each screen whether the user may open its node. It costs a check of the access and a
+4. Have `devices` say for each screen whether the user may open its node. It costs a check of the access and a
    fifth field. Without it a missing udev rule shows at the first command that opens the node, with the text of R14
-6. Trace lines that name the node, for the first opening and after each reopening. It costs a way for the tracing to
+5. Trace lines that name the node, for the first opening and after each reopening. It costs a way for the tracing to
    learn the path, which `Transport` does not give. Without it the node in use is found with `devices`
-7. A document with the steps of the first check on the device: which commands in which order, and what to look for
+6. A document with the steps of the first check on the device: which commands in which order, and what to look for
    in the trace. It costs a page. Without it the human works from the help of the commands and this spec
-8. A `--version` option. It costs the wiring of a version into the build. Without it a build is told apart by its
+7. A `--version` option. It costs the wiring of a version into the build. Without it a build is told apart by its
    commit
-9. A status of its own, 2, for a wrong command line. It costs telling the errors of cobra apart by kind. Without it
+8. A status of its own, 2, for a wrong command line. It costs telling the errors of cobra apart by kind. Without it
    every failure is 1 and the text says which it was
-10. Cobra's `completion` command for shell completion. It costs removing the switch of D7 and a line in the README.
-    Without it there is no completion of command names in the shell
+9. Cobra's `completion` command for shell completion. It costs removing the switch of D7 and a line in the README.
+   Without it there is no completion of command names in the shell
