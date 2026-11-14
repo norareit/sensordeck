@@ -60,11 +60,14 @@ The loop writes one unit at a time, and the next only once the one before it is 
 
 ### Testing
 
-The suite of the project is three commands, and all three must succeed before work is submitted:
+The suite of the project is five commands, and all five must succeed before work is submitted:
 
 * `go test ./...` passes
 * `go vet ./...` reports nothing
 * `gofmt -l .` prints no file name
+* `GOOS=windows GOARCH=amd64 go build ./...` succeeds and reports nothing
+* `GOOS=windows GOARCH=amd64 go vet ./...` succeeds and reports nothing
 
-These three are the whole suite. There is no end-to-end suite yet, because there is no executable to run. The unit that
-adds the first one documents it here.
+The end-to-end tests are in `e2e/`, and `go test ./...` runs them. They build the executable and run it against a fake
+screen made of a directory tree and pseudo terminals, so they need Linux with `/dev/ptmx`. The executable reads the two
+environment variables `SENSORDECK_SYSFS_ROOT` and `SENSORDECK_DEV_ROOT` for them.

@@ -41,6 +41,24 @@ sensordeck theme preview my-theme # render a theme to PNG with sample values
 sensordeck service install        # run in the background at startup
 ```
 
+## Linux: access to the screen
+
+On Linux the screen is reached through hidraw, and a udev rule gives the user of the active session access to its
+device node. Without the rule the node belongs to root, and the commands fail with a message that points here.
+
+The rule is one line:
+
+```
+SUBSYSTEM=="hidraw", ATTRS{idVendor}=="0483", ATTRS{idProduct}=="0065", MODE="0660", TAG+="uaccess"
+```
+
+It is the file `udev/70-sensordeck.rules` of this repository. To install it, copy that file to `/etc/udev/rules.d/`
+and replug the screen. The file name starts with `70` because the `uaccess` tag is acted on by `73-seat-late.rules`,
+and the rule must sort before it.
+
+hidraw is provided by the kernel's `usbhid` driver, so that driver must stay bound to the screen. A rule that unbinds
+`usbhid` for this device, as some guides for other tools add, has to be removed.
+
 ## Credits
 
 Thanks to the [turing-smart-screen-python-HIDdev2](https://github.com/Agentry433/turing-smart-screen-python-HIDdev2)

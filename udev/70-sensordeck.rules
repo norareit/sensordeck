@@ -1,0 +1,3 @@
+# Gives the user of the active session access to the SmartMonitor screen, USB ID 0483:0065, through hidraw.
+# The uaccess tag is acted on by 73-seat-late.rules, so this file must sort before that name.
+SUBSYSTEM=="hidraw", ATTRS{idVendor}=="0483", ATTRS{idProduct}=="0065", MODE="0660", TAG+="uaccess"

@@ -1094,39 +1094,39 @@ copy of `build.Default` with `GOOS` set to `windows` and its `MatchFile(dir, nam
 
 ### The udev rule and the documents
 
-- [ ] Write `udev/70-sensordeck.rules` with a comment line on what it does and why it sorts before
+- [x] Write `udev/70-sensordeck.rules` with a comment line on what it does and why it sorts before
   `73-seat-late.rules`, and the rule line of R25 (R25, D4, D21)
-- [ ] Add the section `## Linux: access to the screen` to `README.md` before `## Credits`, with what R26 lists: hidraw
+- [x] Add the section `## Linux: access to the screen` to `README.md` before `## Credits`, with what R26 lists: hidraw
   and the udev rule, the rule line in a code block, the file, the copying to `/etc/udev/rules.d/` and the replugging,
   and the `usbhid` driver, which must stay bound, with the advice to remove a rule that unbinds it. It names no
   command to reload the rules. Nothing else of the README changes (R26, D21)
-- [ ] In the section "Transport" of `docs/protocol.md`, add that an input report is read from the node as 64 bytes
+- [x] In the section "Transport" of `docs/protocol.md`, add that an input report is read from the node as 64 bytes
   without a report ID byte because the device uses no numbered reports, that the screen is found through the `HID_ID`
   line of the `uevent` file in sysfs, and that hidraw needs the `usbhid` driver bound (R27)
-- [ ] In the section "Assumptions" of `docs/protocol.md`, replace the sentence that names this unit as where they are
+- [x] In the section "Assumptions" of `docs/protocol.md`, replace the sentence that names this unit as where they are
   checked with one saying that the human checks them on the device with the commands of this unit and that they stay
   unconfirmed until then, and add the assumption that an input report shorter than 64 bytes is filled up with `0x00`.
   Nothing else of the document changes (R27)
-- [ ] In the subsection "Testing" of `AGENTS.md`, name the five commands of the suite, the three it names now and
+- [x] In the subsection "Testing" of `AGENTS.md`, name the five commands of the suite, the three it names now and
   `GOOS=windows GOARCH=amd64 go build ./...` and `GOOS=windows GOARCH=amd64 go vet ./...`, and replace the statement
   that there is no end-to-end suite with: the end-to-end tests are in `e2e/`, `go test ./...` runs them, they build
   the executable and run it against a fake screen made of a directory tree and pseudo terminals, they need Linux with
   `/dev/ptmx`, and `SENSORDECK_SYSFS_ROOT` and `SENSORDECK_DEV_ROOT` exist for them (R28)
-- [ ] Commit: `feature-0003 Add the udev rule and document the transport`
+- [x] Commit: `feature-0003 Add the udev rule and document the transport`
 
 ## Verification
 
-- [ ] `go test ./...` passes, with `-count=1` so that the end-to-end tests really run (R29 to R33)
-- [ ] `go vet ./...` reports nothing
-- [ ] `gofmt -l .` prints no file name
-- [ ] `GOOS=windows GOARCH=amd64 go build ./...` and `GOOS=windows GOARCH=amd64 go vet ./...` succeed and report
+- [x] `go test ./...` passes, with `-count=1` so that the end-to-end tests really run (R29 to R33)
+- [x] `go vet ./...` reports nothing
+- [x] `gofmt -l .` prints no file name
+- [x] `GOOS=windows GOARCH=amd64 go build ./...` and `GOOS=windows GOARCH=amd64 go vet ./...` succeed and report
   nothing (R3)
-- [ ] `CGO_ENABLED=0 go build ./...` and `go build .` succeed, the latter giving an executable named `sensordeck` (R1)
-- [ ] `go mod tidy -diff` reports no difference, and `go.mod` holds `go 1.27` and the two direct requirements (R2)
-- [ ] `go test ./internal/smartmonitor` still passes its import check (R4)
-- [ ] `grep -rn 'udevadm trigger' --include='*.md' . --exclude-dir=node_modules --exclude-dir=changes` finds nothing
+- [x] `CGO_ENABLED=0 go build ./...` and `go build .` succeed, the latter giving an executable named `sensordeck` (R1)
+- [x] `go mod tidy -diff` reports no difference, and `go.mod` holds `go 1.27` and the two direct requirements (R2)
+- [x] `go test ./internal/smartmonitor` still passes its import check (R4)
+- [x] `grep -rn 'udevadm trigger' --include='*.md' . --exclude-dir=node_modules --exclude-dir=changes` finds nothing
   (R26)
-- [ ] `npm run check-changes` passes on the committed work
+- [x] `npm run check-changes` passes on the committed work
 
 ## Commit Points
 
@@ -1134,4 +1134,4 @@ copy of `build.Default` with `GOOS` set to `windows` and its `MatchFile(dir, nam
 - [x] `feature-0003 Add the fake screen and the hidraw transport`
 - [x] `feature-0003 Add the executable and its commands`
 - [x] `feature-0003 Add the end-to-end tests`
-- [ ] `feature-0003 Add the udev rule and document the transport`
+- [x] `feature-0003 Add the udev rule and document the transport`

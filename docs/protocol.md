@@ -25,6 +25,10 @@ reports of 64 bytes, and the device answers with input reports of 64 bytes. On L
 belongs to the transport and is no part of the 64 bytes this document speaks of. A "report" below is always the 64
 bytes alone.
 
+An input report is read from the node as 64 bytes without a report ID byte, because the device uses no numbered
+reports. The screen is found through the `HID_ID` line of the `uevent` file of its entry under `/sys/class/hidraw`,
+which holds the bus, the vendor ID and the product ID. hidraw needs the kernel's `usbhid` driver bound to the device.
+
 ## Value update
 
 One report sets up to 20 values:
@@ -108,7 +112,8 @@ bytes `123456789` is `0x31C3`.
 
 ## Assumptions
 
-Each of these is not yet confirmed on the device. The unit that adds the Linux transport is where they are checked.
+Each of these is not yet confirmed on the device. They are checked on the device by the human with the commands of the
+unit that adds the Linux transport, and stay unconfirmed until then.
 
 * **Carrying a block in reports.** A YMODEM block is carried as consecutive reports of 64 bytes, the last filled up
   with `0x00`: 3 reports for 133 bytes and 17 for 1029. The alternatives are a length byte or a command byte in front
@@ -121,3 +126,4 @@ Each of these is not yet confirmed on the device. The unit that adds the Linux t
   at that point
 * **The numbers of the upload.** A pause of 1 second before the first attempt to reopen the device, 500 milliseconds
   between attempts, 20 attempts, 10 seconds for an answer, and 10 writes of one item
+* **A short input report.** An input report shorter than 64 bytes is filled up with `0x00`
