@@ -54,5 +54,13 @@ timestamp: 2026-11-14T19:03:59Z
   commands, the static build, the module tidy diff and the change check successfully. Physical-device behavior,
   host sensors, real NVIDIA driver output and execution on Windows remain unverified. The status stays
   `in-progress`
+- 2026-11-14T19:27:53Z [OpenCode, openai/gpt-6.1-sol] as the reviewer, made a delta review of
+  `changes/0004-linux-sensors-and-run` at `6ce21b22defcd7cba2018c2a7fc17c3fb63f7818`, compared against
+  `7893d972a98846a09d7de5fe0fbf6069545416b8`. Only the preceding review entry changed; there are no code or test
+  corrections. Returned the unchanged findings S1, S2 and C1, with no new findings, saved in
+  `.reviews/changes/0004-linux-sensors-and-run/review-round-3-20261114T192724Z.md`. Reran the five project suite
+  commands, the static build, the module tidy diff and the change check successfully. Physical-device behavior,
+  host sensors, real NVIDIA driver output and execution on Windows remain unverified. The status stays
+  `in-progress`
 
 ## Amendments
