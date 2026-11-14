@@ -36,7 +36,6 @@ supersedes: 0005-commander-core-xt-probes
   tests also passed once with `-race`, and the driver and fake tests 20 times in a row, with no split answer seen. Not
   checked: the real controller, which the sandbox does not have, so the check that `sensors` lists both probes on it
   is the human's. The unit has not been reviewed, so the status stays `in-progress`
-
 - 2026-11-14T23:51:41Z [OpenCode, openai/gpt-6.1-sol] as the reviewer, made a full review of
   `0006-commander-answer-size` at `0cc799be8113cb48f40b06f273ddc8f8d3467bf0`, against merge base
   `2786473597de9adbffafc9a6acd8e2bbbfde371c`. Returned no findings on spec conformance, plan fidelity or code quality;
