@@ -104,109 +104,109 @@ for. It has no `toolchain` line.
 
 ### Documents and module
 
-- [ ] Write `docs/protocol.md` in the project's own words, with a section each for the identity, the nature of the
+- [x] Write `docs/protocol.md` in the project's own words, with a section each for the identity, the nature of the
   device, the transport, the value update, the clock, the five steps of the theme upload, the YMODEM block and the
   CRC with its check value `0x31C3`, keeping every byte value of "What is known of the device" in the spec (R1)
-- [ ] Add to `docs/protocol.md` a section "Unknown" that lists the brightness, reading back device information and
+- [x] Add to `docs/protocol.md` a section "Unknown" that lists the brightness, reading back device information and
   the firmware version, what the device sends unasked, the touch layer, and the meaning of `0x01 0x15` at offsets 1
   and 2 and of `0x64` at offset 10 of the clock report; a section "Assumptions" that states each of D5 to D10 as not
   yet confirmed on the device, with the numbers of D10; and a sentence that the protocol was learned from the
   project the README credits and that this document holds no code or text of it (R2)
-- [ ] Add a subsection "Testing" under "Specific to this project" in `AGENTS.md` that says `go test ./...` passes,
+- [x] Add a subsection "Testing" under "Specific to this project" in `AGENTS.md` that says `go test ./...` passes,
   `go vet ./...` reports nothing and `gofmt -l .` prints no file name, that these three are the whole suite, and
   that there is no end-to-end suite yet because there is no executable (R3)
-- [ ] Write `go.mod` holding only `module github.com/norareit/sensordeck` and `go 1.27`, and add no `go.sum` (R4)
-- [ ] Write `internal/smartmonitor/doc.go` with the package comment: the package speaks the wire protocol of the
+- [x] Write `go.mod` holding only `module github.com/norareit/sensordeck` and `go 1.27`, and add no `go.sum` (R4)
+- [x] Write `internal/smartmonitor/doc.go` with the package comment: the package speaks the wire protocol of the
   SmartMonitor screen `0483:0065`, described in `docs/protocol.md`, and does no I/O of its own (D3)
-- [ ] Commit: `feature-0002 Document the protocol and add the Go module`
+- [x] Commit: `feature-0002 Document the protocol and add the Go module`
 
 ### Reports and encoders
 
-- [ ] In `report_test.go`, test `toReports`: 133 bytes give 3 reports, the last holding bytes 128 to 132 and 59 of
+- [x] In `report_test.go`, test `toReports`: 133 bytes give 3 reports, the last holding bytes 128 to 132 and 59 of
   `0x00`; 1029 bytes give 17; 64 give 1; 1 gives 1 with 63 of `0x00`; the pieces are in order (R18, R28)
-- [ ] In `report.go`, define `Report` as `[64]byte` and write `toReports` so the tests pass (R7, R18)
-- [ ] In `values_test.go`, test `EncodeValues`: the example of R8 byte for byte; 41 pairs give counts 20, 20 and 1
+- [x] In `report.go`, define `Report` as `[64]byte` and write `toReports` so the tests pass (R7, R18)
+- [x] In `values_test.go`, test `EncodeValues`: the example of R8 byte for byte; 41 pairs give counts 20, 20 and 1
   with the pairs in list order; 40 pairs give 20 and 20; an empty list and nil give no report; a copy of the input
   taken before the call equals the input after it; a tag given twice is encoded twice (R8, R9, R28)
-- [ ] In `values.go`, define `Value` and write `EncodeValues` so the tests pass (R8, R9)
-- [ ] In `clock_test.go`, test `EncodeClock`: 2026-11-14 15:04:05 in `time.UTC` gives the bytes of R10; a time in a
+- [x] In `values.go`, define `Value` and write `EncodeValues` so the tests pass (R8, R9)
+- [x] In `clock_test.go`, test `EncodeClock`: 2026-11-14 15:04:05 in `time.UTC` gives the bytes of R10; a time in a
   fixed zone made with `time.FixedZone` is encoded with its own fields and not converted; a Sunday gives `0x07` and a
   Monday `0x01` at offset 9; the years 1999 and 2256 give an error whose text holds the year and a zero `Report`;
   the years 2000 and 2255 give no error (R10, R11, R28)
-- [ ] In `clock.go`, write `EncodeClock` so the tests pass, mapping `time.Sunday` to 7 (R10, R11, D16)
-- [ ] In `commands_test.go`, test that `ResetCommand` and `YmodemCommand` give the reports of R12 (R12, R28)
-- [ ] In `commands.go`, write `ResetCommand` and `YmodemCommand` so the tests pass (R12, D6)
-- [ ] In `imports_test.go`, list every `.go` file of the package directory, tests included, with
+- [x] In `clock.go`, write `EncodeClock` so the tests pass, mapping `time.Sunday` to 7 (R10, R11, D16)
+- [x] In `commands_test.go`, test that `ResetCommand` and `YmodemCommand` give the reports of R12 (R12, R28)
+- [x] In `commands.go`, write `ResetCommand` and `YmodemCommand` so the tests pass (R12, D6)
+- [x] In `imports_test.go`, list every `.go` file of the package directory, tests included, with
   `filepath.Glob("*.go")`, parse each with `parser.ParseFile` in `parser.ImportsOnly` mode, and fail on any import
   path whose first element holds a dot, which is not the standard library, and on any of `os`, `os/exec`,
   `os/signal`, `net`, `syscall` and `unsafe`. Neither call needs the test to import `os` (R5)
-- [ ] Commit: `feature-0002 Encode reports, value updates, the clock and the commands`
+- [x] Commit: `feature-0002 Encode reports, value updates, the clock and the commands`
 
 ### YMODEM framing
 
-- [ ] In `ymodem_test.go`, test `crc16`: `0x31C3` for `123456789`, `0x0000` for no bytes and for 128 bytes of `0x00`
+- [x] In `ymodem_test.go`, test `crc16`: `0x31C3` for `123456789`, `0x0000` for no bytes and for 128 bytes of `0x00`
   (R13, R28)
-- [ ] In `ymodem_test.go`, test `headerBlock(2500)`: 133 bytes, `01 00 FF`, the data starting with
+- [x] In `ymodem_test.go`, test `headerBlock(2500)`: 133 bytes, `01 00 FF`, the data starting with
   `69 6D 67 2E 64 61 74 00 32 35 30 30 00` and `0x00` after it, and the last two bytes `82 BF` (R14, R28)
-- [ ] In `ymodem_test.go`, test `dataBlocks`: for the theme of R16 three blocks of 1029 bytes starting with `02 01 FE`,
+- [x] In `ymodem_test.go`, test `dataBlocks`: for the theme of R16 three blocks of 1029 bytes starting with `02 01 FE`,
   `02 02 FD` and `02 03 FC`, the CRC bytes `C2 E0`, `C2 E0` and `FC 8B`, the third holding 452 theme bytes and 572 of
   `0x1A`; for a theme of 2048 bytes two blocks and no third; for a theme of 257 times 1024 bytes the bytes at offsets
   1 and 2 of blocks 255, 256 and 257 are `FF 00`, `00 FF` and `01 FE`; the theme is unchanged after the call (R15,
   R16, R27, R28)
-- [ ] In `ymodem_test.go`, test that `endOfTransmission` is the single byte `0x04` and that `closingBlock` is 133
+- [x] In `ymodem_test.go`, test that `endOfTransmission` is the single byte `0x04` and that `closingBlock` is 133
   bytes, `01 00 FF`, 128 of `0x00` and `00 00` (R17, R28)
-- [ ] In `ymodem.go`, write `crc16`, `headerBlock`, `dataBlocks`, `endOfTransmission` and `closingBlock` so the tests
+- [x] In `ymodem.go`, write `crc16`, `headerBlock`, `dataBlocks`, `endOfTransmission` and `closingBlock` so the tests
   pass, with a shared unexported helper that frames a start byte, a block number and data into a block (R13 to R17,
   D7, D14)
-- [ ] Commit: `feature-0002 Frame YMODEM blocks with their CRC`
+- [x] Commit: `feature-0002 Frame YMODEM blocks with their CRC`
 
 ### Theme upload
 
-- [ ] In `upload_test.go`, write the fake transport and the recording pause described under Approach, neither of
+- [x] In `upload_test.go`, write the fake transport and the recording pause described under Approach, neither of
   which waits (R6, R29)
-- [ ] Test a complete upload of the theme of R16 against a transport that answers ACK to everything and reopens at
+- [x] Test a complete upload of the theme of R16 against a transport that answers ACK to everything and reopens at
   once: the recorded calls equal, in order, the write of the reset report, a reopen, the ymodem report and a read,
   the 3 reports of the header block and a read, for each of the 3 data blocks its 17 reports and a read, the one
   report of the end of transmission and a read, the 3 reports of the closing block, and a reopen; every report
   written equals what `toReports` gives for that item; every read is passed 10 seconds; the pauses are two of
   1 second; the error is nil; the theme is unchanged (R19, R20, R25, R27, R29)
-- [ ] Test NAK and then ACK on data block 2: its 17 reports are written twice, identical, with a read after each, and
+- [x] Test NAK and then ACK on data block 2: its 17 reports are written twice, identical, with a read after each, and
   the upload completes (R21, R29)
-- [ ] Test NAK and then ACK on the ymodem command, on the header block and on the end of transmission: the item is
+- [x] Test NAK and then ACK on the ymodem command, on the header block and on the end of transmission: the item is
   written again and the upload completes (R21)
-- [ ] Test ten NAKs on data block 2: the item is written 10 times, nothing is written after the tenth read, and
+- [x] Test ten NAKs on data block 2: the item is written 10 times, nothing is written after the tenth read, and
   `errors.As` gives an `*UploadError` with `StageData` and block 2, whose text names the data block and the number 2
   (R22, R26, R29)
-- [ ] Test a read that returns an error standing for the passed time limit on the header block: `errors.As` gives
+- [x] Test a read that returns an error standing for the passed time limit on the header block: `errors.As` gives
   `StageHeader` and block 0, `errors.Is` reaches the read's error, and nothing is written after the read (R23, R26,
   R29, D11)
-- [ ] Test an answer of `0x43` on data block 1: the error has `StageData` and block 1, its text holds `0x43`, and
+- [x] Test an answer of `0x43` on data block 1: the error has `StageData` and block 1, its text holds `0x43`, and
   nothing is written after the read (R23, R29, D12)
-- [ ] Test a write that returns an error, once on the reset and once on the closing block: the error has the stage
+- [x] Test a write that returns an error, once on the reset and once on the closing block: the error has the stage
   of the item, `errors.Is` reaches the write's error, and no call follows the failing write (R23, R26, R29)
-- [ ] Test reopening that fails three times and then succeeds, after the reset and after the upload: the upload
+- [x] Test reopening that fails three times and then succeeds, after the reset and after the upload: the upload
   completes, and the pauses after each reset are 1 second followed by three of 500 milliseconds (R24, R29)
-- [ ] Test reopening that fails 20 times after the reset: 20 reopen calls, the pauses 1 second and 19 of
+- [x] Test reopening that fails 20 times after the reset: 20 reopen calls, the pauses 1 second and 19 of
   500 milliseconds, nothing written after, and an error with `StageReopenAfterReset` that reaches the twentieth
   reopen error with `errors.Is`. Test the same after the upload with `StageReopenAfterUpload` (R24, R26, R29)
-- [ ] Test that `Stage.String` gives the name of each of the eight stages and that the text of an error of every
+- [x] Test that `Stage.String` gives the name of each of the eight stages and that the text of an error of every
   stage but the data block names its stage (R26)
-- [ ] In `upload.go`, write `Transport`, `Stage`, `UploadError` with `Error` and `Unwrap`, the constants, `sendItem`,
+- [x] In `upload.go`, write `Transport`, `Stage`, `UploadError` with `Error` and `Unwrap`, the constants, `sendItem`,
   `writeOnly`, `reopen` and `Upload` as described under Approach so the tests pass (R19 to R27, D9 to D13, D15, D17)
-- [ ] Commit: `feature-0002 Upload a theme over a transport`
+- [x] Commit: `feature-0002 Upload a theme over a transport`
 
 ## Verification
 
-- [ ] `go test ./...` passes (R5, R28, R29)
-- [ ] `go vet ./...` reports nothing (R3)
-- [ ] `gofmt -l .` prints no file name (R3)
-- [ ] `go list -deps ./internal/smartmonitor` lists only standard library packages, and there is no `go.sum` (R4, R5)
-- [ ] `grep -rn 'time.Sleep\|time.After\|time.NewTimer\|time.Tick' internal/` finds nothing (R6, R25)
-- [ ] `npm run check-changes` passes on the committed work
+- [x] `go test ./...` passes (R5, R28, R29)
+- [x] `go vet ./...` reports nothing (R3)
+- [x] `gofmt -l .` prints no file name (R3)
+- [x] `go list -deps ./internal/smartmonitor` lists only standard library packages, and there is no `go.sum` (R4, R5)
+- [x] `grep -rn 'time.Sleep\|time.After\|time.NewTimer\|time.Tick' internal/` finds nothing (R6, R25)
+- [x] `npm run check-changes` passes on the committed work
 
 ## Commit Points
 
-- [ ] `feature-0002 Document the protocol and add the Go module`
-- [ ] `feature-0002 Encode reports, value updates, the clock and the commands`
-- [ ] `feature-0002 Frame YMODEM blocks with their CRC`
-- [ ] `feature-0002 Upload a theme over a transport`
+- [x] `feature-0002 Document the protocol and add the Go module`
+- [x] `feature-0002 Encode reports, value updates, the clock and the commands`
+- [x] `feature-0002 Frame YMODEM blocks with their CRC`
+- [x] `feature-0002 Upload a theme over a transport`
