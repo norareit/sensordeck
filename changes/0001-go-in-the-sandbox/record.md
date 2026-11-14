@@ -1,6 +1,6 @@
 ---
 kind: task
-status: in-progress
+status: implemented
 timestamp: 2026-11-14T14:50:00Z
 ---
 
@@ -30,5 +30,11 @@ The task adds no Go code and no `go.mod`. Those come with the first feature.
 - 2026-11-14T14:53:55Z [human] approved the record. The status is `approved`
 - 2026-11-14T14:54:20Z [Claude Code, anthropic/claude-fable-5-2] as the implementer, began the work. The status is
   `in-progress`
+- 2026-11-14T14:55:30Z [Claude Code, anthropic/claude-fable-5-2] as the implementer, added `sandbox/Dockerfile` and the three hosts
+  to the allowlist. The kit's entrypoint sets a fixed `PATH`, so `go` and `gofmt` are linked into `/usr/local/bin`
+  and no `PATH` is set, and `GOTOOLCHAIN` is `local` because the firewall does not admit the hosts a toolchain is
+  fetched from. In a unit run, `go version` reports 1.27.4 and `go get golang.org/x/image@latest` succeeds
+- 2026-11-14T14:55:30Z [Claude Code, anthropic/claude-fable-5-2] under the delegation in `AGENTS.md`, with no review to decide, set
+  the status to `implemented`
 
 ## Amendments
