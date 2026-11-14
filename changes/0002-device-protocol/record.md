@@ -35,5 +35,17 @@ timestamp: 2026-11-14T14:51:19Z
   `.reviews/changes/0002-device-protocol/review-20261114T150521Z.md`. The three project suite commands passed,
   including an uncached test run with module-network access disabled; `npm run check-changes` passed on the
   committed implementation. Device behavior and Windows execution were not verified. The status stays `in-progress`
+- 2026-11-14T15:40:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, accepted C1 by the definition of
+  the orchestrator, which accepts findings the implementer agrees with, and not as a decision of the human. The
+  parameter of every test function and of the helper `expectUploadError` is now `test` and not `t`, a naming-only
+  change. `go test -count=1 ./...` passes, `go vet ./...` reports nothing and `gofmt -l .` prints no file name
+- 2026-11-14T15:40:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, accepted P2 by the definition of
+  the orchestrator, and not as a decision of the human. The fake answers ACK to an unscripted read so that a test
+  scripts only its exceptions, and the tests that end in an error check the last recorded call. `plan.md` was
+  corrected to describe that, instead of the exhaustion check it promised
+- 2026-11-14T15:40:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, proposes declining P1. The
+  upload tests were written after `upload.go`, and the record already says so. Editing the code now cannot change the
+  order, and no spec requirement or rule of the standards is broken by it, so there is nothing to change. The finding
+  stays open until the human decides it
 
 ## Amendments

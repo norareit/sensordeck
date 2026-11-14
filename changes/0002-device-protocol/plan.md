@@ -81,7 +81,8 @@ stage and block, and since the transport's error is the cause, `errors.Is` reach
 The fake transport of the tests, in `upload_test.go`, holds a script of answers (each a report or an error) and a
 script of reopen results, and records every call as an entry of kind write, read or reopen with the report written
 or the time limit passed. The pause function of the tests records each duration and returns at once (R6). A read
-past the end of the script fails the test, so that an unexpected read is caught.
+with no scripted answer gives ACK, and a reopen with no scripted result succeeds, so that a test scripts only its
+exceptions. The tests that end in an error check the last recorded call, which catches a call after the failure.
 
 `go.mod` is written by hand, because `go mod init` of Go 1.27 does not write the directive `go 1.27` that R4 asks
 for. It has no `toolchain` line.

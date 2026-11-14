@@ -88,26 +88,26 @@ func writtenReports(calls []call) []Report {
 	return reports
 }
 
-func expectUploadError(t *testing.T, err error, stage Stage, block int) *UploadError {
-	t.Helper()
+func expectUploadError(test *testing.T, err error, stage Stage, block int) *UploadError {
+	test.Helper()
 	var uploadError *UploadError
 	if !errors.As(err, &uploadError) {
-		t.Fatalf("error %v is not an UploadError", err)
+		test.Fatalf("error %v is not an UploadError", err)
 	}
 	if uploadError.Stage != stage || uploadError.Block != block {
-		t.Fatalf("stage %v block %d, want %v block %d", uploadError.Stage, uploadError.Block, stage, block)
+		test.Fatalf("stage %v block %d, want %v block %d", uploadError.Stage, uploadError.Block, stage, block)
 	}
 	return uploadError
 }
 
-func TestUploadCompleteOrderOfCalls(t *testing.T) {
+func TestUploadCompleteOrderOfCalls(test *testing.T) {
 	theme := uploadTheme()
 	original := append([]byte(nil), theme...)
 	fake := &fakeTransport{}
 	pauses := &recordedPauses{}
 
 	if err := Upload(fake, theme, pauses.pause); err != nil {
-		t.Fatal(err)
+		test.Fatal(err)
 	}
 
 	var want []call
@@ -133,21 +133,21 @@ func TestUploadCompleteOrderOfCalls(t *testing.T) {
 	want = append(want, call{kind: callReopen})
 
 	if !reflect.DeepEqual(fake.calls, want) {
-		t.Fatalf("calls differ: got %d, want %d", len(fake.calls), len(want))
+		test.Fatalf("calls differ: got %d, want %d", len(fake.calls), len(want))
 	}
 	if !reflect.DeepEqual(pauses.durations, []time.Duration{time.Second, time.Second}) {
-		t.Errorf("pauses %v", pauses.durations)
+		test.Errorf("pauses %v", pauses.durations)
 	}
 	if !bytes.Equal(theme, original) {
-		t.Error("the theme was changed")
+		test.Error("the theme was changed")
 	}
 }
 
-func TestUploadWritesABlockAgainOnNAK(t *testing.T) {
+func TestUploadWritesABlockAgainOnNAK(test *testing.T) {
 	// reads: ymodem 0, header 1, data block 1 is 2, data block 2 is 3 and its repeat is 4
 	fake := &fakeTransport{readResults: map[int]readResult{3: {first: answerNAK}}}
 	if err := Upload(fake, uploadTheme(), (&recordedPauses{}).pause); err != nil {
-		t.Fatal(err)
+		test.Fatal(err)
 	}
 	block := toReports(dataBlocks(uploadTheme())[1])
 	reports := writtenReports(fake.calls)
@@ -158,72 +158,72 @@ func TestUploadWritesABlockAgainOnNAK(t *testing.T) {
 		}
 	}
 	if occurrences != 2 {
-		t.Fatalf("block 2 was written %d times", occurrences)
+		test.Fatalf("block 2 was written %d times", occurrences)
 	}
 }
 
-func TestUploadWritesAgainOnNAKForEveryKindOfItem(t *testing.T) {
+func TestUploadWritesAgainOnNAKForEveryKindOfItem(test *testing.T) {
 	cases := map[string]int{"ymodem command": 0, "header block": 1, "end of transmission": 5}
 	for name, readPosition := range cases {
 		fake := &fakeTransport{readResults: map[int]readResult{readPosition: {first: answerNAK}}}
 		if err := Upload(fake, uploadTheme(), (&recordedPauses{}).pause); err != nil {
-			t.Errorf("%s: %v", name, err)
+			test.Errorf("%s: %v", name, err)
 		}
 		if fake.reads != 7 {
-			t.Errorf("%s: %d reads, want 7", name, fake.reads)
+			test.Errorf("%s: %d reads, want 7", name, fake.reads)
 		}
 	}
 }
 
-func TestUploadEndsAfterTenNAKs(t *testing.T) {
+func TestUploadEndsAfterTenNAKs(test *testing.T) {
 	results := map[int]readResult{}
 	for position := 3; position < 13; position++ {
 		results[position] = readResult{first: answerNAK}
 	}
 	fake := &fakeTransport{readResults: results}
 	err := Upload(fake, uploadTheme(), (&recordedPauses{}).pause)
-	expectUploadError(t, err, StageData, 2)
+	expectUploadError(test, err, StageData, 2)
 	if !strings.Contains(err.Error(), "data block 2") {
-		t.Errorf("text %q", err)
+		test.Errorf("text %q", err)
 	}
 	if fake.reads != 13 {
-		t.Errorf("%d reads", fake.reads)
+		test.Errorf("%d reads", fake.reads)
 	}
 	if fake.calls[len(fake.calls)-1].kind != callRead {
-		t.Error("something was written after the tenth answer")
+		test.Error("something was written after the tenth answer")
 	}
 	// reset, ymodem command, header block, data block 1 and ten writes of data block 2
 	if got, want := len(writtenReports(fake.calls)), 1+1+3+17+10*17; got != want {
-		t.Errorf("%d reports written, want %d", got, want)
+		test.Errorf("%d reports written, want %d", got, want)
 	}
 }
 
-func TestUploadEndsWhenAReadFails(t *testing.T) {
+func TestUploadEndsWhenAReadFails(test *testing.T) {
 	timeLimit := errors.New("time limit passed")
 	fake := &fakeTransport{readResults: map[int]readResult{1: {err: timeLimit}}}
 	err := Upload(fake, uploadTheme(), (&recordedPauses{}).pause)
-	expectUploadError(t, err, StageHeader, 0)
+	expectUploadError(test, err, StageHeader, 0)
 	if !errors.Is(err, timeLimit) {
-		t.Error("the read error is not reachable")
+		test.Error("the read error is not reachable")
 	}
 	if fake.calls[len(fake.calls)-1].kind != callRead {
-		t.Error("something was done after the failed read")
+		test.Error("something was done after the failed read")
 	}
 }
 
-func TestUploadEndsOnAnUnexpectedAnswer(t *testing.T) {
+func TestUploadEndsOnAnUnexpectedAnswer(test *testing.T) {
 	fake := &fakeTransport{readResults: map[int]readResult{2: {first: 0x43}}}
 	err := Upload(fake, uploadTheme(), (&recordedPauses{}).pause)
-	expectUploadError(t, err, StageData, 1)
+	expectUploadError(test, err, StageData, 1)
 	if !strings.Contains(err.Error(), "0x43") {
-		t.Errorf("text %q", err)
+		test.Errorf("text %q", err)
 	}
 	if fake.calls[len(fake.calls)-1].kind != callRead {
-		t.Error("something was done after the answer")
+		test.Error("something was done after the answer")
 	}
 }
 
-func TestUploadEndsWhenAWriteFails(t *testing.T) {
+func TestUploadEndsWhenAWriteFails(test *testing.T) {
 	writeFailure := errors.New("write failed")
 	closingFirstWrite := 1 + 1 + 3 + 3*17 + 1
 	cases := map[string]struct {
@@ -236,31 +236,31 @@ func TestUploadEndsWhenAWriteFails(t *testing.T) {
 	for name, scenario := range cases {
 		fake := &fakeTransport{writeErrors: map[int]error{scenario.position: writeFailure}}
 		err := Upload(fake, uploadTheme(), (&recordedPauses{}).pause)
-		expectUploadError(t, err, scenario.stage, 0)
+		expectUploadError(test, err, scenario.stage, 0)
 		if !errors.Is(err, writeFailure) {
-			t.Errorf("%s: the write error is not reachable", name)
+			test.Errorf("%s: the write error is not reachable", name)
 		}
 		if fake.writes != scenario.position+1 || fake.calls[len(fake.calls)-1].kind != callWrite {
-			t.Errorf("%s: calls followed the failing write", name)
+			test.Errorf("%s: calls followed the failing write", name)
 		}
 	}
 }
 
-func TestUploadRetriesReopening(t *testing.T) {
+func TestUploadRetriesReopening(test *testing.T) {
 	failure := errors.New("i/o error")
 	fake := &fakeTransport{reopenResults: []error{failure, failure, failure, nil, failure, failure, failure, nil}}
 	pauses := &recordedPauses{}
 	if err := Upload(fake, uploadTheme(), pauses.pause); err != nil {
-		t.Fatal(err)
+		test.Fatal(err)
 	}
 	segment := []time.Duration{time.Second, 500 * time.Millisecond, 500 * time.Millisecond, 500 * time.Millisecond}
 	want := append(append([]time.Duration(nil), segment...), segment...)
 	if !reflect.DeepEqual(pauses.durations, want) {
-		t.Errorf("pauses %v", pauses.durations)
+		test.Errorf("pauses %v", pauses.durations)
 	}
 }
 
-func TestUploadEndsWhenReopeningFails20Times(t *testing.T) {
+func TestUploadEndsWhenReopeningFails20Times(test *testing.T) {
 	failure := errors.New("i/o error")
 	failures := make([]error, 20)
 	for position := range failures {
@@ -278,26 +278,26 @@ func TestUploadEndsWhenReopeningFails20Times(t *testing.T) {
 		fake := &fakeTransport{reopenResults: scenario.results}
 		pauses := &recordedPauses{}
 		err := Upload(fake, uploadTheme(), pauses.pause)
-		expectUploadError(t, err, scenario.stage, 0)
+		expectUploadError(test, err, scenario.stage, 0)
 		if !errors.Is(err, failure) {
-			t.Errorf("%s: the reopen error is not reachable", name)
+			test.Errorf("%s: the reopen error is not reachable", name)
 		}
 		if fake.calls[len(fake.calls)-1].kind != callReopen {
-			t.Errorf("%s: calls followed the last reopen", name)
+			test.Errorf("%s: calls followed the last reopen", name)
 		}
 		if scenario.writes != 0 && len(writtenReports(fake.calls)) != scenario.writes {
-			t.Errorf("%s: %d reports written", name, len(writtenReports(fake.calls)))
+			test.Errorf("%s: %d reports written", name, len(writtenReports(fake.calls)))
 		}
 		last := pauses.durations[len(pauses.durations)-19:]
 		for _, duration := range last {
 			if duration != 500*time.Millisecond {
-				t.Errorf("%s: pause %v", name, duration)
+				test.Errorf("%s: pause %v", name, duration)
 			}
 		}
 	}
 }
 
-func TestStageNamesAndErrorTexts(t *testing.T) {
+func TestStageNamesAndErrorTexts(test *testing.T) {
 	names := map[Stage]string{
 		StageReset:             "reset",
 		StageReopenAfterReset:  "reopening after the reset",
@@ -310,14 +310,14 @@ func TestStageNamesAndErrorTexts(t *testing.T) {
 	}
 	for stage, name := range names {
 		if stage.String() != name {
-			t.Errorf("stage %d is %q", int(stage), stage.String())
+			test.Errorf("stage %d is %q", int(stage), stage.String())
 		}
 		if stage == StageData {
 			continue
 		}
 		text := (&UploadError{Stage: stage, Err: errors.New("cause")}).Error()
 		if text != "upload failed at the "+name+": cause" {
-			t.Errorf("text %q", text)
+			test.Errorf("text %q", text)
 		}
 	}
 }
