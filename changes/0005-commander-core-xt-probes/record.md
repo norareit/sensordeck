@@ -38,5 +38,11 @@ timestamp: 2026-11-14T21:54:29Z
   were also run once with `-race`, which reported nothing. Not checked: the controller itself, which the sandbox does
   not have, so the check on the real device, including which probe is which, is the human's. The unit has not been
   reviewed, so the status stays `in-progress`
+- 2026-11-14T23:25:27Z [OpenCode, openai/gpt-6.1-sol] as the reviewer, performed a full review of unit
+  `0005-commander-core-xt-probes` at `861440096d147988f835d0955040b6a5654fecc7`, against merge base
+  `557d0c555c8635ea7f126920b2c3bbe6f8dc6b3b` with `origin/master`. Returned S1; the full findings are in
+  `.reviews/changes/0005-commander-core-xt-probes/round-1-review.md`. The five required checks, the change check and
+  race-enabled driver, fake-controller and end-to-end tests passed. Could not verify the physical controller, a Windows
+  runtime or the locally held trace. The status stays `in-progress`
 
 ## Amendments
