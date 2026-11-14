@@ -76,7 +76,7 @@ func TestNoGrowthGivesNothing(test *testing.T) {
 }
 
 func TestMalformedLinesGiveNothing(test *testing.T) {
-	for _, content := range []string{"cpu  1 1 1 1 1 1 1\n", "cpu  1 1 1x 1 1 1 1 1\n", "cpu0 1 1 1 1 1 1 1 1\n", ""} {
+	for _, content := range []string{"cpu  1 1 1 1 1 1 1\n", "cpu  1 1 1x 1 1 1 1 1\n", "cpu  1 1 1 1 1 1 1 1 bad 0\n", "cpu  1 1 1 1 1 1 1 1 0 -1\n", "cpu0 1 1 1 1 1 1 1 1\n", ""} {
 		tree := newTree(test)
 		run := newUtilisation(test, tree, content)
 		if got := readUtilisation(run.source); len(got) != 0 {

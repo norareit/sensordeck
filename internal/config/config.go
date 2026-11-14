@@ -4,6 +4,7 @@ package config
 import (
 	"errors"
 	"fmt"
+	"math/big"
 	"slices"
 	"strings"
 	"time"
@@ -125,9 +126,18 @@ func parseTags(node *yaml.Node) ([]Mapping, error) {
 }
 
 func parseTag(name string, node *yaml.Node) (uint8, error) {
+	notWhole := fmt.Errorf("tags: %s: the tag must be a whole number from 0 to 255", name)
+	if node.Kind != yaml.ScalarNode || (node.ShortTag() != "!!int" && node.ShortTag() != "!!float") {
+		return 0, notWhole
+	}
 	var tag int64
-	if node.Kind != yaml.ScalarNode || node.ShortTag() != "!!int" || node.Decode(&tag) != nil {
-		return 0, fmt.Errorf("tags: %s: the tag must be a whole number from 0 to 255", name)
+	if node.ShortTag() != "!!int" || node.Decode(&tag) != nil {
+		// An integer too large for int64 is still an integer, so it is out of range rather than not whole. YAML
+		// reads one too large even for uint64 as a float, so the text decides.
+		if _, whole := new(big.Int).SetString(node.Value, 10); !whole {
+			return 0, notWhole
+		}
+		return 0, fmt.Errorf("tags: %s: the tag %s is outside 0 to 255", name, node.Value)
 	}
 	if tag < 0 || tag > maxTag {
 		return 0, fmt.Errorf("tags: %s: the tag %s is outside 0 to 255", name, node.Value)

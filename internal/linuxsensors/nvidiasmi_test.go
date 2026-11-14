@@ -126,14 +126,14 @@ func TestProgramBeyondTheTimeLimitIsKilledEvenWithAChildHoldingItsOutput(test *t
 	// the child keeps the output open for 3 seconds and the program waits for it
 	script := ": > " + started + "\nsleep 3 &\nwait\n: > " + finished + "\n"
 	test.Setenv("PATH", fakesensors.NvidiaSMI(test, script))
-	limit := 300 * time.Millisecond
+	limit := 100 * time.Millisecond
 	begun := time.Now()
 	got := read(gpu{timeLimit: limit}, everything)
 	elapsed := time.Since(begun)
 	if _, err := os.Stat(started); err != nil {
 		test.Fatalf("the program did not start: %v", err)
 	}
-	if len(got) != 0 || elapsed < limit || elapsed > 1500*time.Millisecond {
+	if len(got) != 0 || elapsed < limit || elapsed > limit+time.Second {
 		test.Errorf("got %v after %v", got, elapsed)
 	}
 	time.Sleep(100 * time.Millisecond)

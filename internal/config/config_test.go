@@ -59,6 +59,8 @@ func TestParseErrors(test *testing.T) {
 		{"word tag", "tags: {cpu.temp: x}\n", "tags: cpu.temp: the tag must be a whole number from 0 to 255"},
 		{"mapping tag", "tags: {cpu.temp: {a: 1}}\n", "tags: cpu.temp: the tag must be a whole number from 0 to 255"},
 		{"big tag", "tags: {cpu.temp: 256}\n", "tags: cpu.temp: the tag 256 is outside 0 to 255"},
+		{"huge tag", "tags: {cpu.temp: 9223372036854775808}\n", "tags: cpu.temp: the tag 9223372036854775808 is outside 0 to 255"},
+		{"negative huge tag", "tags: {cpu.temp: -9223372036854775809}\n", "tags: cpu.temp: the tag -9223372036854775809 is outside 0 to 255"},
 		{"negative tag", "tags: {cpu.temp: -1}\n", "tags: cpu.temp: the tag -1 is outside 0 to 255"},
 		{"same tag", "tags: {cpu.temp: 1, cpu.clock: 1}\n", "tags: cpu.clock and cpu.temp both have the tag 1"},
 		{"same tag other order", "tags: {cpu.clock: 1, cpu.temp: 1}\n", "tags: cpu.clock and cpu.temp both have the tag 1"},

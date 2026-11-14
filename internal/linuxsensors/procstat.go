@@ -20,7 +20,7 @@ const sampleInterval = 200 * time.Millisecond
 type sample struct{ total, idle uint64 }
 
 // parseStat reads the first line that starts with "cpu" and a space. The total is the sum of the first eight
-// counters, because guest and guest_nice are already counted in user and nice, and iowait counts as idle.
+// counters, and every counter must be a whole number, because guest and guest_nice are already counted in user and nice, and iowait counts as idle.
 func parseStat(content string) (sample, bool) {
 	for _, line := range strings.Split(content, "\n") {
 		if !strings.HasPrefix(line, "cpu ") {
@@ -31,13 +31,13 @@ func parseStat(content string) (sample, bool) {
 			return sample{}, false
 		}
 		var taken sample
-		for position, text := range counters[:8] {
-			if !isDigits(text) {
+		for position, text := range counters {
+			counter, err := strconv.ParseUint(text, 10, 64)
+			if err != nil || !isDigits(text) {
 				return sample{}, false
 			}
-			counter, err := strconv.ParseUint(text, 10, 64)
-			if err != nil {
-				return sample{}, false
+			if position >= 8 {
+				continue
 			}
 			taken.total += counter
 			if position == 3 || position == 4 {
