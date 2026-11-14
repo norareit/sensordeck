@@ -20,5 +20,11 @@ timestamp: 2026-11-14T15:17:19Z
   says, and the nine items left under "Beyond the request" are declined. The approval that follows is made under
   that delegation
 - 2026-11-14T15:20:37Z [human] approved the spec. The status is `approved`
+- 2026-11-14T15:27:28Z [Claude Code, anthropic/claude-opus-5-5] as the planner, wrote the plan against the tree of the
+  unit's branch. Every requirement R1 to R35 has a task, and every task names the requirements it delivers. A
+  trial in the sandbox confirmed what the fake screen relies on: a raw pseudo terminal behind a symbolic link
+  passes the bytes unchanged, keeps a report sent before the node is opened, gives one report of 64 bytes per
+  read and honours a read deadline, and cobra v1.10.2 with `golang.org/x/sys` v0.50.0 resolves without
+  changing the directive `go 1.27`. The status stays `approved`
 
 ## Amendments
