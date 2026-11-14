@@ -112,7 +112,7 @@ over the 96 bytes read. "Software mode" and "hardware mode" are what the command
 - **R8** The reading takes the stop of the `Source` contract of unit 0004. When stop is done before step 1, nothing
   is written. When it is done later, the reading writes no further command of steps 2 to 7, and makes step 8 as R7
   says. On SIGINT or SIGTERM, `run` therefore leaves the controller in hardware mode, and still ends within the
-  3 seconds of R23 of unit 0004
+  3 seconds of R23 of unit 0004. R22 makes `sensors` do the same
 - **R9** From a valid answer of step 6, the entry of probe *i*, for *i* from 0 to *c* − 1, is the three bytes at
   offset 6 + 3·*i*. A probe whose status byte is `0x00` gives `commander.<i + 1>.temp` with the value of the next two
   bytes, low byte first, read as a signed 16-bit number and divided by 10. A probe whose status is not `0x00` is
@@ -135,6 +135,12 @@ over the 96 bytes read. "Software mode" and "hardware mode" are what the command
   other metric. R15 of unit 0004 no longer says that it opens no device node: it opens no node of the screen, takes no
   account of `--device`, and opens the node of the controller as R4 says
 - **R13** `sensordeck run` sends a mapped metric of the controller to its tag as any other metric, by R21 of unit 0004
+- **R22** `sensordeck sensors` catches SIGINT and SIGTERM while it reads its metrics, as `run` does by R23 of unit
+  0004, and passes the stop to every source. A signal during the reading of the controller therefore ends it as R8
+  says, with the write of step 8, and the process does not end before step 8 has been written and its answer read or
+  its time limit passed. After a signal during the reading, `sensors` writes nothing to standard output, writes
+  `sensordeck: interrupted` to standard error and ends with the exit status 1, no later than 3 seconds after the
+  signal. A signal before or after the reading keeps the effect it has today
 
 ### Access on Linux
 
@@ -174,6 +180,11 @@ over the 96 bytes read. "Software mode" and "hardware mode" are what the command
   before step 1, which writes nothing, and stop done during the sequence, which writes step 8; and a reading in which
   no metric of the controller is wanted, which opens no node. The tests of the time limit take a time limit of
   100 milliseconds or less
+- **R23** A unit test of `sensors`, with sources the test gives and a stop the test ends during the reading, covers
+  the output, the error line and the exit status of R22, and that the stop reached the sources. An end-to-end test
+  runs `sensors` against the fake controller made to give no answer to step 6, sends SIGINT once step 6 has arrived,
+  and checks that step 8 arrived after it, that the fake is in hardware mode, that the exit status is 1 with the line
+  of R22, and that the process ended within 3 seconds of the signal
 - **R19** The unit tests of R2 of unit 0004 cover `commander.1.temp`, `commander.0.temp` and `commander.01.temp`,
   and the test of the units of each row covers the new row
 - **R20** An end-to-end test runs `sensors` against the tree of R34 of unit 0004 together with the fake controller
@@ -240,11 +251,14 @@ over the 96 bytes read. "Software mode" and "hardware mode" are what the command
 - **D12** The controller gets its own udev rule line, R14, so that sensordeck does not depend on the rule of liquidctl,
   which the human's machine has today only because liquidctl is installed. It goes in the file of the screen, so the
   user installs one file for both, as described in the README
-- **D13** On Ctrl-C of `sensors`, which keeps the default handling of signals as unit 0004 decided, the process can
-  end inside the sequence, between steps 1 and 8, and leave the controller in software mode until the next reading
-  or a replug. The window is about 140 milliseconds, in a command that otherwise ends at once. This limitation is
-  accepted for this unit; handling the signal in `sensors` is item 2 of "Beyond the request". A process that is
-  killed with SIGKILL or loses power can leave software mode in both commands, which no program can prevent
+- **D13** `sensors` catches SIGINT and SIGTERM while it reads, R22, which unit 0004 left to the default handling.
+  With the default handling a Ctrl-C between steps 1 and 8, a window of about 140 milliseconds, would end the process
+  inside the sequence and leave the controller in software mode until the next reading or a replug, for the reasons
+  of D2 a failure worth the small cost. An interrupted `sensors` ends with status 1 and writes no readings, because a
+  list cut short by the user is no answer to the command, and a nonzero status tells a script so. The limitation that
+  remains is a process killed with SIGKILL or a loss of power between steps 1 and 8, which can leave software mode in
+  both commands and which no program can prevent. Taking this into the unit was item 2 of "Beyond the request",
+  decided by the orchestrating session under the delegation in `AGENTS.md`
 - **D14** The driver is for Linux only in this unit, over hidraw. Windows reaches HID devices in another way and is a
   later unit; the Windows build keeps compiling because the driver is limited to Linux by build constraints
 
@@ -268,10 +282,8 @@ over the 96 bytes read. "Software mode" and "hardware mode" are what the command
 1. Fan speeds as metrics, `commander.fan.<n>` in rpm, from the answer of step 3 that the sequence reads anyway. It
    costs a row of the table, the parsing of six speeds and tests. Without it no fan speed of the controller is shown,
    and the host has no fan on the controller
-2. `sensors` catches SIGINT and SIGTERM while it reads the controller, so that a Ctrl-C between steps 1 and 8 still
-   restores hardware mode, as R8 makes `run` do. It costs the stop of `run` in `sensors` and a test. Without it a
-   Ctrl-C in that window of about 140 milliseconds leaves the controller in software mode until the next reading or a
-   replug, D13
+2. Taken into the unit as R22 and R23, D13: `sensors` catches SIGINT and SIGTERM while it reads the controller, so
+   that a Ctrl-C between steps 1 and 8 still restores hardware mode
 3. A line on standard error from `sensors` when a controller is found but its node cannot be opened, pointing to the
    README section on access. It costs a way for a source to report a hint and a test. Without it the two metrics are
    silently missing and the user finds the cause in the README
