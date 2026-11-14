@@ -92,5 +92,14 @@ timestamp: 2026-11-14T19:03:59Z
 - 2026-11-14T19:37:35Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, corrected S3 of the same review, accepted by the orchestrating session under the delegation in `AGENTS.md`: `parseStat` validates every counter of the cpu line as a decimal whole number and still sums only the first eight. The regression cases are a malformed ninth and a negative tenth counter, which failed before the fix
 - 2026-11-14T19:37:35Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, corrected S4 of the same review, accepted by the orchestrating session under the delegation in `AGENTS.md`: `parseTag` reports an integer that does not fit int64 with the out-of-range message of R18. YAML reads one beyond uint64 as a float, so the text decides. The regression cases are 9223372036854775808 and -9223372036854775809, which failed before the fix, and the same message was seen through `run --config` for a 23-digit tag
 - 2026-11-14T19:37:35Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, ran on the tree of these corrections `go test -count=1 ./...` including the end-to-end suite, `go vet ./...`, `gofmt -l .` and the build and vet with `GOOS=windows GOARCH=amd64`, which passed or reported nothing. Not checked: a real device, a real `nvidia-smi` and execution on Windows. The status stays `in-progress`
+- 2026-11-14T19:41:08Z [OpenCode, openai/gpt-6.1-sol] as the reviewer, made a delta review of
+  `changes/0004-linux-sensors-and-run` at `38349159a620e848344877dffc4477f9ece3fe22`, compared against
+  `688be96`, and the requested whole-unit spec check against merge base `6e1c57771f204a06eb3c531a752a508308163b61`
+  with `origin/master`. Returned S4, saved in
+  `.reviews/changes/0004-linux-sensors-and-run/review-round-5-20261114T193956Z.md` and copied to
+  `.reviews/0004-linux-sensors-and-run/review-round-5-20261114T193956Z.md`. Ran the five project suite commands,
+  the static build, module tidy diff, change check and focused correction tests successfully; also reproduced the
+  overflow-tag diagnostics through the executable. Not verified: physical-device behavior, host sensors, real NVIDIA
+  driver output or execution on Windows
 
 ## Amendments
