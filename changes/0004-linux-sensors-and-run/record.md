@@ -80,5 +80,13 @@ timestamp: 2026-11-14T19:03:59Z
 - 2026-11-14T19:30:19Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, ran the suite on the tree of `c8389a3`: `go test -count=1 ./...` including the end-to-end suite, `go vet ./...`,
   `gofmt -l .`, and the build and vet with `GOOS=windows GOARCH=amd64` passed or reported nothing. Not checked: a real
   device, a real `nvidia-smi`, and execution on Windows. The status stays `in-progress`
+- 2026-11-14T19:34:26Z [OpenCode, openai/gpt-6.1-sol] as the reviewer, made a delta review of
+  `changes/0004-linux-sensors-and-run` at `63daf8672cb109c73d99a0b80dffd11536b2c4cb`, compared against
+  `ada76ea`, and the requested whole-unit spec check against merge base `6e1c57771f204a06eb3c531a752a508308163b61`
+  with `origin/master`. Returned C1, S3 and S4, saved in
+  `.reviews/changes/0004-linux-sensors-and-run/review-round-4-20261114T193426Z.md` and copied to
+  `.reviews/0004-linux-sensors-and-run/review-round-4-20261114T193426Z.md`. Ran the five project suite commands,
+  the static build, the module tidy diff, focused correction tests and the change check successfully. Not verified:
+  physical-device behavior, host sensors, real NVIDIA driver output or execution on Windows
 
 ## Amendments
