@@ -19,8 +19,11 @@ import (
 )
 
 const (
-	writeSize  = 97
+	writeSize = 97
+	// answerSize is what an answer of the trace holds, and reportSize the input report of the report descriptor that
+	// a reply fills, with 0xFF past the answer.
 	answerSize = 96
+	reportSize = 384
 	// maxProbes is the count that a valid answer can hold: 6 + 3·30 = 96.
 	maxProbes = (answerSize - 6) / 3
 	// quietPeriod is how long no byte may arrive before Writes gives what it holds.
@@ -356,9 +359,13 @@ func (controller *Controller) stepOfOpenEndpoint(fanStep, temperatureStep int) i
 	return 0
 }
 
-// reply makes the 96 bytes of the answer of the step, as the trace showed them. The caller holds the mutex.
+// reply makes the 384 bytes of the report of the step: the 96 bytes of the answer, as the trace showed them, and 0xFF
+// after them, which is not zero so that a test can show that the driver does not interpret it. The caller holds the
+// mutex.
 func (controller *Controller) reply(step int, command []byte) []byte {
-	answer := make([]byte, answerSize)
+	report := bytes.Repeat([]byte{0xFF}, reportSize)
+	answer := report[:answerSize]
+	clear(answer)
 	answer[1] = command[1]
 	switch step {
 	case 3:
@@ -373,7 +380,7 @@ func (controller *Controller) reply(step int, command []byte) []byte {
 			answer[offset+2] = byte(uint16(probe.Tenths) >> 8)
 		}
 	}
-	return answer
+	return report
 }
 
 func applyFailure(answer []byte, failure Failure) {

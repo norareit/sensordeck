@@ -7,7 +7,10 @@ package commandercore
 import "bytes"
 
 const (
+	// answerSize is what the driver interprets of an answer, and reportSize the input report of the report descriptor
+	// of interface 0, which a read takes whole.
 	answerSize = 96
+	reportSize = 384
 	writeSize  = 1 + answerSize
 	// maxProbes is the largest count whose entries fit into an answer: 6 + 3·30 = 96.
 	maxProbes = (answerSize - 6) / 3
@@ -53,10 +56,10 @@ func encode(command []byte) []byte {
 	return written
 }
 
-// valid tells whether the answer is one of the command: 96 bytes, the second byte of the command echoed in byte 1,
-// and byte 2, taken as a status, zero.
+// valid tells whether the answer is one of the command: at least 96 bytes, the second byte of the command echoed in
+// byte 1, and byte 2, taken as a status, zero.
 func valid(command, answer []byte) bool {
-	return len(answer) == answerSize && answer[1] == command[1] && answer[2] == 0x00
+	return len(answer) >= answerSize && answer[1] == command[1] && answer[2] == 0x00
 }
 
 // temperatures reads the probes of an answer of the temperature endpoint that is valid. It gives false when the data

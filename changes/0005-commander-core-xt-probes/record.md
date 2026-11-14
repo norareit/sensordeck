@@ -64,3 +64,9 @@ timestamp: 2026-11-14T21:54:29Z
   `9b238d3`. The checks on the physical controller are the human's and follow the merge. The status is `implemented`
 
 ## Amendments
+
+- 2026-11-14T23:45:43Z [Claude Code, anthropic/claude-opus-5-5] as the implementer of `0006-commander-answer-size`, recorded
+  that unit as the correction of the first condition of R6, that an answer is valid only when exactly 96 bytes were
+  read, and of the report size in `docs/commander-core-xt.md`. The 96 bytes of the trace were the size of the other
+  tool's read buffer: the input report of interface 0 is 384 bytes, and hidraw discarded the rest of it. On the real
+  controller sensordeck read 97 bytes of it and rejected the answer of step 1, so no probe was listed

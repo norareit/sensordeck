@@ -41,8 +41,8 @@ func newHarness(test *testing.T) *harness {
 	return &harness{test: test, fake: fake, controller: controller, file: file}
 }
 
-// send writes the command as the driver would, as 97 bytes in one write, and gives the answer, or nil when none
-// arrived within the limit.
+// send writes the command as the driver would, as 97 bytes in one write, and gives the report of 384 bytes that
+// answers it in one read, or nil when none arrived within the limit or the read gave fewer bytes.
 func (harness *harness) send(command []byte) []byte {
 	harness.test.Helper()
 	return exchange(harness.test, harness.file, command)
@@ -58,19 +58,21 @@ func exchange(test *testing.T, file *os.File, command []byte) []byte {
 	if err := file.SetReadDeadline(time.Now().Add(limit)); err != nil {
 		test.Fatal(err)
 	}
-	answer := make([]byte, answerSize)
-	count, err := file.Read(answer)
-	if err != nil || count != answerSize {
+	report := make([]byte, reportSize)
+	count, err := file.Read(report)
+	if err != nil || count != reportSize {
 		return nil
 	}
-	return answer
+	return report
 }
 
-// padded is the head of an answer followed by zeros up to 96 bytes.
+// padded is the report of 384 bytes that holds the head of an answer, followed by zeros up to 96 bytes and by 0xFF
+// after them.
 func padded(head ...byte) []byte {
-	answer := make([]byte, answerSize)
-	copy(answer, head)
-	return answer
+	report := bytes.Repeat([]byte{0xFF}, reportSize)
+	clear(report[:answerSize])
+	copy(report, head)
+	return report
 }
 
 func TestTheEightCommandsGetTheAnswersOfTheTrace(test *testing.T) {

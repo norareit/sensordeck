@@ -13,6 +13,11 @@ func answerOf(head ...byte) []byte {
 	return answer
 }
 
+// reportOf is the answer of answerOf as a full input report of 384 bytes, with 0xFF after the first 96 bytes.
+func reportOf(head ...byte) []byte {
+	return append(answerOf(head...), bytes.Repeat([]byte{0xFF}, reportSize-answerSize)...)
+}
+
 func TestEncodeGivesTheReportIDTheCommandAndZeros(test *testing.T) {
 	for position, command := range steps {
 		written := encode(command)
@@ -44,10 +49,11 @@ func TestValid(test *testing.T) {
 		answer []byte
 		want   bool
 	}{
-		{"a good answer", answerOf(0x00, 0x0D, 0x00), true},
+		{"an answer of 384 bytes", reportOf(0x00, 0x0D, 0x00), true},
+		{"an answer of 97 bytes", reportOf(0x00, 0x0D, 0x00)[:97], true},
+		{"an answer of 96 bytes", answerOf(0x00, 0x0D, 0x00), true},
 		{"byte 0 is not checked", answerOf(0x07, 0x0D, 0x00), true},
-		{"a short answer", answerOf(0x00, 0x0D, 0x00)[:95], false},
-		{"a long answer", append(answerOf(0x00, 0x0D, 0x00), 0), false},
+		{"an answer of 95 bytes", answerOf(0x00, 0x0D, 0x00)[:95], false},
 		{"a wrong echo", answerOf(0x00, 0x08, 0x00), false},
 		{"byte 2 not zero", answerOf(0x00, 0x0D, 0x01), false},
 	} {
@@ -65,6 +71,26 @@ func TestTemperaturesOfTheTrace(test *testing.T) {
 	}
 	if probes[0] != (probe{available: true, celsius: 37.3}) || probes[1] != (probe{available: true, celsius: 22.7}) {
 		test.Fatalf("got %+v", probes)
+	}
+}
+
+func TestTemperaturesOfTheTraceInAFullReportIgnoreTheBytesAfterTheAnswer(test *testing.T) {
+	answer := reportOf(0x00, 0x08, 0x00, 0x10, 0x00, 0x02, 0x00, 0x75, 0x01, 0x00, 0xE3, 0x00)
+	if !valid(steps[readTemperatures], answer) {
+		test.Fatal("the answer is not valid")
+	}
+	probes, ok := temperatures(answer)
+	if !ok || len(probes) != 2 {
+		test.Fatalf("got %v, %v", probes, ok)
+	}
+	if probes[0] != (probe{available: true, celsius: 37.3}) || probes[1] != (probe{available: true, celsius: 22.7}) {
+		test.Fatalf("got %+v", probes)
+	}
+}
+
+func TestTemperaturesTheCountIsBoundedByTheAnswerInAFullReport(test *testing.T) {
+	if _, ok := temperatures(reportOf(0x00, 0x08, 0x00, 0x10, 0x00, 31)); ok {
+		test.Error("the count 31 is accepted")
 	}
 }
 

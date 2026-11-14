@@ -100,8 +100,9 @@ func runSteps(stop context.Context, file *os.File, timeLimit time.Duration) []pr
 	return probes
 }
 
-// exchange writes the command as one write and reads one answer within the time limit. It gives false when the write
-// failed or was short, no answer came, or the answer is not valid.
+// exchange writes the command as one write and reads one answer within the time limit, into a buffer of the whole
+// input report, so that hidraw discards nothing of it. It gives the first 96 bytes of a valid answer, and false when
+// the write failed or was short, no answer came, or the answer is not valid.
 func exchange(file *os.File, command []byte, timeLimit time.Duration) ([]byte, bool) {
 	written, err := file.Write(encode(command))
 	if err != nil || written < writeSize {
@@ -110,11 +111,14 @@ func exchange(file *os.File, command []byte, timeLimit time.Duration) ([]byte, b
 	if err := file.SetReadDeadline(time.Now().Add(timeLimit)); err != nil {
 		return nil, false
 	}
-	answer := make([]byte, answerSize+1)
+	answer := make([]byte, reportSize)
 	count, err := file.Read(answer)
 	if err != nil {
 		return nil, false
 	}
 	answer = answer[:count]
-	return answer, valid(command, answer)
+	if !valid(command, answer) {
+		return nil, false
+	}
+	return answer[:answerSize], true
 }

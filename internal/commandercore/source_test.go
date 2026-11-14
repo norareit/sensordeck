@@ -73,6 +73,16 @@ func TestBothProbesAreReadWithTheEightWrites(test *testing.T) {
 	}
 }
 
+// The controller answers with a full input report of 384 bytes. A driver that took an answer for exactly 96 bytes, as
+// unit 0005 did, rejects the answer of step 1 and reads no probe.
+func TestAnAnswerOfAFullInputReportIsRead(test *testing.T) {
+	harness := newHarness(test)
+	harness.fake.Add(9, 10)
+	if got := harness.read(); !reflect.DeepEqual(got, bothProbes) {
+		test.Fatalf("got %v", got)
+	}
+}
+
 func TestAProbeWithAStatusKeepsTheNumberOfTheOther(test *testing.T) {
 	harness := newHarness(test)
 	controller := harness.fake.Add(9, 10)
