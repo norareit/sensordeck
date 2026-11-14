@@ -1,6 +1,6 @@
 ---
 kind: feature
-status: draft
+status: approved
 timestamp: 2026-11-14T21:54:29Z
 ---
 
@@ -22,5 +22,6 @@ timestamp: 2026-11-14T21:54:29Z
   timestamps of the two entries above, which did not match their commits, were corrected to the times of those
   commits. Item 2 of "Beyond the request" is taken as R22 and R23, and items 1, 3 and 4 are declined. The approval
   that follows is made under that delegation
+- 2026-11-14T21:56:33Z [human] approved the spec. The status is `approved`
 
 ## Amendments
