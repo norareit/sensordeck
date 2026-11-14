@@ -6,6 +6,7 @@ func TestIsName(test *testing.T) {
 	accepted := []string{
 		"cpu.temp", "cpu.util", "cpu.clock", "gpu.temp", "gpu.util", "gpu.mem.used", "gpu.mem.total", "ram.used",
 		"ram.total", "cpu.ccd1.temp", "ram.2.temp", "nvme.10.temp", "nvme.9.temp",
+		"commander.1.temp", "commander.10.temp",
 	}
 	for _, name := range accepted {
 		if !IsName(name) {
@@ -14,7 +15,7 @@ func TestIsName(test *testing.T) {
 	}
 	refused := []string{
 		"ram.0.temp", "ram.01.temp", "CPU.temp", "cpu.tmp", "ram..temp", "ram.-1.temp", "ram.1x.temp", "",
-		"ram.1.2.temp", "ram.1.temp.", "cpu.ccd.temp",
+		"ram.1.2.temp", "ram.1.temp.", "cpu.ccd.temp", "commander.0.temp", "commander.01.temp",
 	}
 	for _, name := range refused {
 		if IsName(name) {
@@ -28,6 +29,7 @@ func TestUnitOfEachRow(test *testing.T) {
 		"cpu.temp": "°C", "cpu.ccd1.temp": "°C", "cpu.util": "%", "cpu.clock": "MHz", "gpu.temp": "°C",
 		"gpu.util": "%", "gpu.mem.used": "MiB", "gpu.mem.total": "MiB", "ram.used": "GiB", "ram.total": "GiB",
 		"ram.1.temp": "°C", "nvme.1.temp": "°C",
+		"commander.1.temp": "°C",
 	}
 	if len(want) != len(metricKinds) {
 		test.Fatalf("%d names for %d rows", len(want), len(metricKinds))
@@ -43,7 +45,8 @@ func TestUnitOfEachRow(test *testing.T) {
 }
 
 func TestNumberedNames(test *testing.T) {
-	if CCDTemperature(2) != "cpu.ccd2.temp" || RAMTemperature(1) != "ram.1.temp" || NVMeTemperature(12) != "nvme.12.temp" {
+	if CCDTemperature(2) != "cpu.ccd2.temp" || RAMTemperature(1) != "ram.1.temp" || NVMeTemperature(12) != "nvme.12.temp" ||
+		CommanderTemperature(2) != "commander.2.temp" {
 		test.Error("a numbered name is wrong")
 	}
 }

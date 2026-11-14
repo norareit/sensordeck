@@ -41,6 +41,7 @@ var metricKinds = []metricKind{
 	{prefix: RAMTotal, unit: "GiB"},
 	{prefix: "ram.", suffix: ".temp", numbered: true, unit: "°C"},
 	{prefix: "nvme.", suffix: ".temp", numbered: true, unit: "°C"},
+	{prefix: "commander.", suffix: ".temp", numbered: true, unit: "°C"},
 }
 
 // IsName tells whether name is a metric name: a fixed one, or a numbered one with a decimal number of 1 or more
@@ -98,3 +99,6 @@ func RAMTemperature(number int) string { return "ram." + strconv.Itoa(number) + 
 
 // NVMeTemperature is the name of the temperature of the drive with the number.
 func NVMeTemperature(number int) string { return "nvme." + strconv.Itoa(number) + ".temp" }
+
+// CommanderTemperature is the name of the temperature of the probe of the controller with the number, counted from 1.
+func CommanderTemperature(number int) string { return "commander." + strconv.Itoa(number) + ".temp" }

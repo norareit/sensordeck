@@ -289,7 +289,7 @@ R13).
 
 ### The metric
 
-- [ ] Add to `metrics_test.go`: `commander.1.temp` and `commander.10.temp` among the accepted names,
+- [x] Add to `metrics_test.go`: `commander.1.temp` and `commander.10.temp` among the accepted names,
   `commander.0.temp` and `commander.01.temp` among the refused, `"commander.1.temp": "°C"` in the test of units, and
   `CommanderTemperature(2) == "commander.2.temp"` in the test of numbered names. Then add the row and the function to
   `metrics.go` (R1, R19)
