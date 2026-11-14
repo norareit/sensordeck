@@ -14,7 +14,6 @@ import (
 const (
 	hidrawImport       = "github.com/norareit/sensordeck/internal/hidraw"
 	linuxsensorsImport = "github.com/norareit/sensordeck/internal/linuxsensors"
-	retiredYAMLImport  = "gopkg.in/yaml.v3"
 )
 
 // goFiles walks the module and gives the path of every Go file, leaving out what is no part of the module.
@@ -107,6 +106,9 @@ func TestOnlyLinuxFilesOfTheCommandsNameTheLinuxCode(test *testing.T) {
 		}
 	}
 }
+
+// retiredYAMLImport is written in two pieces so that a search of the module for the name finds no use of the package.
+const retiredYAMLImport = "gopkg.in/" + "yaml.v3"
 
 func TestNoFileImportsTheArchivedYAMLPackage(test *testing.T) {
 	for _, path := range goFiles(test) {

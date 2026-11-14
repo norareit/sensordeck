@@ -28,5 +28,16 @@ timestamp: 2026-11-14T19:03:59Z
   `approved`
 - 2026-11-14T19:20:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, began the work. The status is
   `in-progress`
+- 2026-11-14T20:10:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, built the unit in the seven commits
+  of the plan. Two things differ from the plan as written: the commit `Add the command sensors` holds the harness
+  fields and the third root, but its `main.go` does not yet name `run`, and the next commit adds it, so each of the
+  two commits builds and passes on its own; and the layout test writes the name of the archived YAML package in two
+  pieces, so that `grep -rn 'gopkg.in/yaml' --include='*.go' .`, a verification item of the plan, finds nothing
+- 2026-11-14T20:12:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, ran the suite on the final tree:
+  `go test -count=1 ./...`, `go vet ./...`, `gofmt -l .`, `GOOS=windows GOARCH=amd64 go build ./...` and
+  `GOOS=windows GOARCH=amd64 go vet ./...` all passed or reported nothing, and so did `CGO_ENABLED=0 go build ./...`
+  and `go mod tidy -diff`. `go.mod` holds `go 1.27`, no `toolchain` line, and cobra, x/sys and `go.yaml.in/yaml/v3`
+  v3.0.6 as its direct requirements. The end-to-end suite passed three times in a row with `-count=3`. Not checked: a
+  real device, a real `nvidia-smi`, the sensors of the host, and anything on Windows beyond the build and vet
 
 ## Amendments

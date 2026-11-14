@@ -582,15 +582,15 @@ is ever run.
 
 ## Verification
 
-- [ ] `go test -count=1 ./...` passes, so that the end-to-end tests really run (R28 to R35)
-- [ ] `go vet ./...` reports nothing
-- [ ] `gofmt -l .` prints no file name
-- [ ] `GOOS=windows GOARCH=amd64 go build ./...` and `GOOS=windows GOARCH=amd64 go vet ./...` succeed and report
+- [x] `go test -count=1 ./...` passes, so that the end-to-end tests really run (R28 to R35)
+- [x] `go vet ./...` reports nothing
+- [x] `gofmt -l .` prints no file name
+- [x] `GOOS=windows GOARCH=amd64 go build ./...` and `GOOS=windows GOARCH=amd64 go vet ./...` succeed and report
   nothing (R14)
-- [ ] `CGO_ENABLED=0 go build ./...` succeeds (R25)
-- [ ] `go mod tidy -diff` reports no difference, and `go.mod` holds `go 1.27` and the three direct requirements (R25)
-- [ ] `grep -rn 'gopkg.in/yaml' --include='*.go' .` finds nothing (R25)
-- [ ] `npm run check-changes` passes on the committed work
+- [x] `CGO_ENABLED=0 go build ./...` succeeds (R25)
+- [x] `go mod tidy -diff` reports no difference, and `go.mod` holds `go 1.27` and the three direct requirements (R25)
+- [x] `grep -rn 'gopkg.in/yaml' --include='*.go' .` finds nothing (R25)
+- [x] `npm run check-changes` passes on the committed work
 
 ## Commit Points
 
