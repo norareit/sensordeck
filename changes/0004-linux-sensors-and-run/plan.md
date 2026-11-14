@@ -599,5 +599,5 @@ is ever run.
 - [x] `feature-0004 Add the Linux sources of the sensors`
 - [x] `feature-0004 Add the command sensors`
 - [x] `feature-0004 Add the command run`
-- [ ] `feature-0004 Add the end-to-end tests of sensors and run`
+- [x] `feature-0004 Add the end-to-end tests of sensors and run`
 - [ ] `feature-0004 Document the sensors and the run command`

@@ -52,15 +52,31 @@ type result struct {
 // run runs the executable against the fake screen through the two variables that replace the roots.
 func run(test *testing.T, fake *fakescreen.Fake, args ...string) result {
 	test.Helper()
+	return runWith(test, fake, nil, args...)
+}
+
+// environmentOf gives the variables that put the executable on the fake screen, and the given ones after them, so that
+// they override what the process inherits.
+func environmentOf(fake *fakescreen.Fake, environment []string) []string {
+	return append(append(os.Environ(),
+		"SENSORDECK_SYSFS_ROOT="+fake.SysfsRoot,
+		"SENSORDECK_DEV_ROOT="+fake.DevRoot), environment...)
+}
+
+// runWith is run with more environment variables, and waits for the end of the executable.
+func runWith(test *testing.T, fake *fakescreen.Fake, environment []string, args ...string) result {
+	test.Helper()
 	context, cancel := context.WithTimeout(context.Background(), runTimeLimit)
 	defer cancel()
 	command := exec.CommandContext(context, executable, args...)
-	command.Env = append(os.Environ(),
-		"SENSORDECK_SYSFS_ROOT="+fake.SysfsRoot,
-		"SENSORDECK_DEV_ROOT="+fake.DevRoot)
+	command.Env = environmentOf(fake, environment)
 	var stdout, stderr bytes.Buffer
 	command.Stdout, command.Stderr = &stdout, &stderr
-	err := command.Run()
+	return finish(test, args, command.Run(), &stdout, &stderr)
+}
+
+func finish(test *testing.T, args []string, err error, stdout, stderr *bytes.Buffer) result {
+	test.Helper()
 	status := 0
 	var exitError *exec.ExitError
 	if errors.As(err, &exitError) {
@@ -69,4 +85,45 @@ func run(test *testing.T, fake *fakescreen.Fake, args ...string) result {
 		test.Fatalf("running %v: %v", args, err)
 	}
 	return result{stdout: stdout.String(), stderr: stderr.String(), status: status}
+}
+
+// process is an executable that is still running.
+type process struct {
+	test           *testing.T
+	args           []string
+	command        *exec.Cmd
+	stdout, stderr bytes.Buffer
+	done           chan error
+}
+
+// start starts the executable and does not wait for it. A cleanup kills it when the test ends and it still runs.
+func start(test *testing.T, fake *fakescreen.Fake, environment []string, args ...string) *process {
+	test.Helper()
+	running := &process{test: test, args: args, done: make(chan error, 1)}
+	running.command = exec.Command(executable, args...)
+	running.command.Env = environmentOf(fake, environment)
+	running.command.Stdout, running.command.Stderr = &running.stdout, &running.stderr
+	if err := running.command.Start(); err != nil {
+		test.Fatalf("starting %v: %v", args, err)
+	}
+	go func() { running.done <- running.command.Wait() }()
+	test.Cleanup(func() { _ = running.command.Process.Kill() })
+	return running
+}
+
+// stop sends the signal and waits for the end, and gives what the run left behind and the time from the signal to
+// the end.
+func (running *process) stop(signal os.Signal) (result, time.Duration) {
+	running.test.Helper()
+	if err := running.command.Process.Signal(signal); err != nil {
+		running.test.Fatalf("signalling %v: %v", running.args, err)
+	}
+	sent := time.Now()
+	select {
+	case err := <-running.done:
+		return finish(running.test, running.args, err, &running.stdout, &running.stderr), time.Since(sent)
+	case <-time.After(runTimeLimit):
+		running.test.Fatalf("%v did not end after the signal", running.args)
+		return result{}, 0
+	}
 }
