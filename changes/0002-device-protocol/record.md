@@ -1,6 +1,6 @@
 ---
 kind: feature
-status: in-progress
+status: implemented
 timestamp: 2026-11-14T14:51:19Z
 ---
 
@@ -59,5 +59,8 @@ timestamp: 2026-11-14T14:51:19Z
   `.reviews/changes/0002-device-protocol/review-20261114T150819Z.md`. The uncached tests with module-network
   access disabled passed, vet reported nothing, gofmt printed no filenames, and the change check passed on the
   committed work. Device behavior and Windows execution were not verified. The status stays `in-progress`
+- 2026-11-14T15:09:05Z [Claude Code, anthropic/claude-fable-5-2] under the delegation in `AGENTS.md`, after the second review returned
+  no finding and with P1 decided, set the status to `implemented`. The assumptions of D5 to D10 stay unconfirmed
+  until the unit that adds the Linux transport is checked on the device
 
 ## Amendments
