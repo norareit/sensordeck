@@ -1,6 +1,6 @@
 ---
 kind: feature
-status: in-progress
+status: implemented
 timestamp: 2026-11-14T15:17:19Z
 ---
 
@@ -32,5 +32,8 @@ timestamp: 2026-11-14T15:17:19Z
 - 2026-11-14T18:10:46Z [OpenCode, openai/gpt-6.1-sol] as the reviewer, performed a full review of `changes/0003-linux-transport-and-command-line` at `85e7ee9dc36c5f8d7e2a6911c4bc41566f880953`, against merge base `64aa559b3a610f1eac2c0260ae91f1e184a9ee32` with `origin/master`. Returned S1, P1 and C1, saved in `.reviews/changes/0003-linux-transport-and-command-line/review-20261114T180939Z.md`. Independently ran the five project checks, the cgo-disabled build, root build, module-tidiness check, change check, five race-test runs of the transport and one race-test run of all packages, including end-to-end tests; all passed. The real device and Windows execution could not be checked. The status stays `in-progress`
 - 2026-11-14T18:30:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, outcome of the review of `85e7ee9`, accepted by the definition of the orchestrator and not as a decision of the human: S1 (blocking) is accepted. A number beyond 64 bits is now a number that the range checks refuse with the error of its field, and the tests cover both fields in both bases; the plan text that said otherwise is corrected. C1 (blocking) is accepted. `session.say` takes a string and the call sites format. P1 (nonblocking) is accepted and was a fault of the implementer: ticking the tasks duplicated sections of `plan.md`, which is restored to the single text of the planning commit with every box ticked, and no content was removed. On `63f34a1`: `go test -count=1 ./...`, `go vet ./...`, `gofmt -l .` and the Windows vet reported clean, and `npm run check-changes` passed. The status stays `in-progress`
 - 2026-11-14T18:13:00Z [OpenCode, openai/gpt-6.1-sol] as the reviewer, performed a delta review of `changes/0003-linux-transport-and-command-line` at `8695a831f4e5a95918612f170da93fa2e4493943`, compared against `85e7ee9dc36c5f8d7e2a6911c4bc41566f880953` named by the previous full review. Verified the corrections of S1, P1 and C1 and reviewed the intervening diff on all three axes; returned no new findings. The review is saved in `.reviews/changes/0003-linux-transport-and-command-line/review-20261114T181300Z.md`. Independently ran the five project checks, the cgo-disabled build, module-tidiness check, change check, CLI race tests and diff whitespace check; all passed. The physical device and Windows execution were not checked. The status stays `in-progress`
+- 2026-11-14T18:14:33Z [Claude Code, anthropic/claude-opus-5-5] under the delegation in `AGENTS.md`, after the second review returned
+  no finding, set the status to `implemented`. The check on the real device, which the run left for the human, is
+  done after the merge and its outcome goes into the next unit
 
 ## Amendments
