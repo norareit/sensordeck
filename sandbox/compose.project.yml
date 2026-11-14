@@ -29,3 +29,8 @@ services:
         # Add the hosts this project needs, one per line: the API host of each model
         # provider its agents use besides Anthropic, such as api.openai.com, and what
         # its tools and tests reach, such as github.com for git over HTTPS.
+        # The reviewer runs under OpenCode on an OpenAI model
+        api.openai.com
+        # Go modules: the download and the verification of their checksums
+        proxy.golang.org
+        sum.golang.org
