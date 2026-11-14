@@ -600,39 +600,39 @@ copy of `build.Default` with `GOOS` set to `windows` and its `MatchFile(dir, nam
 
 ### The package of the protocol
 
-- [ ] In `identity_test.go`, test that `VendorID` is `0x0483` and `ProductID` is `0x0065`, and write `identity.go`
+- [x] In `identity_test.go`, test that `VendorID` is `0x0483` and `ProductID` is `0x0065`, and write `identity.go`
   so it passes (R5)
-- [ ] In `upload_test.go`, add the kind `progress` to the recorded calls of the fake transport, with the stage, block
+- [x] In `upload_test.go`, add the kind `progress` to the recorded calls of the fake transport, with the stage, block
   and count, and a recording progress function that appends to the same list, so that the order of the progress
   calls among the calls on the transport is checked. Pass it in every existing call of `Upload` (R7)
-- [ ] Test the complete upload of the theme of 2500 bytes: the recorded list is the existing expected list with a
+- [x] Test the complete upload of the theme of 2500 bytes: the recorded list is the existing expected list with a
   progress entry before the first call of each stage and of each of the three data blocks, block numbers 1 to 3 for
   the data blocks and 0 otherwise, and the count 3 in every entry. A progress entry for each reopening stands before
   its reopen call (R7, R32)
-- [ ] Test NAK and then ACK on data block 2 and on the ymodem command, and a reopening that fails three times after
+- [x] Test NAK and then ACK on data block 2 and on the ymodem command, and a reopening that fails three times after
   the reset: there is exactly one progress entry for that block or stage, and it stands before the first write or
   reopen of it (R7, R32)
-- [ ] Test that `Upload` of a failing ymodem command makes three progress calls, the reset, the reopening after the
+- [x] Test that `Upload` of a failing ymodem command makes three progress calls, the reset, the reopening after the
   reset and the ymodem command, and none after (R7)
-- [ ] In `upload.go`, add `ErrReadTimeout` and the comment of `Read` of R6, and change `Upload` and `sendDataBlocks`
+- [x] In `upload.go`, add `ErrReadTimeout` and the comment of `Read` of R6, and change `Upload` and `sendDataBlocks`
   as the Approach says, so that the tests pass and the existing ones still do (R6, R7)
-- [ ] Commit: `feature-0003 Report the stages of the upload and name the passed time limit`
+- [x] Commit: `feature-0003 Report the stages of the upload and name the passed time limit`
 
 ### The fake screen and the Linux transport
 
-- [ ] Add `golang.org/x/sys` at v0.50.0 with `go get` and write `internal/fakescreen/fakescreen.go` as the Approach
+- [x] Add `golang.org/x/sys` at v0.50.0 with `go get` and write `internal/fakescreen/fakescreen.go` as the Approach
   says, `//go:build linux` on its first line (R2, R29, D18)
-- [ ] In `discover_test.go`, with trees written by a helper of the test into `test.TempDir()`, and no node made under
+- [x] In `discover_test.go`, with trees written by a helper of the test into `test.TempDir()`, and no node made under
   the dev root, so that a discovery that opened a node would fail: no `class/hidraw` directory; an empty one; entries
   of other devices only; one screen with all its fields; `hidraw10` and `hidraw2` given in that order of creation,
   coming back as `hidraw2` first; `HID_ID` in lower case; a missing `HID_NAME` and an empty `HID_UNIQ`, both empty;
   an entry without `uevent`; a malformed `HID_ID`, once with two fields and once with a field that is no hexadecimal;
   vendor and product right on bus `0005`; entries named `hidraw` and `hidrawx1`, passed over; and a `class/hidraw`
   that is a regular file, giving an error (R8, R9, R10, R30)
-- [ ] Test `Screen.Line` for the screen of the spec on `/dev/hidraw3`, giving
+- [x] Test `Screen.Line` for the screen of the spec on `/dev/hidraw3`, giving
   `/dev/hidraw3\t0483:0065\tllhmi.com llTechCo.,Ltd\t-`, and for one with a serial and no name (R15, R32)
-- [ ] Write `discover.go` so the tests pass (R5, R8, R9, R10)
-- [ ] In `transport_test.go`, against the fake screen: a write that arrives as 65 bytes, `0x00` and the report; a
+- [x] Write `discover.go` so the tests pass (R5, R8, R9, R10)
+- [x] In `transport_test.go`, against the fake screen: a write that arrives as 65 bytes, `0x00` and the report; a
   read of a report the fake sent; two reports sent one after the other and read as two; one byte `0x06` sent and read
   as a report of `0x06` and 63 of `0x00`; a read with a limit of 50 milliseconds and nothing sent, giving an error
   for which `errors.Is(err, smartmonitor.ErrReadTimeout)` is true; a read after `Remove`, giving an error for which it
@@ -640,14 +640,14 @@ copy of `build.Default` with `GOOS` set to `windows` and its `MatchFile(dir, nam
   `Remove`, which fails, after which a write and a read fail, and a reopening after `Add` of a new screen, which
   succeeds; `OpenDiscovered` with no screen and with two, giving the texts of R11 to the character; and `OpenPath` on
   the node of one of two screens, whose write arrives there and not at the other (R11, R12, R31)
-- [ ] Test that `OpenPath` on a regular file in `test.TempDir()` fails with an error that says the node does not
+- [x] Test that `OpenPath` on a regular file in `test.TempDir()` fails with an error that says the node does not
   support a time limit for reading (R13)
-- [ ] Test `openError` with `&fs.PathError{Op: "open", Path: "/dev/hidraw3", Err: syscall.EACCES}`, giving the text of
+- [x] Test `openError` with `&fs.PathError{Op: "open", Path: "/dev/hidraw3", Err: syscall.EACCES}`, giving the text of
   R14 to the character and `errors.Is(err, fs.ErrPermission)` true, and with `syscall.ENOENT`, giving
   `cannot open /dev/hidraw3: no such file or directory` and `errors.Is(err, fs.ErrNotExist)` true. Test that
   `OpenPath` on a path that does not exist gives the second form (R14, R31)
-- [ ] Write `transport.go` so the tests pass (R11 to R14, D10, D11, D14)
-- [ ] Commit: `feature-0003 Add the fake screen and the hidraw transport`
+- [x] Write `transport.go` so the tests pass (R11 to R14, D10, D11, D14)
+- [x] Commit: `feature-0003 Add the fake screen and the hidraw transport`
 
 ### The executable
 
@@ -755,7 +755,7 @@ copy of `build.Default` with `GOOS` set to `windows` and its `MatchFile(dir, nam
 ## Commit Points
 
 - [x] `feature-0003 Report the stages of the upload and name the passed time limit`
-- [ ] `feature-0003 Add the fake screen and the hidraw transport`
+- [x] `feature-0003 Add the fake screen and the hidraw transport`
 - [ ] `feature-0003 Add the executable and its commands`
 - [ ] `feature-0003 Add the end-to-end tests`
 - [ ] `feature-0003 Add the udev rule and document the transport`
