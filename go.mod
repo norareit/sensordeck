@@ -4,6 +4,7 @@ go 1.27
 
 require (
 	github.com/spf13/cobra v1.10.2
+	go.yaml.in/yaml/v3 v3.0.6
 	golang.org/x/sys v0.50.0
 )
 

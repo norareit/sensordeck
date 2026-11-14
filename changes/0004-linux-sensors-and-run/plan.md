@@ -412,17 +412,17 @@ is ever run.
 
 ### The metrics and the config
 
-- [ ] In `internal/sensors/metrics_test.go`, test that `IsName` accepts the eight fixed names of R1 and
+- [x] In `internal/sensors/metrics_test.go`, test that `IsName` accepts the eight fixed names of R1 and
   `cpu.ccd1.temp`, `ram.2.temp`, `nvme.10.temp` and `nvme.9.temp`, and refuses `ram.0.temp`, `ram.01.temp`,
   `CPU.temp`, `cpu.tmp`, `ram..temp`, `ram.-1.temp`, `ram.1x.temp` and the empty name; and that `Unit` gives the unit
   of R1 for one name of each of the twelve rows (R1, R2, R31)
-- [ ] In `internal/sensors/convert_test.go`, test `ToValue` with 51.5 giving 52, 51.49 giving 51, 0.5 giving 1, -5
+- [x] In `internal/sensors/convert_test.go`, test `ToValue` with 51.5 giving 52, 51.49 giving 51, 0.5 giving 1, -5
   giving 0, 70000 giving 65535, 65535.4 giving 65535, and `math.Inf(1)` giving 65535 (R4, R31)
-- [ ] In `internal/sensors/source_test.go`, test that `ReadAll` joins the readings of two fake sources in their order
+- [x] In `internal/sensors/source_test.go`, test that `ReadAll` joins the readings of two fake sources in their order
   and passes `wanted` and `stop` to both (R1, R3)
-- [ ] Write `metrics.go`, `source.go` and `convert.go` as the Approach says, so the tests pass (R1 to R4, D1, D2, D5)
-- [ ] Add `go.yaml.in/yaml/v3` at v3.0.6 with `go get` (R25, D19)
-- [ ] In `internal/config/config_test.go`, test that the example of R17 gives 1 second and the mappings `cpu.temp` 1
+- [x] Write `metrics.go`, `source.go` and `convert.go` as the Approach says, so the tests pass (R1 to R4, D1, D2, D5)
+- [x] Add `go.yaml.in/yaml/v3` at v3.0.6 with `go get` (R25, D19)
+- [x] In `internal/config/config_test.go`, test that the example of R17 gives 1 second and the mappings `cpu.temp` 1
   and `cpu.clock` 2 in that order; that `interval: 500ms` gives 500 milliseconds, `interval: 100ms` is accepted, and a
   file without `interval` gives 1 second; that the mappings come ordered by tag whatever the order of the file; and
   each error of R18 to the character after the prefix: a syntax error, giving the text of the parser; `tags` given
@@ -431,8 +431,8 @@ is ever run.
   the key `cpu.tmp`; the tags `1.0`, `"1"`, `x` and a mapping; the tags `256` and `-1`, each named as written; `1` for
   both `cpu.temp` and `cpu.clock`, given in that order and in the other, both naming `cpu.clock` first; `interval: 1`,
   `interval: soon` and `interval: [1s]`; and `interval: 99ms` and `interval: -1s` (R17, R18, R31)
-- [ ] Write `internal/config/config.go` as the Approach says, so the tests pass (R17, R18, D11, D12, D18)
-- [ ] Commit: `feature-0004 Add the metric names and the config`
+- [x] Write `internal/config/config.go` as the Approach says, so the tests pass (R17, R18, D11, D12, D18)
+- [x] Commit: `feature-0004 Add the metric names and the config`
 
 ### The Linux sources
 
@@ -595,7 +595,7 @@ is ever run.
 ## Commit Points
 
 - [x] `feature-0004 Extract the reading of a named file and the check of a clock report`
-- [ ] `feature-0004 Add the metric names and the config`
+- [x] `feature-0004 Add the metric names and the config`
 - [ ] `feature-0004 Add the Linux sources of the sensors`
 - [ ] `feature-0004 Add the command sensors`
 - [ ] `feature-0004 Add the command run`
