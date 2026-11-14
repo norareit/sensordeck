@@ -14,5 +14,10 @@ timestamp: 2026-11-14T15:17:19Z
   taken into the unit as R35 and D25, with R3, R16, R18, R32 and R33 changed for it, and the other items are
   declined and stay in the list, renumbered 1 to 9. D18 now says that the sandbox was checked for `/dev/ptmx`. The
   status stays `draft`
+- 2026-11-14T15:20:37Z [Claude Code, anthropic/claude-fable-5-2] read the spec under the delegation in `AGENTS.md`: every requirement
+  can be tested without the device, the counts of trace lines in R33 were computed again and hold, and the sandbox
+  was checked to have the pseudo terminals the fake screen needs. The `raw` command was taken in, as the entry above
+  says, and the nine items left under "Beyond the request" are declined. The approval that follows is made under
+  that delegation
 
 ## Amendments
