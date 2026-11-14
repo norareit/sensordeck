@@ -104,7 +104,7 @@ that the tests read what the device gives.
 - **R8** The end-to-end tests of R20, R21 and R23 of unit 0005 run against the fake controller of R4 and keep their
   expected results, and every other test of the suite passes unchanged in what it expects
 
-### The document
+### The documents
 
 - **R9** The section "Reports" of `docs/commander-core-xt.md` states, in the project's own words: the report
   descriptor of interface 0 and where on the host it was read; that it declares no report IDs and one input and one
@@ -115,6 +115,12 @@ that the tests read what the device gives.
   first 96. The section "Unknown" names what bytes 96 to 383 of an answer hold and whether the device needs the full
   output report of 384 bytes, which it was not given and did not need. Every other statement of the document that
   says a read gives 96 bytes is corrected to match
+- **R10** The `record.md` of unit 0005 has one more entry under "Amendments", made on this unit's branch and in the
+  format of `process.md`, that names `0006-commander-answer-size` as the correction of the 96-byte condition of R6 and
+  of the report size in `docs/commander-core-xt.md`, and says that the 96 bytes of its trace were the other tool's
+  buffer. The `spec.md` and `plan.md` of unit 0005 do not change, and nothing else of its `record.md` changes. Taking
+  this into the unit was item 1 of "Beyond the request", decided by the orchestrating session under the delegation in
+  `AGENTS.md`
 
 ## Decisions
 
@@ -149,9 +155,9 @@ that the tests read what the device gives.
   old one in `supersedes`. Only R1 and R2 of this unit replace a part of unit 0005, the size of the read and the first
   condition of R6, and the rest of unit 0005 stands
 - **D7** The unit needs no `plan.md`. The fix is one commit: the size of the buffer and the condition of validity in
-  the driver, the size of the answer in the fake controller, the tests of R5 to R7, and the document. The driver and
-  the fake change together: the fake of R4 alone breaks the tests of unit 0005, and the driver alone passes against
-  the fake of unit 0005, so that no test would show the defect it corrects
+  the driver, the size of the answer in the fake controller, the tests of R5 to R7, the document, and the amendment
+  of R10. The driver and the fake change together: the fake of R4 alone breaks the tests of unit 0005, and the driver
+  alone passes against the fake of unit 0005, so that no test would show the defect it corrects
 
 ## Non-goals
 
@@ -165,9 +171,8 @@ that the tests read what the device gives.
 
 ## Beyond the request
 
-1. An entry under "Amendments" in the `record.md` of unit 0005 that names this unit as the correction of R6 and of the
-   report size of its document, made on this unit's branch. It costs one entry. Without it a reader of unit 0005 finds
-   the correction only through the `supersedes` of this unit
+1. Taken into the unit as R10: an entry under "Amendments" in the `record.md` of unit 0005 that names this unit as
+   the correction of R6 and of the report size of its document
 2. Reading the size of the input report from the report descriptor in sysfs at each reading, rather than taking 384
    as a constant. It costs a parser of the descriptor's items and its tests. Without it a firmware that changed the
    size would still work as long as its reports are at least 96 bytes, and only reports longer than 384 bytes would be
