@@ -67,6 +67,11 @@ func readingsOf(probes []probe, wanted func(name string) bool) []sensors.Reading
 // whatever happens, because what the controller does in software mode with nobody sending it settings is not known.
 // A failure of step 8 changes nothing of the probes the steps gave.
 func runSequence(stop context.Context, file *os.File, timeLimit time.Duration) []probe {
+	// Discovery and opening come before this point, and a stop can arrive during them. Nothing is written then, because
+	// step 8 is owed only once step 1 has been attempted.
+	if stop.Err() != nil {
+		return nil
+	}
 	probes := runSteps(stop, file, timeLimit)
 	exchange(file, steps[returnToHardwareMode], timeLimit)
 	return probes

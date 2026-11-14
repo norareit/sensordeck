@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/norareit/sensordeck/internal/fakecommander"
+	"github.com/norareit/sensordeck/internal/hidraw"
 	"github.com/norareit/sensordeck/internal/sensors"
 )
 
@@ -229,5 +230,25 @@ func TestNothingWantedOpensNoNode(test *testing.T) {
 		if !sensors.IsName(name) || !strings.HasPrefix(name, "commander.") {
 			test.Fatalf("wanted was asked for %q", name)
 		}
+	}
+}
+
+func TestAStopDoneAtTheStartOfTheSequenceWritesNothing(test *testing.T) {
+	harness := newHarness(test)
+	controller := harness.fake.Add(9, 10)
+	file, err := hidraw.OpenNode(filepath.Join(harness.source.DevRoot, "hidraw9"))
+	if err != nil {
+		test.Fatal(err)
+	}
+	defer file.Close()
+	harness.cancel()
+	if got := runSequence(harness.stop, file, testTimeLimit); got != nil {
+		test.Fatalf("got %v", got)
+	}
+	if writes := controller.Writes(); len(writes) != 0 {
+		test.Fatalf("got %d writes", len(writes))
+	}
+	if controller.Mode() != fakecommander.NoMode {
+		test.Fatal("a mode command was written")
 	}
 }
