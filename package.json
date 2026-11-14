@@ -1,0 +1,12 @@
+{
+  "name": "sensordeck",
+  "description": "Turn a cheap USB sensor panel screen into a hardware-monitoring dashboard on Linux and Windows",
+  "private": true,
+  "author": "Stef Klaassen",
+  "devDependencies": {
+    "agentrite": "^8.5.0"
+  },
+  "scripts": {
+    "check-changes": "node node_modules/agentrite/scripts/check-changes.mjs"
+  }
+}
