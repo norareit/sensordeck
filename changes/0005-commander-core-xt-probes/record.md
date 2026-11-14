@@ -23,5 +23,10 @@ timestamp: 2026-11-14T21:54:29Z
   commits. Item 2 of "Beyond the request" is taken as R22 and R23, and items 1, 3 and 4 are declined. The approval
   that follows is made under that delegation
 - 2026-11-14T21:56:33Z [human] approved the spec. The status is `approved`
+- 2026-11-14T22:00:41Z [Claude Code, anthropic/claude-opus-5-5] as the planner, wrote the plan against the tree of
+  the branch `feature-0005-commander-core-xt-probes`. It starts with two refactorings that keep the behavior, the
+  listing of hidraw entries and the opening of a node in `internal/hidraw` and the pseudo terminals of the fake screen
+  in `internal/fakepty`, so that the driver and the fake controller repeat neither. Every task names the requirements
+  it delivers, and every requirement from R1 to R23 has a task. The status stays `approved`
 
 ## Amendments
