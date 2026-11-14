@@ -16,5 +16,10 @@ timestamp: 2026-11-14T19:03:59Z
   `gopkg.in/yaml.v3`, in R16, R25, D18 and the new D19; item 9 of "Beyond the request", the status line of the
   README, is taken into the unit as R37 and D20; the other eight items are declined and stay in the list. The status
   stays `draft`
+- 2026-11-14T19:06:57Z [Claude Code, anthropic/claude-opus-5-5] read the spec under the delegation in `AGENTS.md`: every
+  requirement can be tested in the sandbox with fake trees, a fake `nvidia-smi` and the fake screen, and the tag 1 and
+  tag 2 example matches what the human saw on the device. It was amended on the two decisions the entry above
+  records, and the eight items left under "Beyond the request" are declined. The approval that follows is made under
+  that delegation
 
 ## Amendments
