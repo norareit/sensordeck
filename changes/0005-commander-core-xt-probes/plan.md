@@ -307,11 +307,11 @@ R13).
 
 ### The driver
 
-- [ ] Write `internal/commandercore/protocol_test.go` with the cases of "The tests", then `protocol.go` (R5, R6, R9)
-- [ ] Write `internal/commandercore/discover_test.go`: no `class/hidraw` directory, an entry of the screen, only an
+- [x] Write `internal/commandercore/protocol_test.go` with the cases of "The tests", then `protocol.go` (R5, R6, R9)
+- [x] Write `internal/commandercore/discover_test.go`: no `class/hidraw` directory, an entry of the screen, only an
   entry of interface 1, a malformed `HID_ID`, and entries 7 and 3 that both qualify, of which `hidraw3` is given; then
   `discover.go` (R3)
-- [ ] Write `internal/commandercore/source_test.go` against the fake controller with a time limit of 50 milliseconds,
+- [x] Write `internal/commandercore/source_test.go` against the fake controller with a time limit of 50 milliseconds,
   with one test for each of: (R5, R9, R10, R18)
     - both probes wanted: the readings `commander.1.temp` 37.3 and `commander.2.temp` 22.7, and the eight writes byte
       for byte, once
@@ -334,7 +334,7 @@ R13).
       only. An opening cannot be seen on a pseudo terminal, and in `Read` an opening is always followed by the write
       of step 1 unless stop is done, which this test does not do, so no write is the evidence that no node was
       opened
-- [ ] Write `internal/commandercore/source.go` as "The driver" describes, until its tests pass (R2, R4 to R10)
+- [x] Write `internal/commandercore/source.go` as "The driver" describes, until its tests pass (R2, R4 to R10)
 
 ### The commands
 
