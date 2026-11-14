@@ -103,5 +103,13 @@ timestamp: 2026-11-14T19:03:59Z
   driver output or execution on Windows
 - 2026-11-14T19:42:25Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, corrected S4 of `review-round-5-20261114T193956Z.md`, accepted by the orchestrating session under the delegation in `AGENTS.md`: `parseTag` takes a scalar whose resolved tag is `!!int` as a whole number in any spelling and reports one that does not fit 0 to 255, or int64, with the out-of-range message of R18. The regression cases are the hexadecimal, octal, legacy octal, binary and underscore forms in and out of range, with 1.0, 1e3 and strings still refused as not whole. The parser resolves a decimal beyond uint64 as a float and other spellings beyond it as a string, so for the decimal float case alone the text, with underscores removed, still decides, and a hexadecimal beyond uint64 stays not whole. Suites are logged in the next entry
 - 2026-11-14T19:42:40Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, ran on the tree of this correction `go test -count=1 ./...` including the end-to-end suite, `go vet ./...`, `gofmt -l .` and the build and vet with `GOOS=windows GOARCH=amd64`, which passed or reported nothing. Not checked: a real device, a real `nvidia-smi` and execution on Windows. The status stays `in-progress`
+- 2026-11-14T19:43:53Z [OpenCode, openai/gpt-6.1-sol] as the reviewer, made a delta review of
+  `changes/0004-linux-sensors-and-run` at `75eca92a795a4e72eb568c7351d8c829ef4a8f55`, compared against
+  `98c3893`, checking the whole-unit spec only where the correction touches it. Returned no findings, saved in
+  `.reviews/changes/0004-linux-sensors-and-run/review-round-6-20261114T194353Z.md` and copied to
+  `.reviews/0004-linux-sensors-and-run/review-round-6-20261114T194353Z.md`. Ran the five project suite commands,
+  the static build, module tidy diff, change check and delta whitespace check successfully, and exercised overflow
+  and non-integer diagnostics through the executable. Not verified: physical-device behavior, host sensors, real
+  NVIDIA driver output or execution on Windows
 
 ## Amendments
