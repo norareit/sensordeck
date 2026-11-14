@@ -69,5 +69,6 @@ The suite of the project is five commands, and all five must succeed before work
 * `GOOS=windows GOARCH=amd64 go vet ./...` succeeds and reports nothing
 
 The end-to-end tests are in `e2e/`, and `go test ./...` runs them. They build the executable and run it against a fake
-screen made of a directory tree and pseudo terminals, so they need Linux with `/dev/ptmx`. The executable reads the two
-environment variables `SENSORDECK_SYSFS_ROOT` and `SENSORDECK_DEV_ROOT` for them.
+screen made of a directory tree and pseudo terminals, so they need Linux with `/dev/ptmx`. The executable reads the three
+environment variables `SENSORDECK_SYSFS_ROOT`, `SENSORDECK_DEV_ROOT` and `SENSORDECK_PROC_ROOT` for them. The tests
+that need `nvidia-smi` put a fake one on a `PATH` they set, so that the suite never runs a real one.

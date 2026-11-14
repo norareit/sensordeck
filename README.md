@@ -2,7 +2,9 @@
 
 Turn a cheap USB "sensor panel" screen into a hardware-monitoring dashboard on **Linux and Windows**.
 
-> **Status: early development.** Nothing is usable yet. This README describes what sensordeck is meant to become.
+> **Status: early development.** The screen can be driven on Linux: with the low-level commands (`devices`, `clock`,
+> `values`, `upload`, `listen` and `raw`), with `sensordeck sensors` and with `sensordeck run`. Themes, Windows and the
+> service are still to come. This README describes what sensordeck is meant to become.
 
 ## What it will do
 
@@ -58,6 +60,59 @@ and the rule must sort before it.
 
 hidraw is provided by the kernel's `usbhid` driver, so that driver must stay bound to the screen. A rule that unbinds
 `usbhid` for this device, as some guides for other tools add, has to be removed.
+
+## Showing sensor values on the screen
+
+`sensordeck sensors` lists the readings that can be read now, one line each: the metric name, the value with one
+decimal and the unit, separated by tabs. A metric that cannot be read is left out. When none can be read, it says so on
+standard error.
+
+```
+cpu.temp	51.4	°C
+cpu.clock	4425.4	MHz
+ram.used	21.8	GiB
+```
+
+The metrics are:
+
+| Metric | Unit | Source |
+|---|---|---|
+| `cpu.temp` | °C | `k10temp`, the sensor `Tctl` |
+| `cpu.ccd<n>.temp` | °C | `k10temp`, the sensor `Tccd<n>` |
+| `cpu.util` | % | `/proc/stat` |
+| `cpu.clock` | MHz | the highest clock of all CPUs |
+| `gpu.temp` | °C | `nvidia-smi` |
+| `gpu.util` | % | `nvidia-smi` |
+| `gpu.mem.used` | MiB | `nvidia-smi` |
+| `gpu.mem.total` | MiB | `nvidia-smi` |
+| `ram.used` | GiB | `/proc/meminfo`, the total minus what is available |
+| `ram.total` | GiB | `/proc/meminfo` |
+| `ram.<n>.temp` | °C | `spd5118`, one for each memory module |
+| `nvme.<n>.temp` | °C | `nvme`, the sensor `Composite`, one for each drive |
+
+The GPU metrics need `nvidia-smi` and come from the first NVIDIA GPU only. Numbered metrics count from 1, in the order
+of the places of the hardware in the system, which does not change when the drivers load in another order.
+
+`sensordeck run` sends the metrics named in a config file to the screen. The tags are those of the theme on the
+screen, so for a vendor theme only you know which tag shows what. The config file is `sensordeck/config.yaml` in your
+config directory (`$XDG_CONFIG_HOME`, or `~/.config`), and `--config <path>` reads another file. This one is for a vendor
+theme in which tag 1 shows the CPU temperature and tag 2 the CPU speed:
+
+```yaml
+interval: 1s
+tags:
+  cpu.temp: 1
+  cpu.clock: 2
+```
+
+`interval` is the time between two rounds, of at least 100 milliseconds, and is 1 second without the key. A tag is a
+whole number from 0 to 255.
+
+Values are sent as whole numbers, rounded, so 51.5 is sent as 52. A metric that cannot be read is not sent, so the
+screen keeps its last value.
+
+`sensordeck run` sends the values until Ctrl+C or SIGTERM. It sets the clock of the screen when it starts and once a
+minute, and it keeps running when the screen is unplugged and plugged in again.
 
 ## Credits
 

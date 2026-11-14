@@ -562,12 +562,12 @@ is ever run.
 
 ### The documents
 
-- [ ] In `README.md`, replace the sentence after the marker `**Status: early development.**` that says nothing is
+- [x] In `README.md`, replace the sentence after the marker `**Status: early development.**` that says nothing is
   usable yet with one that says the screen can be driven on Linux with the low-level commands, with
   `sensordeck sensors` and with `sensordeck run`, and that themes, Windows and the service are still to come. The
   sentence that the README describes what sensordeck is meant to become stays, and nothing else of the opening
   changes (R37, D20)
-- [ ] Add the section `## Showing sensor values on the screen` to `README.md` after `## Linux: access to the screen`,
+- [x] Add the section `## Showing sensor values on the screen` to `README.md` after `## Linux: access to the screen`,
   with what R26 lists: `sensordeck sensors` and its format; a table of the twelve metrics of R1 with their units, and
   that the GPU metrics need `nvidia-smi` and come from the first NVIDIA GPU only; that the tags are those of the theme
   on the screen and only the user knows them for a vendor theme; the place of the config file, `--config`, and the
@@ -575,10 +575,10 @@ is ever run.
   as whole numbers, rounded, and an unreadable metric is not sent so the screen keeps its last value; and that
   `sensordeck run` sends until Ctrl+C or SIGTERM, sets the clock, and keeps running when the screen is unplugged and
   plugged in again (R26)
-- [ ] In the subsection "Testing" of `AGENTS.md`, name `SENSORDECK_PROC_ROOT` with the two variables named there, and
+- [x] In the subsection "Testing" of `AGENTS.md`, name `SENSORDECK_PROC_ROOT` with the two variables named there, and
   add that the tests that need `nvidia-smi` put a fake one on a `PATH` they set, so that the suite never runs a real
   one. The five commands do not change (R27)
-- [ ] Commit: `feature-0004 Document the sensors and the run command`
+- [x] Commit: `feature-0004 Document the sensors and the run command`
 
 ## Verification
 
@@ -600,4 +600,4 @@ is ever run.
 - [x] `feature-0004 Add the command sensors`
 - [x] `feature-0004 Add the command run`
 - [x] `feature-0004 Add the end-to-end tests of sensors and run`
-- [ ] `feature-0004 Document the sensors and the run command`
+- [x] `feature-0004 Document the sensors and the run command`
