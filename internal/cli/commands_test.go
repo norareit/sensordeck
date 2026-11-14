@@ -58,8 +58,8 @@ func (harness *harness) run(args ...string) int {
 			return harness.transport, nil
 		},
 		userConfigDir: func() (string, error) { return harness.configDir, harness.configDirErr },
-		newSources: func(sysfsRoot, procRoot string) ([]sensors.Source, error) {
-			if sysfsRoot != "/sysroot" || procRoot != "/procroot" {
+		newSources: func(sysfsRoot, devRoot, procRoot string) ([]sensors.Source, error) {
+			if sysfsRoot != "/sysroot" || devRoot != "/devroot" || procRoot != "/procroot" {
 				return nil, errors.New("the roots were not passed on")
 			}
 			return harness.sources, harness.sourcesErr

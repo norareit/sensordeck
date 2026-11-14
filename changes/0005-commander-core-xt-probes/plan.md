@@ -338,15 +338,15 @@ R13).
 
 ### The commands
 
-- [ ] Change `newSources` to take the dev root in `main.go`, `sources_linux.go`, `sources_other.go`, `commands.go`,
+- [x] Change `newSources` to take the dev root in `main.go`, `sources_linux.go`, `sources_other.go`, `commands.go`,
   `run.go` and the harness of `commands_test.go`, which fails when the dev root is not `/devroot`. Add the controller
   as the last source in `sources_linux.go` (R12, R13)
-- [ ] Add to `sensors_test.go`: `fakeSource` keeps the stop of each call; a test whose source cancels the harness stop
+- [x] Add to `sensors_test.go`: `fakeSource` keeps the stop of each call; a test whose source cancels the harness stop
   in `onRead`, and that expects status 1, no standard output, `sensordeck: interrupted\n` on standard error, and that
   the stop the source got is done; and a test that a reading without a signal gives the source a stop that is not
   done. Then change `sensors` in `commands.go` and the comment of `notifyStop` in `main.go` as "The commands" says
   (R22, R23)
-- [ ] Add `internal/commandercore`, `internal/fakecommander` and `internal/fakepty` to the list of
+- [x] Add `internal/commandercore`, `internal/fakecommander` and `internal/fakepty` to the list of
   `TestLinuxCodeIsLimitedToLinux`, and `github.com/norareit/sensordeck/internal/commandercore` to the imports that
   `TestOnlyLinuxFilesOfTheCommandsNameTheLinuxCode` refuses in a file of `internal/cli` that is part of a Windows
   build (R11)

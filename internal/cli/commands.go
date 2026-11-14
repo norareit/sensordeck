@@ -254,11 +254,17 @@ func (current *session) sensorsCommand() *cobra.Command {
 		Short: "List the sensor readings that can be read now",
 		Args:  cobra.NoArgs,
 		RunE: func(command *cobra.Command, args []string) error {
-			sources, err := current.env.newSources(current.env.sysfsRoot, current.env.procRoot)
+			sources, err := current.env.newSources(current.env.sysfsRoot, current.env.devRoot, current.env.procRoot)
 			if err != nil {
 				return err
 			}
-			readings := sensors.ReadAll(context.Background(), sources, func(string) bool { return true })
+			stop, cancel := current.env.notifyStop(context.Background())
+			readings := sensors.ReadAll(stop, sources, func(string) bool { return true })
+			interrupted := stop.Err() != nil
+			cancel()
+			if interrupted {
+				return errors.New("interrupted")
+			}
 			if len(readings) == 0 {
 				_, _ = fmt.Fprintln(current.env.stderr, noSensorMessage)
 				return nil

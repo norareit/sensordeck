@@ -16,10 +16,12 @@ type fakeSource struct {
 	asked   [][]string
 	onRead  func()
 	readsAt int
+	stops   []context.Context
 }
 
 func (source *fakeSource) Read(stop context.Context, wanted func(name string) bool) []sensors.Reading {
 	source.readsAt++
+	source.stops = append(source.stops, stop)
 	if source.onRead != nil {
 		source.onRead()
 	}
@@ -83,5 +85,28 @@ func TestSensorsNeverOpensATransport(test *testing.T) {
 	harness.run("--device", "x", "sensors")
 	if len(harness.opened) != 0 {
 		test.Errorf("opened %v", harness.opened)
+	}
+}
+
+func TestSensorsInterruptedWhileReadingWritesNothingAndFails(test *testing.T) {
+	harness := newHarness()
+	source := &fakeSource{names: []string{"cpu.temp"}, values: map[string]float64{"cpu.temp": 50}}
+	source.onRead = harness.cancelStop
+	harness.sources = []sensors.Source{source}
+	harness.expectFailure(test, "interrupted", "sensors")
+	if len(source.stops) != 1 || source.stops[0].Err() == nil {
+		test.Errorf("the source did not get a stop that was done: %v", source.stops)
+	}
+}
+
+func TestSensorsGivesTheSourcesAStopThatIsNotDone(test *testing.T) {
+	harness := newHarness()
+	source := &fakeSource{names: []string{"cpu.temp"}, values: map[string]float64{"cpu.temp": 50}}
+	harness.sources = []sensors.Source{source}
+	if status := harness.run("sensors"); status != 0 {
+		test.Fatalf("status %d", status)
+	}
+	if len(source.stops) != 1 || source.stops[0].Err() != nil {
+		test.Errorf("stops %v", source.stops)
 	}
 }

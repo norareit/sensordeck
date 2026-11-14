@@ -37,7 +37,7 @@ func (current *session) runCommand() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("config file %s: %w", path, err)
 			}
-			sources, err := current.env.newSources(current.env.sysfsRoot, current.env.procRoot)
+			sources, err := current.env.newSources(current.env.sysfsRoot, current.env.devRoot, current.env.procRoot)
 			if err != nil {
 				return err
 			}

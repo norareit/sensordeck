@@ -34,9 +34,9 @@ type environment struct {
 	listScreens    func(sysfsRoot, devRoot string) ([]string, error)
 	openTransport  func(sysfsRoot, devRoot, device string) (transport, error)
 	userConfigDir  func() (string, error)
-	newSources     func(sysfsRoot, procRoot string) ([]sensors.Source, error)
-	// notifyStop gives a context that ends at SIGINT or SIGTERM. Only run calls it, so that the other commands keep
-	// the default handling of Ctrl+C.
+	newSources     func(sysfsRoot, devRoot, procRoot string) ([]sensors.Source, error)
+	// notifyStop gives a context that ends at SIGINT or SIGTERM. Only run and the reading of sensors call it, so that
+	// the other commands keep the default handling of Ctrl+C.
 	notifyStop func(parent context.Context) (context.Context, context.CancelFunc)
 	// wait waits for the duration and gives false when stop ended the wait.
 	wait func(stop context.Context, duration time.Duration) bool

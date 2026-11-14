@@ -14,6 +14,7 @@ import (
 const (
 	hidrawImport       = "github.com/norareit/sensordeck/internal/hidraw"
 	linuxsensorsImport = "github.com/norareit/sensordeck/internal/linuxsensors"
+	commanderImport    = "github.com/norareit/sensordeck/internal/commandercore"
 )
 
 // goFiles walks the module and gives the path of every Go file, leaving out what is no part of the module.
@@ -84,7 +85,8 @@ func TestNoFileImportsC(test *testing.T) {
 }
 
 func TestLinuxCodeIsLimitedToLinux(test *testing.T) {
-	linuxOnly := []string{"internal/hidraw", "internal/fakescreen", "internal/linuxsensors", "internal/fakesensors", "e2e"}
+	linuxOnly := []string{"internal/hidraw", "internal/fakescreen", "internal/linuxsensors", "internal/fakesensors",
+		"internal/commandercore", "internal/fakecommander", "internal/fakepty", "e2e"}
 	for _, path := range goFiles(test) {
 		for _, directory := range linuxOnly {
 			if inDirectory(path, directory) && !excludedFromWindows(test, path) {
@@ -100,7 +102,7 @@ func TestOnlyLinuxFilesOfTheCommandsNameTheLinuxCode(test *testing.T) {
 			continue
 		}
 		for _, imported := range importsOf(test, path) {
-			if imported == hidrawImport || imported == linuxsensorsImport {
+			if imported == hidrawImport || imported == linuxsensorsImport || imported == commanderImport {
 				test.Errorf("%s imports %s and is part of a Windows build", path, imported)
 			}
 		}
