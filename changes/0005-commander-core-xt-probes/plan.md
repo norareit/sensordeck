@@ -370,11 +370,11 @@ R13).
 
 ### Access and documents
 
-- [ ] Add to `udev/70-sensordeck.rules`, after the rule of the screen, a comment that names the Corsair iCUE
+- [x] Add to `udev/70-sensordeck.rules`, after the rule of the screen, a comment that names the Corsair iCUE
   Commander Core XT and its USB ID `1b1c:0c2a`, and the line
   `SUBSYSTEM=="hidraw", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="0c2a", MODE="0660", TAG+="uaccess"`. The first
   two lines and the rule of the screen stay as they are (R14)
-- [ ] Write `docs/commander-core-xt.md` in the project's own words, with the sections: how it was learned (a
+- [x] Write `docs/commander-core-xt.md` in the project's own words, with the sections: how it was learned (a
   black-box trace of the hidraw traffic of another tool on one machine, no code of that tool read); identity (USB ID,
   `HID_NAME`, the two interfaces and how `HID_PHYS` tells them apart, which one is used); reports (97 bytes written
   with the report ID, 96 read); the eight commands; the layout of an answer (bytes 0 to 2, the echo); the data of the
@@ -382,7 +382,7 @@ R13).
   of bytes 0 and 2 of an answer, the meaning of a probe status other than `00`, which probe sits at which port, and
   whether steps 2 to 4 are needed before the temperature steps; and "Assumptions", which names at least that byte 2
   is a status, that a probe status other than `00` means no reading, and that the temperature is signed (R15)
-- [ ] In `README.md`: add the row `commander.<n>.temp` with `°C` and the source "the temperature probes of a Corsair
+- [x] In `README.md`: add the row `commander.<n>.temp` with `°C` and the source "the temperature probes of a Corsair
   iCUE Commander Core XT" after the `nvme.<n>.temp` row, and a sentence after the table that *n* counts the probes of
   the controller from 1; in "Linux: access to the screen", say that the rule file also holds a rule for the
   controller, which gives access to it, and that its metrics are left out when it cannot be opened; in the status

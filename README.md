@@ -3,7 +3,8 @@
 Turn a cheap USB "sensor panel" screen into a hardware-monitoring dashboard on **Linux and Windows**.
 
 > **Status: early development.** The screen can be driven on Linux: with the low-level commands (`devices`, `clock`,
-> `values`, `upload`, `listen` and `raw`), with `sensordeck sensors` and with `sensordeck run`. Themes, Windows and the
+> `values`, `upload`, `listen` and `raw`), with `sensordeck sensors` and with `sensordeck run`, which also reads the temperature probes of a Corsair iCUE
+> Commander Core XT. Themes, Windows and the
 > service are still to come. This README describes what sensordeck is meant to become.
 
 ## What it will do
@@ -58,6 +59,10 @@ It is the file `udev/70-sensordeck.rules` of this repository. To install it, cop
 and replug the screen. The file name starts with `70` because the `uaccess` tag is acted on by `73-seat-late.rules`,
 and the rule must sort before it.
 
+The same file holds a second rule of the same form, for the USB ID `1b1c:0c2a` of the Corsair iCUE Commander Core XT, so
+that its temperature probes can be read without liquidctl. Its metrics are left out when the controller cannot be
+opened, for lack of this rule for instance.
+
 hidraw is provided by the kernel's `usbhid` driver, so that driver must stay bound to the screen. A rule that unbinds
 `usbhid` for this device, as some guides for other tools add, has to be removed.
 
@@ -89,9 +94,11 @@ The metrics are:
 | `ram.total` | GiB | `/proc/meminfo` |
 | `ram.<n>.temp` | °C | `spd5118`, one for each memory module |
 | `nvme.<n>.temp` | °C | `nvme`, the sensor `Composite`, one for each drive |
+| `commander.<n>.temp` | °C | the temperature probes of a Corsair iCUE Commander Core XT |
 
 The GPU metrics need `nvidia-smi` and come from the first NVIDIA GPU only. Numbered metrics count from 1, in the order
-of the places of the hardware in the system, which does not change when the drivers load in another order.
+of the places of the hardware in the system, which does not change when the drivers load in another order. For
+`commander.<n>.temp`, *n* counts the probes of the controller from 1.
 
 `sensordeck run` sends the metrics named in a config file to the screen. The tags are those of the theme on the
 screen, so for a vendor theme only you know which tag shows what. The config file is `sensordeck/config.yaml` in your
