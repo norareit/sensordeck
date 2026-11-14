@@ -149,6 +149,36 @@ func TestRunSetsTheClockAgainAfterSixtySecondsAndNotBefore(test *testing.T) {
 	}
 }
 
+// The clock written at 2.5 seconds, after the reopening, is 60 seconds old at 62.5, so the round that starts at 62.6
+// after a long round sets it, although the place of that round on the grid of one second is 62.
+func TestRunSetsTheClockByTheTimeARoundStartsNotByItsPlaceOnTheGrid(test *testing.T) {
+	source := twoMetrics()
+	var harness *harness
+	reads := 0
+	var writtenBeforeRead62 string
+	source.onRead = func() {
+		reads++
+		switch reads {
+		case 1:
+			harness.clock.sleep(2500 * time.Millisecond)
+		case 61:
+			harness.clock.sleep(1600 * time.Millisecond)
+		case 62:
+			writtenBeforeRead62 = kinds(test, harness.transport.writes)
+		case 63:
+			harness.cancelStop()
+		}
+	}
+	harness = newHarness()
+	harness.sources = []sensors.Source{source}
+	harness.transport.failWrites = []bool{false, true}
+	harness.transport.reopenResults = []error{nil}
+	harness.run("run", "--config", writeConfig(test, twoTags))
+	if reads < 62 || !strings.HasSuffix(writtenBeforeRead62, "VC") {
+		test.Errorf("reads %d, writes before the 62nd read end in %q", reads, writtenBeforeRead62[max(0, len(writtenBeforeRead62)-4):])
+	}
+}
+
 func TestRunLeavesAnUnavailableMetricOut(test *testing.T) {
 	source := twoMetrics()
 	delete(source.values, "cpu.temp")

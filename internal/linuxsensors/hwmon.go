@@ -145,14 +145,20 @@ func (source cpuTemperatures) Read(stop context.Context, wanted func(name string
 			continue
 		}
 		seen[sensor.label] = true
+		isControl := sensor.label == "Tctl" && wanted(sensors.CPUTemperature)
+		number, isCCD := ccdNumber(sensor.label)
+		isCCD = isCCD && wanted(sensors.CCDTemperature(number))
+		if !isControl && !isCCD {
+			continue
+		}
 		value, ok := readTemperature(inputPath(entries[0].path, sensor.number))
 		if !ok {
 			continue
 		}
-		if sensor.label == "Tctl" && wanted(sensors.CPUTemperature) {
+		if isControl {
 			control, haveControl = value, true
 		}
-		if number, found := ccdNumber(sensor.label); found && wanted(sensors.CCDTemperature(number)) {
+		if isCCD {
 			ccds[number] = value
 		}
 	}

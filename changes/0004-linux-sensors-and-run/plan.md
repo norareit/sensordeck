@@ -331,7 +331,7 @@ func (feeding *feeder) feed(stop context.Context) error
 * At the start: `writeClock`, then the first round starts at `first := now()`, index 0 (R20, R21)
 * A round, at its start time: when `lost`, it calls `Reopen` once; a failure ends the round with no line, a success
   writes `screen back`, clears `lost`, calls `writeClock` and goes on with the values (R22). When not lost and
-  `start.Sub(lastClock) >= time.Minute`, `writeClock` before the values (R20). The values: `sensors.ReadAll` with a
+  `now().Sub(lastClock) >= time.Minute`, `now()` being the time the round actually starts and not its place on the grid, `writeClock` before the values (R20). The values: `sensors.ReadAll` with a
   `wanted` that is true for the names of the mappings only, the readings put into a map by name, then for each
   mapping in tag order a `smartmonitor.Value` of its tag and `sensors.ToValue` of its reading when there is one, and
   `EncodeValues` of the pairs, each report through `write`. No pair writes no report (R21, D3, D17)

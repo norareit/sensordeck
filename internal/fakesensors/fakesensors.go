@@ -80,12 +80,13 @@ func (tree *Tree) Meminfo(content string) {
 }
 
 // NvidiaSMI makes a new temporary directory with an executable nvidia-smi, "#!/bin/sh\n" and the script, and gives
-// the directory, for the PATH of a test.
+// the directory, for the PATH of a test. The script runs with the PATH the test had when this was called, so that it
+// can start sleep and touch, while the lookup of nvidia-smi by the program under test finds only the fake.
 func NvidiaSMI(test testing.TB, script string) string {
 	test.Helper()
 	directory := test.TempDir()
 	path := filepath.Join(directory, "nvidia-smi")
-	if err := os.WriteFile(path, []byte("#!/bin/sh\n"+script), 0o755); err != nil {
+	if err := os.WriteFile(path, []byte("#!/bin/sh\nPATH='"+os.Getenv("PATH")+"'\n"+script), 0o755); err != nil {
 		test.Fatalf("fake sensors: %v", err)
 	}
 	return directory

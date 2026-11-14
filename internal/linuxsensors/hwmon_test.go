@@ -7,7 +7,9 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"syscall"
 	"testing"
+	"time"
 
 	"github.com/norareit/sensordeck/internal/fakesensors"
 	"github.com/norareit/sensordeck/internal/sensors"
@@ -67,6 +69,42 @@ func TestK10tempReadsOnlyWantedMetrics(test *testing.T) {
 	got := read(cpuTemperatures{tree.SysfsRoot}, func(name string) bool { return name == "cpu.ccd1.temp" })
 	if want := []sensors.Reading{{Name: "cpu.ccd1.temp", Value: 40}}; !reflect.DeepEqual(got, want) {
 		test.Errorf("got %v", got)
+	}
+}
+
+// A named pipe with no writer blocks a read for good, so a read of an input that is not wanted shows as a hang.
+func TestK10tempDoesNotReadTheInputOfAMetricThatIsNotWanted(test *testing.T) {
+	tree := newTree(test)
+	entry := tree.Hwmon(2, "k10temp", "pci0000:00/b",
+		fakesensors.Sensor{Number: 1, Label: "Tctl", Input: "51000"},
+		fakesensors.Sensor{Number: 3, Label: "Tccd1", Input: "40000"},
+		fakesensors.Sensor{Number: 4, Label: "Tccd2", Input: "41000"})
+	for _, number := range []string{"1", "3"} {
+		pipe := filepath.Join(entry, "temp"+number+"_input")
+		if err := os.Remove(pipe); err != nil {
+			test.Fatal(err)
+		}
+		if err := syscall.Mkfifo(pipe, 0o644); err != nil {
+			test.Fatal(err)
+		}
+		// opening for writing at the end frees a reader that the test found blocked
+		test.Cleanup(func() {
+			if file, err := os.OpenFile(pipe, os.O_RDWR, 0); err == nil {
+				file.Close()
+			}
+		})
+	}
+	finished := make(chan []sensors.Reading, 1)
+	go func() {
+		finished <- read(cpuTemperatures{tree.SysfsRoot}, func(name string) bool { return name == "cpu.ccd2.temp" })
+	}()
+	select {
+	case got := <-finished:
+		if want := []sensors.Reading{{Name: "cpu.ccd2.temp", Value: 41}}; !reflect.DeepEqual(got, want) {
+			test.Errorf("got %v", got)
+		}
+	case <-time.After(2 * time.Second):
+		test.Fatal("an input that is not wanted was read")
 	}
 }
 

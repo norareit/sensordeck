@@ -103,7 +103,7 @@ func (feeding *feeder) feed(stop context.Context) error {
 	interval := feeding.config.Interval
 	index := 0
 	for stop.Err() == nil {
-		if err := feeding.round(stop, first.Add(time.Duration(index)*interval)); err != nil {
+		if err := feeding.round(stop); err != nil {
 			return err
 		}
 		end := feeding.now()
@@ -117,8 +117,9 @@ func (feeding *feeder) feed(stop context.Context) error {
 	return nil
 }
 
-// round does one round that starts at the given time on the grid of the rounds.
-func (feeding *feeder) round(stop context.Context, start time.Time) error {
+// round does one round. The age of the clock is measured at the time the round actually starts, because a round
+// that follows a long one starts after its place on the grid.
+func (feeding *feeder) round(stop context.Context) error {
 	if feeding.lost {
 		if feeding.transport.Reopen() != nil {
 			return nil
@@ -128,7 +129,7 @@ func (feeding *feeder) round(stop context.Context, start time.Time) error {
 		if written, err := feeding.writeClock(stop); !written || err != nil {
 			return err
 		}
-	} else if start.Sub(feeding.lastClock) >= clockPeriod {
+	} else if feeding.now().Sub(feeding.lastClock) >= clockPeriod {
 		if written, err := feeding.writeClock(stop); !written || err != nil {
 			return err
 		}

@@ -5,6 +5,7 @@ package linuxsensors
 import (
 	"context"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"reflect"
 	"strings"
@@ -91,9 +92,18 @@ func TestMissingProgramGivesNothing(test *testing.T) {
 
 func TestNoGPUMetricWantedDoesNotRunTheProgram(test *testing.T) {
 	marker := filepath.Join(test.TempDir(), "ran")
-	readGPU(test, "touch "+marker+"\n", func(name string) bool { return name == "cpu.temp" })
+	// a redirection is a shell builtin, so the marker needs no program of the PATH
+	readGPU(test, ": > "+marker+"\n", func(name string) bool { return name == "cpu.temp" })
 	if _, err := os.Stat(marker); err == nil {
 		test.Error("the program ran")
+	}
+}
+
+func TestTheMarkerShowsARunOfTheProgram(test *testing.T) {
+	marker := filepath.Join(test.TempDir(), "ran")
+	readGPU(test, ": > "+marker+"\n", everything)
+	if _, err := os.Stat(marker); err != nil {
+		test.Errorf("the marker was not written: %v", err)
 	}
 }
 
@@ -111,22 +121,48 @@ func TestTwoGPUMetricsRunTheProgramOnce(test *testing.T) {
 }
 
 func TestProgramBeyondTheTimeLimitIsKilledEvenWithAChildHoldingItsOutput(test *testing.T) {
-	test.Setenv("PATH", fakesensors.NvidiaSMI(test, "sleep 3 &\nwait\n"))
-	started := time.Now()
-	got := read(gpu{timeLimit: 100 * time.Millisecond}, everything)
-	if elapsed := time.Since(started); len(got) != 0 || elapsed > 1100*time.Millisecond {
+	directory := test.TempDir()
+	started, finished := filepath.Join(directory, "started"), filepath.Join(directory, "finished")
+	// the child keeps the output open for 3 seconds and the program waits for it
+	script := ": > " + started + "\nsleep 3 &\nwait\n: > " + finished + "\n"
+	test.Setenv("PATH", fakesensors.NvidiaSMI(test, script))
+	limit := 300 * time.Millisecond
+	begun := time.Now()
+	got := read(gpu{timeLimit: limit}, everything)
+	elapsed := time.Since(begun)
+	if _, err := os.Stat(started); err != nil {
+		test.Fatalf("the program did not start: %v", err)
+	}
+	if len(got) != 0 || elapsed < limit || elapsed > 1500*time.Millisecond {
 		test.Errorf("got %v after %v", got, elapsed)
+	}
+	time.Sleep(100 * time.Millisecond)
+	if _, err := os.Stat(finished); err == nil {
+		test.Error("the program ran to its end")
 	}
 }
 
 func TestStopEndsTheRun(test *testing.T) {
-	test.Setenv("PATH", fakesensors.NvidiaSMI(test, "exec sleep 3\n"))
+	directory := test.TempDir()
+	started := filepath.Join(directory, "started")
+	test.Setenv("PATH", fakesensors.NvidiaSMI(test, ": > "+started+"\nexec sleep 3\n"))
 	stop, cancel := context.WithCancel(context.Background())
-	time.AfterFunc(100*time.Millisecond, cancel)
-	started := time.Now()
+	time.AfterFunc(300*time.Millisecond, cancel)
+	begun := time.Now()
 	got := gpu{timeLimit: 5 * time.Second}.Read(stop, everything)
-	if elapsed := time.Since(started); len(got) != 0 || elapsed > time.Second {
+	elapsed := time.Since(begun)
+	if _, err := os.Stat(started); err != nil {
+		test.Fatalf("the program did not start: %v", err)
+	}
+	if len(got) != 0 || elapsed < 300*time.Millisecond || elapsed > time.Second {
 		test.Errorf("got %v after %v", got, elapsed)
+	}
+}
+
+func TestFakeProgramLookupFindsOnlyTheFake(test *testing.T) {
+	test.Setenv("PATH", fakesensors.NvidiaSMI(test, "exit 0\n"))
+	if _, err := exec.LookPath("sleep"); err == nil {
+		test.Error("sleep is on the PATH of the program under test")
 	}
 }
 
