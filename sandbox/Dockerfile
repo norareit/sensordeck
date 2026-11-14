@@ -16,8 +16,10 @@ RUN case "${TARGETARCH}" in \
     && curl -fsSL -o "/tmp/${archive}" "https://go.dev/dl/${archive}" \
     && echo "${checksum}  /tmp/${archive}" | sha256sum -c - \
     && tar -C /usr/local -xzf "/tmp/${archive}" \
-    && rm "/tmp/${archive}"
-ENV PATH=/usr/local/go/bin:${PATH}
+    && rm "/tmp/${archive}" \
+    # The kit's entrypoint sets a fixed PATH, so the commands are linked into a
+    # directory of it and not added to PATH here.
+    && ln -s /usr/local/go/bin/go /usr/local/go/bin/gofmt /usr/local/bin/
 # The firewall admits the module proxy but not the hosts a newer toolchain is fetched
 # from, so the installed toolchain is the only one used.
 ENV GOTOOLCHAIN=local
