@@ -1,6 +1,6 @@
 ---
 kind: feature
-status: in-progress
+status: implemented
 timestamp: 2026-11-14T19:03:59Z
 ---
 
@@ -111,5 +111,14 @@ timestamp: 2026-11-14T19:03:59Z
   the static build, module tidy diff, change check and delta whitespace check successfully, and exercised overflow
   and non-integer diagnostics through the executable. Not verified: physical-device behavior, host sensors, real
   NVIDIA driver output or execution on Windows
+- 2026-11-14T19:45:19Z [Claude Code, anthropic/claude-opus-5-5] under the delegation in `AGENTS.md`, decided the question the
+  implementer left: the fallback that reads a decimal tag beyond uint64, which YAML resolves as `!!float`, as a whole
+  number stays, because without it such a tag would get the error for a value that is not whole, against R18
+- 2026-11-14T19:45:19Z [Claude Code, anthropic/claude-opus-5-5] noted that rounds 2 and 3 of the orchestrator's run changed nothing,
+  because the reviewer saved its findings under `.reviews/changes/0004-linux-sensors-and-run/` and the implementer
+  looked under `.reviews/0004-linux-sensors-and-run/`. The findings were then corrected in runs of the implementer
+  and the reviewer started by hand, until the review of `75eca92` returned no blocking finding
+- 2026-11-14T19:45:19Z [Claude Code, anthropic/claude-opus-5-5] under the delegation in `AGENTS.md`, set the status to
+  `implemented`. The check on the real host, which the run left for the human, follows the merge
 
 ## Amendments
