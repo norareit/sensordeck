@@ -30,5 +30,13 @@ timestamp: 2026-11-14T21:54:29Z
   it delivers, and every requirement from R1 to R23 has a task. The status stays `approved`
 - 2026-11-14T22:10:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, began the work in round 1. The status is
   `in-progress`
+- 2026-11-14T22:40:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, built the unit in the order of the
+  plan, in nine commits from the two refactorings to the documents, with the tests of each part written before its
+  code. No task was added or removed. On `3736205`, `go test -count=1 ./...`, `go vet ./...`, `gofmt -l .` (no file
+  name), `GOOS=windows GOARCH=amd64 go build ./...` and `GOOS=windows GOARCH=amd64 go vet ./...` all succeeded, and
+  `npm run check-changes` passed; `grep -rn liquidctl internal e2e` found nothing. The driver and the fake controller
+  were also run once with `-race`, which reported nothing. Not checked: the controller itself, which the sandbox does
+  not have, so the check on the real device, including which probe is which, is the human's. The unit has not been
+  reviewed, so the status stays `in-progress`
 
 ## Amendments

@@ -391,26 +391,26 @@ R13).
 
 ## Verification
 
-- [ ] `go test ./...` passes
-- [ ] `go vet ./...` reports nothing
-- [ ] `gofmt -l .` prints no file name
-- [ ] `GOOS=windows GOARCH=amd64 go build ./...` succeeds and reports nothing
-- [ ] `GOOS=windows GOARCH=amd64 go vet ./...` succeeds and reports nothing
-- [ ] `grep -rn "liquidctl" internal e2e` finds nothing that is code or text of liquidctl, only the name where a
+- [x] `go test ./...` passes
+- [x] `go vet ./...` reports nothing
+- [x] `gofmt -l .` prints no file name
+- [x] `GOOS=windows GOARCH=amd64 go build ./...` succeeds and reports nothing
+- [x] `GOOS=windows GOARCH=amd64 go vet ./...` succeeds and reports nothing
+- [x] `grep -rn "liquidctl" internal e2e` finds nothing that is code or text of liquidctl, only the name where a
   comment needs it (D1)
-- [ ] `npm run check-changes` passes
+- [x] `npm run check-changes` passes
 
 ## Commit Points
 
-- [ ] `feature-0005 Write the plan` with `plan.md` and the entry of `record.md`
-- [ ] `feature-0005 List the hidraw entries and open a node in one place`, the first two tasks, with no change of
+- [x] `feature-0005 Write the plan` with `plan.md` and the entry of `record.md`
+- [x] `feature-0005 List the hidraw entries and open a node in one place`, the first two tasks, with no change of
   behavior
-- [ ] `feature-0005 Move the pseudo terminals of the fake screen into a package of their own`, with no change of
+- [x] `feature-0005 Move the pseudo terminals of the fake screen into a package of their own`, with no change of
   behavior
-- [ ] `feature-0005 Add the metric of the probes of the controller`
-- [ ] `feature-0005 Add the fake controller`
-- [ ] `feature-0005 Read the probes of the Commander Core XT`, the driver and its tests
-- [ ] `feature-0005 Read the controller in sensors and run, and catch signals while sensors reads`, the commands and
+- [x] `feature-0005 Add the metric of the probes of the controller`
+- [x] `feature-0005 Add the fake controller`
+- [x] `feature-0005 Read the probes of the Commander Core XT`, the driver and its tests
+- [x] `feature-0005 Read the controller in sensors and run, and catch signals while sensors reads`, the commands and
   the layout test
-- [ ] `feature-0005 Test the controller end to end`
-- [ ] `feature-0005 Document the controller and give access to it`, the udev rule, the document and the README
+- [x] `feature-0005 Test the controller end to end`
+- [x] `feature-0005 Document the controller and give access to it`, the udev rule, the document and the README
