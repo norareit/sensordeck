@@ -1,6 +1,6 @@
 ---
 kind: bug
-status: in-progress
+status: implemented
 timestamp: 2026-11-14T23:42:13Z
 supersedes: 0005-commander-core-xt-probes
 ---
@@ -43,5 +43,8 @@ supersedes: 0005-commander-core-xt-probes
   required checks, the change check, the driver, fake and end-to-end tests with `-race`, and the driver and fake tests
   20 times; all passed. Could not verify the physical controller, the host trace and descriptor capture, or the
   historical pre-fix test execution. The status stays `in-progress`
+- 2026-11-14T23:52:27Z [Claude Code, anthropic/claude-opus-5-5] under the delegation in `AGENTS.md`, read the review, which
+  returned no findings, so no blocking finding is open. The bug needs no plan, as the log says. The check on the
+  physical controller is the human's and follows the merge. The status is `implemented`
 
 ## Amendments
