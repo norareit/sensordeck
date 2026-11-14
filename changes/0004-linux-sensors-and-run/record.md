@@ -1,6 +1,6 @@
 ---
 kind: feature
-status: draft
+status: approved
 timestamp: 2026-11-14T19:03:59Z
 ---
 
@@ -21,5 +21,6 @@ timestamp: 2026-11-14T19:03:59Z
   tag 2 example matches what the human saw on the device. It was amended on the two decisions the entry above
   records, and the eight items left under "Beyond the request" are declined. The approval that follows is made under
   that delegation
+- 2026-11-14T19:06:57Z [human] approved the spec. The status is `approved`
 
 ## Amendments
