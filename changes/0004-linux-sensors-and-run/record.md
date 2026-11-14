@@ -39,5 +39,12 @@ timestamp: 2026-11-14T19:03:59Z
   and `go mod tidy -diff`. `go.mod` holds `go 1.27`, no `toolchain` line, and cobra, x/sys and `go.yaml.in/yaml/v3`
   v3.0.6 as its direct requirements. The end-to-end suite passed three times in a row with `-count=3`. Not checked: a
   real device, a real `nvidia-smi`, the sensors of the host, and anything on Windows beyond the build and vet
+- 2026-11-14T19:25:02Z [OpenCode, openai/gpt-6.1-sol] as the reviewer, made a full review of
+  `changes/0004-linux-sensors-and-run` at `2d2ffba4e7148743aad11123d11a21c4fdba40bc`, against the merge base
+  `6e1c57771f204a06eb3c531a752a508308163b61` with `origin/master`. Returned S1, S2 and C1, saved in
+  `.reviews/changes/0004-linux-sensors-and-run/review-round-1-20261114T192402Z.md`. Ran the five project suite
+  commands, the static build, the module tidy diff and the change check, all passing; the focused GPU tests also
+  passed but did not exercise their intended timeout and cancellation scenarios. Not verified: a physical screen,
+  the host sensors, a real NVIDIA driver, or execution on Windows. The status stays `in-progress`
 
 ## Amendments
