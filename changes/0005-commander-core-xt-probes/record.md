@@ -51,5 +51,11 @@ timestamp: 2026-11-14T21:54:29Z
   `TestAStopDoneAtTheStartOfTheSequenceWritesNothing` failed before the fix with 2 writes and passes after it. On
   `f5dbb48`, `go test -count=1 ./...`, `go vet ./...`, `gofmt -l .` (no file name) and the Windows build and vet all
   succeeded. The status stays `in-progress`
+- 2026-11-14T23:27:06Z [OpenCode, openai/gpt-6.1-sol] as the reviewer, performed a delta review of unit
+  `0005-commander-core-xt-probes` at `72eee62f4ec05e2defbcc3521f72fbae15ce9737`, from the previously reviewed
+  `861440096d147988f835d0955040b6a5654fecc7`. Verified the correction of S1 and returned no new findings; the full
+  review is in `.reviews/changes/0005-commander-core-xt-probes/round-2-review.md`. The five required checks and the
+  change check passed. Could not verify the physical controller, a Windows runtime or the locally held trace, and did
+  not replay the pre-fix regression failure. The status stays `in-progress`
 
 ## Amendments
