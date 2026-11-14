@@ -37,7 +37,8 @@ The answer of step 1 above is valid, the sequence goes on to step 8 as R5 of uni
 3. No line starting with `commander.` is printed. Under `strace -e trace=openat,read,write`, the first read on the
    node of interface 0 returns 97, and the next write is that of step 8
 
-The defect was reproduced by the human on the real controller, and the trace above is from that run.
+The human saw the defect on the real controller, and the orchestrating session traced a run of `sensors` on the
+same host, which gave the trace above.
 
 ### Root cause
 
