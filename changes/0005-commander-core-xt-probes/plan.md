@@ -281,7 +281,7 @@ R13).
 - [x] In `internal/hidraw/transport.go`, extract `OpenNode` from `openNode`, which keeps its errors. Add a test that
   `OpenNode` on a missing path gives an error for which `errors.Is(err, fs.ErrNotExist)` holds and whose text is the
   one of the system. The existing tests of the opening pass unchanged (R4)
-- [ ] Add `internal/fakepty` with `Open(test testing.TB) (master, slave *os.File, slavePath string)`, which makes a
+- [x] Add `internal/fakepty` with `Open(test testing.TB) (master, slave *os.File, slavePath string)`, which makes a
   pseudo terminal, opens its slave with `O_NOCTTY` and sets it raw, moving `makeTerminal`, `makeRaw` and `control`
   from `internal/fakescreen` with their comments. Add a test that bytes written to the master arrive unchanged on the
   slave and the other way, `0x0A` and `0x0D` among them. Make `internal/fakescreen` use it. The tests of

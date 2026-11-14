@@ -9,12 +9,10 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
-	"syscall"
 	"testing"
 	"time"
 
-	"golang.org/x/sys/unix"
-
+	"github.com/norareit/sensordeck/internal/fakepty"
 	"github.com/norareit/sensordeck/internal/smartmonitor"
 )
 
@@ -198,12 +196,7 @@ func (screen *Screen) WaitReports(count int, limit time.Duration) ([]smartmonito
 func (screen *Screen) appear(number int) {
 	test := screen.fake.test
 	test.Helper()
-	master, slavePath := makeTerminal(test)
-	slave, err := os.OpenFile(slavePath, os.O_RDWR|syscall.O_NOCTTY, 0)
-	if err != nil {
-		test.Fatalf("fake screen: opening the slave: %v", err)
-	}
-	makeRaw(test, slave)
+	master, slave, slavePath := fakepty.Open(test)
 	screen.number, screen.master, screen.slave = number, master, slave
 
 	entry := filepath.Join(screen.fake.SysfsRoot, "class", "hidraw", fmt.Sprintf("hidraw%d", number), "device")
@@ -276,58 +269,4 @@ func (screen *Screen) dueRules(reports int) (answers []smartmonitor.Report, move
 		}
 	}
 	return answers, moves
-}
-
-// makeTerminal opens a new pseudo terminal and returns its master and the path of its slave. The descriptor is
-// reached only through SyscallConn, because Fd would put the file into blocking mode, and a blocked read could then
-// not be ended by Close.
-func makeTerminal(test testing.TB) (*os.File, string) {
-	test.Helper()
-	master, err := os.OpenFile("/dev/ptmx", os.O_RDWR|syscall.O_NOCTTY, 0)
-	if err != nil {
-		test.Fatalf("fake screen: cannot make a pseudo terminal: %v", err)
-	}
-	var number int
-	control(test, master, func(descriptor int) error {
-		if err := unix.IoctlSetPointerInt(descriptor, unix.TIOCSPTLCK, 0); err != nil {
-			return err
-		}
-		number, err = unix.IoctlGetInt(descriptor, unix.TIOCGPTN)
-		return err
-	})
-	return master, fmt.Sprintf("/dev/pts/%d", number)
-}
-
-// makeRaw sets the terminal to pass every byte unchanged in both directions, without echo.
-func makeRaw(test testing.TB, slave *os.File) {
-	test.Helper()
-	control(test, slave, func(descriptor int) error {
-		settings, err := unix.IoctlGetTermios(descriptor, unix.TCGETS)
-		if err != nil {
-			return err
-		}
-		settings.Iflag &^= unix.IGNBRK | unix.BRKINT | unix.PARMRK | unix.ISTRIP | unix.INLCR | unix.IGNCR | unix.ICRNL | unix.IXON
-		settings.Oflag &^= unix.OPOST
-		settings.Lflag &^= unix.ECHO | unix.ECHONL | unix.ICANON | unix.ISIG | unix.IEXTEN
-		settings.Cflag &^= unix.CSIZE | unix.PARENB
-		settings.Cflag |= unix.CS8
-		settings.Cc[unix.VMIN] = 1
-		settings.Cc[unix.VTIME] = 0
-		return unix.IoctlSetTermios(descriptor, unix.TCSETS, settings)
-	})
-}
-
-func control(test testing.TB, file *os.File, action func(descriptor int) error) {
-	test.Helper()
-	connection, err := file.SyscallConn()
-	if err != nil {
-		test.Fatalf("fake screen: %v", err)
-	}
-	var actionErr error
-	if err := connection.Control(func(descriptor uintptr) { actionErr = action(int(descriptor)) }); err != nil {
-		test.Fatalf("fake screen: %v", err)
-	}
-	if actionErr != nil {
-		test.Fatalf("fake screen: %v", actionErr)
-	}
 }
