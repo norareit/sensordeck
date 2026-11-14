@@ -39,3 +39,21 @@ code follows, and how its tests are run. Everything that holds for every project
 * The project is MIT-licensed. Write all code and docs independently. Never translate or copy GPL-licensed code
 * **Never commit vendor or third-party `.dat` themes.** Keep them in `local-themes/` (gitignored), for local testing
   only
+
+### The automated build of the initial plan
+
+The project is built from its initial plan by an automated loop, in which an orchestrating agent session on the host
+stands in for the human at the steps `process.md` reserves for the human. The human delegated them for this project.
+The loop writes one unit at a time, and the next only once the one before it is merged.
+
+* The orchestrating session reads each spec, or the record of a task, and either has it corrected or approves it with
+  `npx agentrite approve`. It decides which items of "Beyond the request" are taken. Before the approval it logs in
+  `record.md` what it checked and decided, so that the `[human]` entry of the approval is read as one made under this
+  delegation
+* It decides the blocking findings and the proposed declines a run of the orchestrator stops for, and logs each
+  decision in `record.md`
+* After a run that ended with no open blocking finding, it sets the unit to `implemented` and merges the unit's branch
+  into the default branch with `git merge --ff-only`
+* A check that needs the physical device is the human's, and so is everything on Windows. The session asks for it and
+  waits, and does not take a guess for a result
+* The delegation holds for this loop only. A session that is not running it follows `process.md` as it stands
