@@ -1,6 +1,6 @@
 ---
 kind: feature
-status: approved
+status: in-progress
 timestamp: 2026-11-14T15:17:19Z
 ---
 
@@ -26,5 +26,6 @@ timestamp: 2026-11-14T15:17:19Z
   passes the bytes unchanged, keeps a report sent before the node is opened, gives one report of 64 bytes per
   read and honours a read deadline, and cobra v1.10.2 with `golang.org/x/sys` v0.50.0 resolves without
   changing the directive `go 1.27`. The status stays `approved`
+- 2026-11-14T15:40:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, began the work on the unit's branch. The status is `in-progress`
 
 ## Amendments
