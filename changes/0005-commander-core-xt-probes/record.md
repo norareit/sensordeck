@@ -44,5 +44,12 @@ timestamp: 2026-11-14T21:54:29Z
   `.reviews/changes/0005-commander-core-xt-probes/round-1-review.md`. The five required checks, the change check and
   race-enabled driver, fake-controller and end-to-end tests passed. Could not verify the physical controller, a Windows
   runtime or the locally held trace. The status stays `in-progress`
+- 2026-11-14T23:40:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, accepted S1 of the review of round
+  1, a finding the definition of the orchestrator for round 2 accepts and not a decision of the human. `runSequence`
+  now returns before step 1 when stop is done, so a stop that arrives during discovery or opening writes nothing, and
+  step 8 stays owed only once step 1 was attempted. The regression test
+  `TestAStopDoneAtTheStartOfTheSequenceWritesNothing` failed before the fix with 2 writes and passes after it. On
+  `f5dbb48`, `go test -count=1 ./...`, `go vet ./...`, `gofmt -l .` (no file name) and the Windows build and vet all
+  succeeded. The status stays `in-progress`
 
 ## Amendments
