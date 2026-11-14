@@ -164,6 +164,36 @@ func (screen *Screen) Received() []byte {
 	}
 }
 
+// Reports gives the complete reports that arrived so far, over all moves, each without the report ID byte. A last
+// report that is cut short is left out.
+func (screen *Screen) Reports() []smartmonitor.Report {
+	screen.mutex.Lock()
+	defer screen.mutex.Unlock()
+	var reports []smartmonitor.Report
+	for start := 0; start+writtenReportSize <= len(screen.received); start += writtenReportSize {
+		var report smartmonitor.Report
+		copy(report[:], screen.received[start+1:start+writtenReportSize])
+		reports = append(reports, report)
+	}
+	return reports
+}
+
+// WaitReports waits until at least count reports have arrived or the limit has passed, polling as Received does, and
+// gives the reports and whether the count was reached.
+func (screen *Screen) WaitReports(count int, limit time.Duration) ([]smartmonitor.Report, bool) {
+	deadline := time.Now().Add(limit)
+	for {
+		reports := screen.Reports()
+		if len(reports) >= count {
+			return reports, true
+		}
+		if !time.Now().Before(deadline) {
+			return reports, false
+		}
+		time.Sleep(pollInterval)
+	}
+}
+
 // appear makes the terminal, the sysfs entry and the link, and starts the reader. The caller holds the mutex.
 func (screen *Screen) appear(number int) {
 	test := screen.fake.test

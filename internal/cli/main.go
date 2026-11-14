@@ -2,13 +2,17 @@
 package cli
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/spf13/cobra"
 
+	"github.com/norareit/sensordeck/internal/sensors"
 	"github.com/norareit/sensordeck/internal/smartmonitor"
 )
 
@@ -24,17 +28,27 @@ type environment struct {
 	stdout, stderr io.Writer
 	sysfsRoot      string
 	devRoot        string
+	procRoot       string
 	now            func() time.Time
 	sleep          func(time.Duration)
 	listScreens    func(sysfsRoot, devRoot string) ([]string, error)
 	openTransport  func(sysfsRoot, devRoot, device string) (transport, error)
+	userConfigDir  func() (string, error)
+	newSources     func(sysfsRoot, procRoot string) ([]sensors.Source, error)
+	// notifyStop gives a context that ends at SIGINT or SIGTERM. Only run calls it, so that the other commands keep
+	// the default handling of Ctrl+C.
+	notifyStop func(parent context.Context) (context.Context, context.CancelFunc)
+	// wait waits for the duration and gives false when stop ended the wait.
+	wait func(stop context.Context, duration time.Duration) bool
 }
 
 const (
 	sysfsRootVariable = "SENSORDECK_SYSFS_ROOT"
 	devRootVariable   = "SENSORDECK_DEV_ROOT"
+	procRootVariable  = "SENSORDECK_PROC_ROOT"
 	defaultSysfsRoot  = "/sys"
 	defaultDevRoot    = "/dev"
+	defaultProcRoot   = "/proc"
 )
 
 // Main runs the command line of the process and gives its exit status. It is the one place where the environment
@@ -45,11 +59,30 @@ func Main() int {
 		stderr:        os.Stderr,
 		sysfsRoot:     valueOrDefault(os.Getenv(sysfsRootVariable), defaultSysfsRoot),
 		devRoot:       valueOrDefault(os.Getenv(devRootVariable), defaultDevRoot),
+		procRoot:      valueOrDefault(os.Getenv(procRootVariable), defaultProcRoot),
 		now:           time.Now,
 		sleep:         time.Sleep,
 		listScreens:   listScreens,
 		openTransport: openTransport,
+		userConfigDir: os.UserConfigDir,
+		newSources:    newSources,
+		notifyStop: func(parent context.Context) (context.Context, context.CancelFunc) {
+			return signal.NotifyContext(parent, os.Interrupt, syscall.SIGTERM)
+		},
+		wait: waitFor,
 	})
+}
+
+// waitFor waits for the duration and gives false when stop ended before it passed.
+func waitFor(stop context.Context, duration time.Duration) bool {
+	timer := time.NewTimer(duration)
+	defer timer.Stop()
+	select {
+	case <-timer.C:
+		return true
+	case <-stop.Done():
+		return false
+	}
 }
 
 func valueOrDefault(value, fallback string) string {
@@ -97,6 +130,7 @@ func newRootCommand(env environment, start time.Time) *cobra.Command {
 		session.uploadCommand(),
 		session.listenCommand(),
 		session.rawCommand(),
+		session.sensorsCommand(),
 	)
 	return root
 }

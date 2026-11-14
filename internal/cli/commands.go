@@ -1,20 +1,24 @@
 package cli
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io/fs"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/spf13/cobra"
 
+	"github.com/norareit/sensordeck/internal/sensors"
 	"github.com/norareit/sensordeck/internal/smartmonitor"
 )
 
 const (
 	clockLayout      = "2006-01-02 15:04:05"
 	noScreenMessage  = "no supported screen found"
+	noSensorMessage  = "no sensor could be read"
 	listenSeconds    = "5"
 	rawSeconds       = "1"
 	secondsFlagUsage = "how many seconds to read input reports"
@@ -242,4 +246,28 @@ func (current *session) receive(opened smartmonitor.Transport, seconds int) erro
 	}
 	current.say(fmt.Sprintf("reports received: %d", count))
 	return nil
+}
+
+func (current *session) sensorsCommand() *cobra.Command {
+	return &cobra.Command{
+		Use:   "sensors",
+		Short: "List the sensor readings that can be read now",
+		Args:  cobra.NoArgs,
+		RunE: func(command *cobra.Command, args []string) error {
+			sources, err := current.env.newSources(current.env.sysfsRoot, current.env.procRoot)
+			if err != nil {
+				return err
+			}
+			readings := sensors.ReadAll(context.Background(), sources, func(string) bool { return true })
+			if len(readings) == 0 {
+				_, _ = fmt.Fprintln(current.env.stderr, noSensorMessage)
+				return nil
+			}
+			for _, reading := range readings {
+				value := strconv.FormatFloat(reading.Value, 'f', 1, 64)
+				current.say(reading.Name + "\t" + value + "\t" + sensors.Unit(reading.Name))
+			}
+			return nil
+		},
+	}
 }

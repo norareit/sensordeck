@@ -487,23 +487,23 @@ is ever run.
 
 ### The command sensors
 
-- [ ] In `internal/fakescreen/fakescreen_test.go`, test that `WaitReports` of 2 gives the two reports written through
+- [x] In `internal/fakescreen/fakescreen_test.go`, test that `WaitReports` of 2 gives the two reports written through
   the node, without their report ID byte, and true; that `WaitReports` of 3 with a limit of 100 milliseconds gives the
   two and false; and that a report cut short is not counted by `Reports` (R33)
-- [ ] Write `Reports` and `WaitReports`, so the tests pass (R33)
-- [ ] In `internal/cli/commands_test.go`, make the harness fill the new fields of `environment` with fakes: a proc
+- [x] Write `Reports` and `WaitReports`, so the tests pass (R33)
+- [x] In `internal/cli/commands_test.go`, make the harness fill the new fields of `environment` with fakes: a proc
   root, a `userConfigDir` of the test, sources the test gives, a `notifyStop` whose context the test can cancel, and a
   `wait` that moves the fake clock by its duration and gives false when the context is done. Extend the test of the
   help to name `sensors` and `run`, and add `run --help` naming `--config` (R25)
-- [ ] In `internal/cli/main_test.go`, test `waitFor`: 10 milliseconds with a live context gives true, and a cancelled
+- [x] In `internal/cli/main_test.go`, test `waitFor`: 10 milliseconds with a live context gives true, and a cancelled
   context gives false at once (R23)
-- [ ] In `internal/cli/sensors_test.go`, test: readings of two fake sources written in their order with the unit of
+- [x] In `internal/cli/sensors_test.go`, test: readings of two fake sources written in their order with the unit of
   each name and one decimal, 51.375 as `51.4`, 38.125 as `38.1` and 40 as `40.0`; no reading, giving empty stdout,
   `no sensor could be read` on stderr and status 0; `sensors x`, an error; and `--device x sensors`, which never
   opens a transport (R15)
-- [ ] Write the third root and the new fields in `main.go`, `sources_linux.go` and `sources_other.go`, and the command
+- [x] Write the third root and the new fields in `main.go`, `sources_linux.go` and `sources_other.go`, and the command
   `sensors` in `commands.go`, as the Approach says, so the tests pass (R13 to R15, D10)
-- [ ] Commit: `feature-0004 Add the command sensors`
+- [x] Commit: `feature-0004 Add the command sensors`
 
 ### The command run
 
@@ -597,7 +597,7 @@ is ever run.
 - [x] `feature-0004 Extract the reading of a named file and the check of a clock report`
 - [x] `feature-0004 Add the metric names and the config`
 - [x] `feature-0004 Add the Linux sources of the sensors`
-- [ ] `feature-0004 Add the command sensors`
+- [x] `feature-0004 Add the command sensors`
 - [ ] `feature-0004 Add the command run`
 - [ ] `feature-0004 Add the end-to-end tests of sensors and run`
 - [ ] `feature-0004 Document the sensors and the run command`

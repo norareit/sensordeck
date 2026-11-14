@@ -2,12 +2,15 @@ package cli
 
 import (
 	"bytes"
+	"context"
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/norareit/sensordeck/internal/sensors"
 	"github.com/norareit/sensordeck/internal/smartmonitor"
 )
 
@@ -19,11 +22,20 @@ type harness struct {
 	opened         []string // the device asked for by each opening
 	screens        []string
 	openErr        error
+	sources        []sensors.Source
+	sourcesErr     error
+	configDir      string // what userConfigDir gives
+	configDirErr   error
+	stopped        context.Context // ends when cancelStop is called, which is what a signal does in the real command
+	cancelStop     context.CancelFunc
+	waits          []time.Duration
+	onWait         func(count int) // called after each wait has moved the clock, with the count of waits so far
 }
 
 func newHarness() *harness {
 	clock := &fakeClock{current: time.Date(2026, 11, 14, 15, 4, 5, 0, time.UTC)}
-	return &harness{clock: clock, transport: &fakeTransport{clock: clock}}
+	stopped, cancelStop := context.WithCancel(context.Background())
+	return &harness{clock: clock, transport: &fakeTransport{clock: clock}, stopped: stopped, cancelStop: cancelStop}
 }
 
 func (harness *harness) run(args ...string) int {
@@ -32,6 +44,7 @@ func (harness *harness) run(args ...string) int {
 		stderr:    &harness.stderr,
 		sysfsRoot: "/sysroot",
 		devRoot:   "/devroot",
+		procRoot:  "/procroot",
 		now:       harness.clock.now,
 		sleep:     harness.clock.sleep,
 		listScreens: func(sysfsRoot, devRoot string) ([]string, error) {
@@ -43,6 +56,27 @@ func (harness *harness) run(args ...string) int {
 				return nil, harness.openErr
 			}
 			return harness.transport, nil
+		},
+		userConfigDir: func() (string, error) { return harness.configDir, harness.configDirErr },
+		newSources: func(sysfsRoot, procRoot string) ([]sensors.Source, error) {
+			if sysfsRoot != "/sysroot" || procRoot != "/procroot" {
+				return nil, errors.New("the roots were not passed on")
+			}
+			return harness.sources, harness.sourcesErr
+		},
+		notifyStop: func(parent context.Context) (context.Context, context.CancelFunc) {
+			return harness.stopped, func() {}
+		},
+		wait: func(stop context.Context, duration time.Duration) bool {
+			if stop.Err() != nil {
+				return false
+			}
+			harness.clock.sleep(duration)
+			harness.waits = append(harness.waits, duration)
+			if harness.onWait != nil {
+				harness.onWait(len(harness.waits))
+			}
+			return stop.Err() == nil
 		},
 	})
 }
@@ -67,7 +101,7 @@ func TestHelpNamesTheCommandsAndTheOptions(test *testing.T) {
 			test.Errorf("%v: status %d", args, status)
 		}
 		help := harness.stdout.String()
-		for _, name := range []string{"devices", "clock", "values", "upload", "listen", "raw", "--device", "--trace"} {
+		for _, name := range []string{"devices", "clock", "values", "upload", "listen", "raw", "sensors", "--device", "--trace"} {
 			if !strings.Contains(help, name) {
 				test.Errorf("%v: the help does not name %s", args, name)
 			}
