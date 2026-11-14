@@ -1,6 +1,6 @@
 ---
 kind: feature
-status: draft
+status: approved
 timestamp: 2026-11-14T15:17:19Z
 ---
 
@@ -19,5 +19,6 @@ timestamp: 2026-11-14T15:17:19Z
   was checked to have the pseudo terminals the fake screen needs. The `raw` command was taken in, as the entry above
   says, and the nine items left under "Beyond the request" are declined. The approval that follows is made under
   that delegation
+- 2026-11-14T15:20:37Z [human] approved the spec. The status is `approved`
 
 ## Amendments
