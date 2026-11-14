@@ -1,6 +1,6 @@
 ---
 kind: bug
-status: approved
+status: in-progress
 timestamp: 2026-11-14T23:42:13Z
 supersedes: 0005-commander-core-xt-probes
 ---
@@ -23,5 +23,7 @@ supersedes: 0005-commander-core-xt-probes
   trace was corrected: the human saw the defect, and the orchestrating session made the trace. Item 1 of "Beyond the
   request" is taken as R10 and item 2 is declined. The approval that follows is made under that delegation
 - 2026-11-14T23:43:39Z [human] approved the spec. The status is `approved`
+- 2026-11-14T23:44:20Z [Claude Code, anthropic/claude-opus-5-5] as the implementer, began the work, with no `plan.md`
+  as D7 decides. The status is `in-progress`
 
 ## Amendments
