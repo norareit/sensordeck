@@ -43,6 +43,16 @@ func TestParseOrdersMappingsByTag(test *testing.T) {
 	}
 }
 
+func TestParseTagSpellings(test *testing.T) {
+	cases := map[string]uint8{"0xFF": 255, "0o17": 15, "017": 15, "0b11": 3, "1_0": 10, "0x1_0": 16, "+5": 5, "0": 0, "255": 255}
+	for spelling, want := range cases {
+		got, err := Parse([]byte("tags: {cpu.temp: " + spelling + "}\n"))
+		if err != nil || got.Mappings[0].Tag != want {
+			test.Errorf("%s: %+v, %v", spelling, got, err)
+		}
+	}
+}
+
 func TestParseErrors(test *testing.T) {
 	cases := []struct{ name, content, want string }{
 		{"empty", "", "want a mapping with the keys interval and tags"},
@@ -61,6 +71,17 @@ func TestParseErrors(test *testing.T) {
 		{"big tag", "tags: {cpu.temp: 256}\n", "tags: cpu.temp: the tag 256 is outside 0 to 255"},
 		{"huge tag", "tags: {cpu.temp: 9223372036854775808}\n", "tags: cpu.temp: the tag 9223372036854775808 is outside 0 to 255"},
 		{"negative huge tag", "tags: {cpu.temp: -9223372036854775809}\n", "tags: cpu.temp: the tag -9223372036854775809 is outside 0 to 255"},
+		{"hex huge tag", "tags: {cpu.temp: 0x8000000000000000}\n", "tags: cpu.temp: the tag 0x8000000000000000 is outside 0 to 255"},
+		{"underscore huge tag", "tags: {cpu.temp: 9_223_372_036_854_775_808}\n", "tags: cpu.temp: the tag 9_223_372_036_854_775_808 is outside 0 to 255"},
+		{"negative underscore huge tag", "tags: {cpu.temp: -9_223_372_036_854_775_809}\n", "tags: cpu.temp: the tag -9_223_372_036_854_775_809 is outside 0 to 255"},
+		{"hex big tag", "tags: {cpu.temp: 0x100}\n", "tags: cpu.temp: the tag 0x100 is outside 0 to 255"},
+		{"octal big tag", "tags: {cpu.temp: 0o400}\n", "tags: cpu.temp: the tag 0o400 is outside 0 to 255"},
+		{"legacy octal big tag", "tags: {cpu.temp: 0400}\n", "tags: cpu.temp: the tag 0400 is outside 0 to 255"},
+		{"binary big tag", "tags: {cpu.temp: 0b100000000}\n", "tags: cpu.temp: the tag 0b100000000 is outside 0 to 255"},
+		{"underscore big tag", "tags: {cpu.temp: 2_56}\n", "tags: cpu.temp: the tag 2_56 is outside 0 to 255"},
+		{"hex negative tag", "tags: {cpu.temp: -0x1}\n", "tags: cpu.temp: the tag -0x1 is outside 0 to 255"},
+		{"octal negative tag", "tags: {cpu.temp: -0o1}\n", "tags: cpu.temp: the tag -0o1 is outside 0 to 255"},
+		{"exponent tag", "tags: {cpu.temp: 1e3}\n", "tags: cpu.temp: the tag must be a whole number from 0 to 255"},
 		{"negative tag", "tags: {cpu.temp: -1}\n", "tags: cpu.temp: the tag -1 is outside 0 to 255"},
 		{"same tag", "tags: {cpu.temp: 1, cpu.clock: 1}\n", "tags: cpu.clock and cpu.temp both have the tag 1"},
 		{"same tag other order", "tags: {cpu.clock: 1, cpu.temp: 1}\n", "tags: cpu.clock and cpu.temp both have the tag 1"},

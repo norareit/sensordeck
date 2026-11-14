@@ -127,22 +127,27 @@ func parseTags(node *yaml.Node) ([]Mapping, error) {
 
 func parseTag(name string, node *yaml.Node) (uint8, error) {
 	notWhole := fmt.Errorf("tags: %s: the tag must be a whole number from 0 to 255", name)
-	if node.Kind != yaml.ScalarNode || (node.ShortTag() != "!!int" && node.ShortTag() != "!!float") {
+	outside := fmt.Errorf("tags: %s: the tag %s is outside 0 to 255", name, node.Value)
+	if node.Kind != yaml.ScalarNode {
 		return 0, notWhole
 	}
-	var tag int64
-	if node.ShortTag() != "!!int" || node.Decode(&tag) != nil {
-		// An integer too large for int64 is still an integer, so it is out of range rather than not whole. YAML
-		// reads one too large even for uint64 as a float, so the text decides.
-		if _, whole := new(big.Int).SetString(node.Value, 10); !whole {
-			return 0, notWhole
+	switch node.ShortTag() {
+	case "!!int":
+		// The resolved tag decides whether it is whole, whatever the spelling, so a value that does not fit int64
+		// is out of range and not malformed.
+		var tag int64
+		if node.Decode(&tag) != nil || tag < 0 || tag > maxTag {
+			return 0, outside
 		}
-		return 0, fmt.Errorf("tags: %s: the tag %s is outside 0 to 255", name, node.Value)
+		return uint8(tag), nil
+	case "!!float":
+		// The parser reads a decimal integer too large even for uint64 as a float, so for that case alone the text
+		// decides.
+		if _, whole := new(big.Int).SetString(strings.ReplaceAll(node.Value, "_", ""), 10); whole {
+			return 0, outside
+		}
 	}
-	if tag < 0 || tag > maxTag {
-		return 0, fmt.Errorf("tags: %s: the tag %s is outside 0 to 255", name, node.Value)
-	}
-	return uint8(tag), nil
+	return 0, notWhole
 }
 
 func parseInterval(node *yaml.Node) (time.Duration, error) {
