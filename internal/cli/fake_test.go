@@ -22,18 +22,27 @@ type readResult struct {
 // fakeTransport records every call. A read takes the next queued result. With the queue empty it answers ACK when
 // ackWhenEmpty is set, and otherwise it moves the clock forward by its time limit and gives the passed time limit.
 type fakeTransport struct {
-	clock        *fakeClock
-	queue        []readResult
-	ackWhenEmpty bool
-	writes       []smartmonitor.Report
-	writeErr     error
-	reopens      int
-	reopenErr    error
-	closed       int
-	readLimits   []time.Duration
+	clock         *fakeClock
+	queue         []readResult
+	ackWhenEmpty  bool
+	writes        []smartmonitor.Report
+	writeErr      error
+	failWrites    []bool  // one entry for each write from the next on: true fails it with errFake
+	reopenResults []error // one entry for each reopening from the next on, then reopenErr
+	reopens       int
+	reopenErr     error
+	closed        int
+	readLimits    []time.Duration
 }
 
 func (fake *fakeTransport) Write(report smartmonitor.Report) error {
+	if len(fake.failWrites) > 0 {
+		failing := fake.failWrites[0]
+		fake.failWrites = fake.failWrites[1:]
+		if failing {
+			return errFake
+		}
+	}
 	if fake.writeErr != nil {
 		return fake.writeErr
 	}
@@ -57,6 +66,11 @@ func (fake *fakeTransport) Read(timeout time.Duration) (smartmonitor.Report, err
 
 func (fake *fakeTransport) Reopen() error {
 	fake.reopens++
+	if len(fake.reopenResults) > 0 {
+		result := fake.reopenResults[0]
+		fake.reopenResults = fake.reopenResults[1:]
+		return result
+	}
 	return fake.reopenErr
 }
 

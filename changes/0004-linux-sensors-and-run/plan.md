@@ -507,10 +507,10 @@ is ever run.
 
 ### The command run
 
-- [ ] In `internal/cli/fake_test.go`, give `fakeTransport` a count of writes to fail with `errFake` before the
+- [x] In `internal/cli/fake_test.go`, give `fakeTransport` a count of writes to fail with `errFake` before the
   writes succeed again, and a queue of results for `Reopen`, so that a test fails one write and then two reopenings
   (R22, R32)
-- [ ] In `internal/cli/run_test.go`, with the harness, a config written into `test.TempDir()` and fake sources whose
+- [x] In `internal/cli/run_test.go`, with the harness, a config written into `test.TempDir()` and fake sources whose
   values the test sets per round, test the cases below (R32):
     - the config errors: no `--config` and a `userConfigDir` that fails, giving the text of R16; a missing file,
       naming the path once; a config with the tag 256, giving `config file <path>: ` and the text of R18; and `run x`.
@@ -533,10 +533,10 @@ is ever run.
     - a stop while waiting for a round and a stop while the screen is lost: no write after the stop, the transport
       closed, `stopped` as the last line of stdout and status 0 (R23)
     - `--trace run` writes a trace line for each write and for each reopening (R24)
-- [ ] Write `run.go` as the Approach says, so the tests pass (R16, R19 to R24, D11 to D17)
-- [ ] Run `go mod tidy` and check that `go.mod` keeps `go 1.27` with no `toolchain` line, and has cobra, x/sys and
+- [x] Write `run.go` as the Approach says, so the tests pass (R16, R19 to R24, D11 to D17)
+- [x] Run `go mod tidy` and check that `go.mod` keeps `go 1.27` with no `toolchain` line, and has cobra, x/sys and
   `go.yaml.in/yaml/v3` as its only direct requirements (R25)
-- [ ] Commit: `feature-0004 Add the command run`
+- [x] Commit: `feature-0004 Add the command run`
 
 ### The end-to-end tests
 
@@ -598,6 +598,6 @@ is ever run.
 - [x] `feature-0004 Add the metric names and the config`
 - [x] `feature-0004 Add the Linux sources of the sensors`
 - [x] `feature-0004 Add the command sensors`
-- [ ] `feature-0004 Add the command run`
+- [x] `feature-0004 Add the command run`
 - [ ] `feature-0004 Add the end-to-end tests of sensors and run`
 - [ ] `feature-0004 Document the sensors and the run command`

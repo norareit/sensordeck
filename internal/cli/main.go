@@ -131,6 +131,7 @@ func newRootCommand(env environment, start time.Time) *cobra.Command {
 		session.listenCommand(),
 		session.rawCommand(),
 		session.sensorsCommand(),
+		session.runCommand(),
 	)
 	return root
 }

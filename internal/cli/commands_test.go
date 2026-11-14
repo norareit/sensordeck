@@ -101,7 +101,7 @@ func TestHelpNamesTheCommandsAndTheOptions(test *testing.T) {
 			test.Errorf("%v: status %d", args, status)
 		}
 		help := harness.stdout.String()
-		for _, name := range []string{"devices", "clock", "values", "upload", "listen", "raw", "sensors", "--device", "--trace"} {
+		for _, name := range []string{"devices", "clock", "values", "upload", "listen", "raw", "sensors", "run", "--device", "--trace"} {
 			if !strings.Contains(help, name) {
 				test.Errorf("%v: the help does not name %s", args, name)
 			}
@@ -116,6 +116,10 @@ func TestHelpNamesTheCommandsAndTheOptions(test *testing.T) {
 	harness := newHarness()
 	if status := harness.run("values", "--help"); status != 0 || !strings.Contains(harness.stdout.String(), "values") {
 		test.Errorf("values --help: status %d, %q", status, harness.stdout.String())
+	}
+	harness = newHarness()
+	if status := harness.run("run", "--help"); status != 0 || !strings.Contains(harness.stdout.String(), "--config") {
+		test.Errorf("run --help: status %d, %q", status, harness.stdout.String())
 	}
 }
 
