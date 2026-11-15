@@ -27,9 +27,9 @@ func TestMinimalDarkIsOpaqueAndHasTheSizeOfTheScreen(test *testing.T) {
 
 func TestMinimalDarkFollowsTheRuleAtChosenPixels(test *testing.T) {
 	cases := []struct {
-		name string
+		name        string
 		column, row int
-		want color.NRGBA
+		want        color.NRGBA
 	}{
 		{"a corner of the background", 0, 0, ground},
 		{"inside the first panel", 80, 70, fill},
