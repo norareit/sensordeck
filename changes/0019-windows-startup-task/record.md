@@ -1,6 +1,6 @@
 ---
 kind: feature
-status: approved
+status: in-progress
 timestamp: 2026-11-15T23:39:29Z
 ---
 
@@ -34,3 +34,5 @@ timestamp: 2026-11-15T23:39:29Z
   `uninstall` and is `unknown` in `status`, an event gone before the signal is a stop that succeeded, `Enabled` is
   read as an `xs:boolean`, an error after the start of a background run and a stop event that cannot be created are
   written to the log with exit status 1, and the exact texts. The status stays `approved`
+- 2026-11-15T23:49:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, began the work on the branch `feature-0019-windows-startup-task`. No
+  review exists yet. The status is `in-progress`

@@ -24,28 +24,9 @@ func (current *session) runCommand() *cobra.Command {
 		Short: "Send the sensor values named in the config file to the screen until stopped",
 		Args:  cobra.NoArgs,
 		RunE: func(command *cobra.Command, args []string) error {
-			path, err := current.configPath(configPath)
-			if err != nil {
-				return err
-			}
-			// The first stamp is taken before the file is read, so that a write in between is seen as a change.
-			stamp := stampOf(path)
-			content, err := readNamedFile("config file", path)
-			if err != nil {
-				return err
-			}
-			started, err := current.loadConfigFile(path, content)
-			if err != nil {
-				return err
-			}
-			settings := started.settings
 			// The keeper and the feeder write their lines from two goroutines, and so may the trace.
 			current.env.stderr = &lockedWriter{writer: current.env.stderr}
-			state, stateErr := current.stateFile()
-			if started.theme != nil && stateErr != nil {
-				return stateErr
-			}
-			sources, err := current.env.newSources(current.env.sysfsRoot, current.env.devRoot, current.env.procRoot)
+			prepared, err := current.prepareRun(configPath)
 			if err != nil {
 				return err
 			}
@@ -55,49 +36,94 @@ func (current *session) runCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			current.say(fmt.Sprintf("running: %d metrics every %s", len(settings.Mappings), settings.Interval))
-			feeding := &feeder{
-				transport:  opened,
-				others:     current.withMonitor(sources, settings.LibreHardwareMonitorURL),
-				controller: &periodicSource{source: sources.controller, period: settings.CommanderPeriod()},
-				config:     settings,
-				holder:     newThemeHolder(started.theme, state, current.env.sleep, current.env.now, current.say, current.env.stderr),
-				watcher: &configWatcher{path: path, last: stamp, stderr: current.env.stderr, load: func(content []byte) (runConfig, error) {
-					reloaded, err := current.loadConfig(path, content)
-					// A theme needs the state file, and a run that started with tags may have none.
-					if err == nil && reloaded.theme != nil && stateErr != nil {
-						return runConfig{}, stateErr
-					}
-					return reloaded, err
-				}},
-				now:    current.env.now,
-				wait:   current.env.wait,
-				stderr: current.env.stderr,
-			}
-			endKeeping := func() {}
-			if settings.CommanderColour != nil {
-				keeper := current.newKeeper(sources, settings, feeding.probesMapped)
-				keeping, cancelKeeping := context.WithCancel(stop)
-				go keeper.keep(keeping)
-				feeding.controller = keeper
-				// The teardown of the controller comes before the end of run, on a stop and on a feeding error.
-				endKeeping = func() {
-					cancelKeeping()
-					<-keeper.done
-				}
-			}
-			feedErr := feeding.feed(stop)
-			endKeeping()
-			closeTransport()
-			if feedErr != nil {
-				return feedErr
-			}
-			current.say("stopped")
-			return nil
+			return current.serveRun(stop, prepared, opened, closeTransport)
 		},
 	}
 	command.Flags().StringVar(&configPath, "config", "", "read the config from this file instead of the default place")
 	return command
+}
+
+// preparedRun is what a start of run made before it opens the screen.
+type preparedRun struct {
+	path     string
+	stamp    fileStamp
+	started  runConfig
+	state    stateFile
+	stateErr error
+	sources  sourceSet
+}
+
+// prepareRun reads and loads the config file, finds the state file and makes the sources, as run does at its start.
+func (current *session) prepareRun(named string) (preparedRun, error) {
+	path, err := current.configPath(named)
+	if err != nil {
+		return preparedRun{}, err
+	}
+	// The first stamp is taken before the file is read, so that a write in between is seen as a change.
+	stamp := stampOf(path)
+	content, err := readNamedFile("config file", path)
+	if err != nil {
+		return preparedRun{}, err
+	}
+	started, err := current.loadConfigFile(path, content)
+	if err != nil {
+		return preparedRun{}, err
+	}
+	state, stateErr := current.stateFile()
+	if started.theme != nil && stateErr != nil {
+		return preparedRun{}, stateErr
+	}
+	sources, err := current.env.newSources(current.env.sysfsRoot, current.env.devRoot, current.env.procRoot)
+	if err != nil {
+		return preparedRun{}, err
+	}
+	return preparedRun{path: path, stamp: stamp, started: started, state: state, stateErr: stateErr, sources: sources}, nil
+}
+
+// serveRun writes the line running, feeds the screen until stop is done, ends the keeper and closes the transport, and
+// writes stopped. Its error is the error of the feeding.
+func (current *session) serveRun(stop context.Context, prepared preparedRun, opened transport, closeTransport func()) error {
+	settings := prepared.started.settings
+	sources := prepared.sources
+	current.say(fmt.Sprintf("running: %d metrics every %s", len(settings.Mappings), settings.Interval))
+	feeding := &feeder{
+		transport:  opened,
+		others:     current.withMonitor(sources, settings.LibreHardwareMonitorURL),
+		controller: &periodicSource{source: sources.controller, period: settings.CommanderPeriod()},
+		config:     settings,
+		holder:     newThemeHolder(prepared.started.theme, prepared.state, current.env.sleep, current.env.now, current.say, current.env.stderr),
+		watcher: &configWatcher{path: prepared.path, last: prepared.stamp, stderr: current.env.stderr, load: func(content []byte) (runConfig, error) {
+			reloaded, err := current.loadConfig(prepared.path, content)
+			// A theme needs the state file, and a run that started with tags may have none.
+			if err == nil && reloaded.theme != nil && prepared.stateErr != nil {
+				return runConfig{}, prepared.stateErr
+			}
+			return reloaded, err
+		}},
+		now:    current.env.now,
+		wait:   current.env.wait,
+		stderr: current.env.stderr,
+	}
+	endKeeping := func() {}
+	if settings.CommanderColour != nil {
+		keeper := current.newKeeper(sources, settings, feeding.probesMapped)
+		keeping, cancelKeeping := context.WithCancel(stop)
+		go keeper.keep(keeping)
+		feeding.controller = keeper
+		// The teardown of the controller comes before the end of run, on a stop and on a feeding error.
+		endKeeping = func() {
+			cancelKeeping()
+			<-keeper.done
+		}
+	}
+	feedErr := feeding.feed(stop)
+	endKeeping()
+	closeTransport()
+	if feedErr != nil {
+		return feedErr
+	}
+	current.say("stopped")
+	return nil
 }
 
 // withMonitor gives the other sources of the set with the monitor of the URL after them, when the set has a monitor.

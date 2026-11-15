@@ -310,13 +310,13 @@ func taskStatusLines(taskFile, enabled, active, log string) []string
 
 ### 1. The refactoring
 
-- [ ] Add `runProgram` to `internal/cli/systemctl.go` and make `runSystemctl` call it (R9)
-- [ ] Add `callFailure` to `internal/cli/service.go` and make `current.systemctl` use it, with the text of today (R9)
-- [ ] Add `serviceConfigPath` to `internal/cli/service.go` and make `unitFileFor` use it (R5)
-- [ ] Split the `RunE` of `run` in `internal/cli/run.go` into `prepareRun` and `serveRun` as the approach says, with
+- [x] Add `runProgram` to `internal/cli/systemctl.go` and make `runSystemctl` call it (R9)
+- [x] Add `callFailure` to `internal/cli/service.go` and make `current.systemctl` use it, with the text of today (R9)
+- [x] Add `serviceConfigPath` to `internal/cli/service.go` and make `unitFileFor` use it (R5)
+- [x] Split the `RunE` of `run` in `internal/cli/run.go` into `prepareRun` and `serveRun` as the approach says, with
   the `lockedWriter` at the top, the order of the calls unchanged (R26)
-- [ ] Run the five commands of the suite, which pass with no test changed (R36)
-- [ ] Commit: `feature-0019 Split the start of run and share the calls of the service, with no change of behaviour`
+- [x] Run the five commands of the suite, which pass with no test changed (R36)
+- [x] Commit: `feature-0019 Split the start of run and share the calls of the service, with no change of behaviour`
 
 ### 2. The package of the Windows calls
 

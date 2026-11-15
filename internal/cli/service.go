@@ -52,11 +52,17 @@ func (current *session) systemctl(arguments ...string) (string, error) {
 	if err == nil {
 		return stdout, nil
 	}
+	return "", callFailure("systemctl --user", arguments, stderr, err)
+}
+
+// callFailure names the call as "<program> <arguments joined by spaces>" and gives the standard error of the call,
+// trimmed, as its cause, or the error of the call when it wrote none.
+func callFailure(program string, arguments []string, stderr string, err error) error {
 	cause := strings.TrimSpace(stderr)
 	if cause == "" {
 		cause = err.Error()
 	}
-	return "", fmt.Errorf("systemctl --user %s failed: %s", strings.Join(arguments, " "), cause)
+	return fmt.Errorf("%s %s failed: %s", program, strings.Join(arguments, " "), cause)
 }
 
 // installed tells whether the unit file exists. A link at its path counts as a unit file.
@@ -118,18 +124,26 @@ func (current *session) unitFileFor(named string) (content, config string, err e
 	if err != nil {
 		return "", "", err
 	}
-	config, err = current.configPath(named)
+	config, err = current.serviceConfigPath(named)
 	if err != nil {
 		return "", "", err
+	}
+	content, err = unitFileContent(executable, config)
+	return content, config, err
+}
+
+// serviceConfigPath gives the config file named, or the one of the user, made absolute.
+func (current *session) serviceConfigPath(named string) (string, error) {
+	config, err := current.configPath(named)
+	if err != nil {
+		return "", err
 	}
 	// The links of the config file are kept, so that a file that is a link into a repository is read through the link.
 	absolute, err := filepath.Abs(config)
 	if err != nil {
-		return "", "", fmt.Errorf("cannot make the path %s absolute: %w", config, err)
+		return "", fmt.Errorf("cannot make the path %s absolute: %w", config, err)
 	}
-	config = absolute
-	content, err = unitFileContent(executable, config)
-	return content, config, err
+	return absolute, nil
 }
 
 // executablePath gives the path of the running executable, with its links resolved and made absolute.
