@@ -432,20 +432,20 @@ The command never calls `session.open`, `listScreens` or `newSources`, so it ope
 
 ### The fake theme and the reader
 
-- [ ] Add `internal/faketheme/faketheme_test.go` with tests that `New().Bytes()` is 4096 zero bytes, that `Header`
+- [x] Add `internal/faketheme/faketheme_test.go` with tests that `New().Bytes()` is 4096 zero bytes, that `Header`
   and `Slot` write their 64 bytes at `0` and `64 x n`, that two `Resource` calls give `0x1000` and `0x1000` plus the
   length of the first and append the bytes there, that `Head`, `Put16` and `Put32` write big-endian at the given
   positions, and that `Sample` has the slots, boxes and header of "The fake theme" and ends where its last resource
   ends (R22)
-- [ ] Add `internal/faketheme/faketheme.go` as "The fake theme" says, until `go test ./internal/faketheme` passes (R22)
-- [ ] Add `internal/themefile/records_test.go`, with one test for each of the seven types (R2, R3, R4, R22): a slot
+- [x] Add `internal/faketheme/faketheme.go` as "The fake theme" says, until `go test ./internal/faketheme` passes (R22)
+- [x] Add `internal/themefile/records_test.go`, with one test for each of the seven types (R2, R3, R4, R22): a slot
   whose bytes 0 to 63 are all distinct where the layout allows (the type byte fixed, a frame count, the sizes and the
   offset chosen so that the resource fits in the file, every other byte distinct from all others), read with `Parse`
   from a file of `faketheme`, each field compared with the value read from its bytes by hand in the test, `Resource`
   compared with the bytes appended for it, and `Encode()` compared with the 64 bytes of the slot. Add a test that two
   image records with the same offset give the same `Resource` bytes, and that the background with offset 0 has a nil
   `Resource`
-- [ ] Add `internal/themefile/themefile_test.go` (R1, R2, R5 to R10, R22):
+- [x] Add `internal/themefile/themefile_test.go` (R1, R2, R5 to R10, R22):
     - `Parse(faketheme.Sample())` gives the header, `FileSize`, the slots 1 to 7 and 9 in order with their types, and
       the one warning of slot 9
     - a file of the table only, all zeros, gives no entries and no warning; slots used in the order 5, 2 with index
@@ -464,26 +464,26 @@ The command never calls `session.open`, `listScreens` or `newSources`, so it ope
       a gap between resources give no error and no warning
     - for every length from 0 to `len(faketheme.Sample())`, `Parse` of the prefix gives either a theme and a nil error,
       or an error, and does not panic; the full length gives a theme
-- [ ] Add `internal/themefile/themefile.go`, `records.go` and `errors.go` as "The reader" says, until
+- [x] Add `internal/themefile/themefile.go`, `records.go` and `errors.go` as "The reader" says, until
   `go test ./internal/themefile` passes (R1 to R10)
-- [ ] Add to `layout_test.go` the test `TestThePackagesOfThemesDoNoIO`: for each non-test Go file of
+- [x] Add to `layout_test.go` the test `TestThePackagesOfThemesDoNoIO`: for each non-test Go file of
   `internal/themefile`, `internal/themeimage`, `internal/themedump` and `internal/faketheme`, every import is of the
   standard library or one of these four packages, and none is `os`, `os/exec`, `os/signal`, `net`, `syscall` or
   `unsafe`. A directory that does not exist yet is skipped by the walk, so the test passes now and holds as the
   packages are added (R1)
-- [ ] Run the five commands of the suite and commit: `feature-0010 Read the record table of a theme file`
+- [x] Run the five commands of the suite and commit: `feature-0010 Read the record table of a theme file`
 
 ### The images
 
-- [ ] Add `internal/themeimage/themeimage_test.go` (R11, R22): `Expand` of `0000`, `ffff`, `f800`, `07e0`, `001f`
+- [x] Add `internal/themeimage/themeimage_test.go` (R11, R22): `Expand` of `0000`, `ffff`, `f800`, `07e0`, `001f`
   and `8410` against the formula of the spec; for a record of each type with a resource, built with `faketheme` and
   read with `Parse`, the count and bounds of `Resources` and the pixel values at chosen points, including an RGB565
   pixel stored as bytes `0x1f 0xf8` that must read as `f81f` and not `1ff8`, the alpha of the alpha plane of an image
   frame at a point where it is neither 0 nor 255, a text pixel of mask 128 in its colour, and the first column of the
   `-` glyph in a number strip and of the `秒` glyph in a datetime strip; and no image for a bar, an unknown record and
   a background with offset 0
-- [ ] Add `internal/themeimage/themeimage.go` until the test passes (R11)
-- [ ] Add `internal/themeimage/preview_test.go` (R12, R22), each at chosen points of the 480 x 320 preview:
+- [x] Add `internal/themeimage/themeimage.go` until the test passes (R11)
+- [x] Add `internal/themeimage/preview_test.go` (R12, R22), each at chosen points of the 480 x 320 preview:
     - an empty theme is opaque black everywhere
     - a background with offset 0 fills its box with its colour and leaves the outside black; one with a resource shows
       its pixels at its x and y
@@ -497,12 +497,12 @@ The command never calls `session.open`, `listScreens` or `newSources`, so it ope
     - a bar of 6 x 4 has `#ff00ff` on each pixel of its inside edge and black inside; one of 1 x 1 is one pixel
     - a text at x 478 of width 5 and a background with a box past the bottom edge are clipped, with no panic
     - a startup and an unknown record change nothing
-- [ ] Add `internal/themeimage/preview.go` until `go test ./internal/themeimage` passes (R12)
-- [ ] Run the five commands of the suite and commit: `feature-0010 Render the resources and the preview of a theme`
+- [x] Add `internal/themeimage/preview.go` until `go test ./internal/themeimage` passes (R12)
+- [x] Run the five commands of the suite and commit: `feature-0010 Render the resources and the preview of a theme`
 
 ### The dump
 
-- [ ] Add `internal/themedump/themedump_test.go` (R13 to R15, R19):
+- [x] Add `internal/themedump/themedump_test.go` (R13 to R15, R19):
     - `Dump(faketheme.Sample())` gives the file names `theme.json`, `slot01-background.png`,
       `slot02-startup-frame1.png`, `slot02-startup-frame2.png`, `slot03-image-frame1.png`, `slot03-image-frame2.png`,
       `slot04-text.png`, `slot05-number-glyphs.png`, `slot06-datetime-glyphs.png` and `preview.png` in that order, and
@@ -516,16 +516,16 @@ The command never calls `session.open`, `listScreens` or `newSources`, so it ope
     - a resource shared by two image records is written once for each slot
     - two calls on the same input give byte-identical files
     - a short file gives the error of the reader and no files
-- [ ] Add `internal/themedump/themedump.go` and `json.go` as "The dump" says, until `go test ./internal/themedump`
+- [x] Add `internal/themedump/themedump.go` and `json.go` as "The dump" says, until `go test ./internal/themedump`
   passes (R13 to R15, R19)
-- [ ] Run the five commands of the suite and commit: `feature-0010 Describe a theme as JSON and PNG files`
+- [x] Run the five commands of the suite and commit: `feature-0010 Describe a theme as JSON and PNG files`
 
 ### The command
 
-- [ ] In `internal/cli/commands_test.go`, add `theme` to the names of `TestHelpNamesTheCommandsAndTheOptions`, and to
+- [x] In `internal/cli/commands_test.go`, add `theme` to the names of `TestHelpNamesTheCommandsAndTheOptions`, and to
   `TestWrongArgumentsFailBeforeTheTransportIsOpened` the cases `theme dump` with no argument and with one, giving
   `accepts 2 arg(s), received 0` and `... received 1`
-- [ ] Add `internal/cli/theme_test.go`, with the harness of `commands_test.go` (R13, R16 to R18):
+- [x] Add `internal/cli/theme_test.go`, with the harness of `commands_test.go` (R13, R16 to R18):
     - `theme dump` of `faketheme.Sample()` written to a temporary file, into `<temp>/a/b`, gives status 0, the stdout
       `wrote 10 files to <temp>/a/b`, the stderr of the one warning, and the ten files with the contents of
       `themedump.Dump`; the harness's `opened` is empty, and so it is with `--device /nowhere`
@@ -537,13 +537,13 @@ The command never calls `session.open`, `listScreens` or `newSources`, so it ope
     - an out-dir below a regular file gives `cannot create the output directory <dir>: not a directory`, and an out-dir
       that holds a directory named `theme.json` gives `cannot write the file <dir>/theme.json: is a directory`, both
       with status 1. These two hold for root as well
-- [ ] Add `internal/cli/theme.go` as "The command" says and add the command to the root in `internal/cli/main.go`,
+- [x] Add `internal/cli/theme.go` as "The command" says and add the command to the root in `internal/cli/main.go`,
   until `go test ./internal/cli` passes (R13, R16 to R18)
-- [ ] Run the five commands of the suite and commit: `feature-0010 Add the command theme dump`
+- [x] Run the five commands of the suite and commit: `feature-0010 Add the command theme dump`
 
 ### The end-to-end tests
 
-- [ ] Add `e2e/theme_test.go`, with `//go:build linux`, running the built executable with `run` and a
+- [x] Add `e2e/theme_test.go`, with `//go:build linux`, running the built executable with `run` and a
   `fakescreen.New(test)` to which no screen is added (R23):
     - `theme dump` of `faketheme.Sample()` gives status 0, the stdout of R16 and the stderr
       `warning: slot 9: record type 0x77 is not known, kept as raw bytes\n`; the out-dir holds exactly the ten files of
@@ -554,7 +554,7 @@ The command never calls `session.open`, `listScreens` or `newSources`, so it ope
     - a second run into another directory gives byte-identical files (R19)
     - `--device /nonexistent theme dump ...` succeeds in the same way (R18)
     - a file of 100 bytes gives status 1, the stderr of R17, no stdout and no out-dir
-- [ ] Run the five commands of the suite and commit: `feature-0010 Test theme dump end to end`
+- [x] Run the five commands of the suite and commit: `feature-0010 Test theme dump end to end`
 
 ### The documents
 
