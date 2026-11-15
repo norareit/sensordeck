@@ -1,6 +1,6 @@
 ---
 kind: feature
-status: approved
+status: in-progress
 timestamp: 2026-11-15T23:04:03Z
 ---
 
@@ -38,3 +38,5 @@ timestamp: 2026-11-15T23:04:03Z
   `golang.org/x/sys/windows` binds with a panic, by recovering that panic alone as the failure of the call; and the
   proxy test of R40 also checks that the transport has no proxy, because Go never proxies a loopback address. The
   status stays `approved`
+- 2026-11-15T23:30:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, began the work. The status is
+  `in-progress`

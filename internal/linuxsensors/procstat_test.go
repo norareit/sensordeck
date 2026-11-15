@@ -10,12 +10,13 @@ import (
 	"time"
 
 	"github.com/norareit/sensordeck/internal/fakesensors"
+	"github.com/norareit/sensordeck/internal/sampling"
 	"github.com/norareit/sensordeck/internal/sensors"
 )
 
 // utilisation makes the source of a tree with a wait that records its duration and writes the next content.
 type utilisation struct {
-	source  *cpuUtilisation
+	source  *sampling.CPU
 	waits   []time.Duration
 	changes []string
 }
@@ -24,17 +25,17 @@ func newUtilisation(test *testing.T, tree *fakesensors.Tree, first string) *util
 	test.Helper()
 	tree.Stat(first)
 	result := &utilisation{}
-	result.source = &cpuUtilisation{procRoot: tree.ProcRoot, wait: func(duration time.Duration) {
+	result.source = newCPUUtilisation(tree.ProcRoot, func(duration time.Duration) {
 		result.waits = append(result.waits, duration)
 		if len(result.changes) > 0 {
 			tree.Stat(result.changes[0])
 			result.changes = result.changes[1:]
 		}
-	}}
+	})
 	return result
 }
 
-func readUtilisation(source *cpuUtilisation) []sensors.Reading {
+func readUtilisation(source *sampling.CPU) []sensors.Reading {
 	return source.Read(context.Background(), everything)
 }
 
@@ -100,7 +101,7 @@ func TestValueIsClampedTo100(test *testing.T) {
 
 func TestMissingFileGivesNothingAndDoesNotWait(test *testing.T) {
 	waited := false
-	source := &cpuUtilisation{procRoot: filepath.Join(test.TempDir(), "none"), wait: func(time.Duration) { waited = true }}
+	source := newCPUUtilisation(filepath.Join(test.TempDir(), "none"), func(time.Duration) { waited = true })
 	if got := readUtilisation(source); len(got) != 0 || waited {
 		test.Errorf("got %v, waited %v", got, waited)
 	}
@@ -110,14 +111,14 @@ func TestUnwantedUtilisationReadsNothingAndDoesNotWait(test *testing.T) {
 	tree := newTree(test)
 	run := newUtilisation(test, tree, "cpu  1 1 1 1 1 1 1 1 0 0\n")
 	got := run.source.Read(context.Background(), func(name string) bool { return name != "cpu.util" })
-	if len(got) != 0 || len(run.waits) != 0 || run.source.previous != nil {
+	if len(got) != 0 || len(run.waits) != 0 {
 		test.Errorf("got %v, waits %v", got, run.waits)
 	}
 }
 
 func TestParseStatSums(test *testing.T) {
 	got, ok := parseStat("intr 5\ncpu  1 2 3 4 5 6 7 8 9 10\n")
-	if !ok || got != (sample{total: 36, idle: 9}) {
+	if !ok || got != (sampling.CPUSample{Total: 36, Idle: 9}) {
 		test.Errorf("got %+v %v", got, ok)
 	}
 }

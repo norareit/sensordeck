@@ -15,12 +15,12 @@ const gpuTimeLimit = 2 * time.Second
 func Sources(sysfsRoot, procRoot string) []sensors.Source {
 	return []sensors.Source{
 		cpuTemperatures{sysfsRoot: sysfsRoot},
-		&cpuUtilisation{procRoot: procRoot, wait: time.Sleep},
+		newCPUUtilisation(procRoot, time.Sleep),
 		cpuClock{sysfsRoot: sysfsRoot},
 		gpu{timeLimit: gpuTimeLimit},
 		memory{procRoot: procRoot},
 		memoryModules(sysfsRoot),
 		drives(sysfsRoot),
-		&network{sysfsRoot: sysfsRoot, procRoot: procRoot, wait: time.Sleep, now: time.Now},
+		newNetwork(sysfsRoot, procRoot, time.Sleep, time.Now),
 	}
 }

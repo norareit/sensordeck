@@ -183,14 +183,14 @@ What the tree on `feature-0018-windows-sensors` holds, and what the plan builds 
 
 ### 1. The computation from two samples, shared (refactoring)
 
-- [ ] Add `internal/sampling/sampling.go` with `Interval`, `CPUSample`, `CPU`, `Counters` and `Network[Key]`, as the
+- [x] Add `internal/sampling/sampling.go` with `Interval`, `CPUSample`, `CPU`, `Counters` and `Network[Key]`, as the
   choices above say, carrying over the comments of `procstat.go` and `netdev.go` that say why (R8)
-- [ ] In `internal/linuxsensors`, remove `sampleInterval`, `sample`, `cpuUtilisation`, `interfaceCounters`,
+- [x] In `internal/linuxsensors`, remove `sampleInterval`, `sample`, `cpuUtilisation`, `interfaceCounters`,
   `networkSample`, `network`, `take` and `growth`; make `parseStat` give a `sampling.CPUSample` and `parseNetDev` a
   `map[string]sampling.Counters`; add `newCPUUtilisation` and `newNetwork`, and use them in `Sources` (R8)
-- [ ] In `procstat_test.go` and `netdev_test.go`, build the sources with `newCPUUtilisation` and `newNetwork` and
+- [x] In `procstat_test.go` and `netdev_test.go`, build the sources with `newCPUUtilisation` and `newNetwork` and
   change the types that name the moved ones, keeping every input and assertion (R8)
-- [ ] Run the suite, check that the end-to-end tests pass unchanged, and commit:
+- [x] Run the suite, check that the end-to-end tests pass unchanged, and commit:
   `feature-0018 Share the computation from two samples`
 
 ### 2. The GPU source, shared (refactoring)

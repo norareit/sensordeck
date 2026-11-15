@@ -3,41 +3,19 @@
 package linuxsensors
 
 import (
-	"context"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/norareit/sensordeck/internal/sensors"
+	"github.com/norareit/sensordeck/internal/sampling"
 )
-
-// bytesPerKibibyte turns bytes a second into KiB/s.
-const bytesPerKibibyte = 1024
-
-// interfaceCounters is what one line of /proc/net/dev gives that matters: the bytes received and transmitted.
-type interfaceCounters struct{ received, transmitted uint64 }
-
-// networkSample is the counters of the interfaces that count, and the moment they were read.
-type networkSample struct {
-	moment     time.Time
-	interfaces map[string]interfaceCounters
-}
-
-// network reads net.up and net.down as the bytes of the interfaces that belong to a device between two samples. It
-// keeps its previous sample from one reading to the next, so that only the first reading waits.
-type network struct {
-	sysfsRoot, procRoot string
-	wait                func(time.Duration)
-	now                 func() time.Time
-	previous            *networkSample
-}
 
 // parseNetDev gives the counters of each line that has a colon and 16 or more fields after it, the first and the
 // ninth of which are whole numbers of 64 bits. The two header lines are passed over by the same rule.
-func parseNetDev(content string) map[string]interfaceCounters {
-	interfaces := map[string]interfaceCounters{}
+func parseNetDev(content string) map[string]sampling.Counters {
+	interfaces := map[string]sampling.Counters{}
 	for _, line := range strings.Split(content, "\n") {
 		name, rest, found := strings.Cut(line, ":")
 		if !found {
@@ -52,7 +30,7 @@ func parseNetDev(content string) map[string]interfaceCounters {
 		if receivedErr != nil || transmittedErr != nil {
 			continue
 		}
-		interfaces[strings.TrimSpace(name)] = interfaceCounters{received: received, transmitted: transmitted}
+		interfaces[strings.TrimSpace(name)] = sampling.Counters{Received: received, Transmitted: transmitted}
 	}
 	return interfaces
 }
@@ -63,70 +41,24 @@ func hasDevice(sysfsRoot, name string) bool {
 	return err == nil
 }
 
-// take reads a sample, deciding at every call which interfaces count. The moment is taken right after the read.
-func (source *network) take() (networkSample, bool) {
-	content, err := os.ReadFile(filepath.Join(source.procRoot, "net", "dev"))
-	if err != nil {
-		return networkSample{}, false
+// newNetwork reads the interfaces of /proc/net/dev under procRoot that belong to a device, deciding at every sample
+// which ones do, with the rates computed by internal/sampling. The moment is taken right after the read.
+func newNetwork(sysfsRoot, procRoot string, wait func(time.Duration), now func() time.Time) *sampling.Network[string] {
+	return &sampling.Network[string]{
+		Take: func() (map[string]sampling.Counters, bool) {
+			content, err := os.ReadFile(filepath.Join(procRoot, "net", "dev"))
+			if err != nil {
+				return nil, false
+			}
+			counting := map[string]sampling.Counters{}
+			for name, counters := range parseNetDev(string(content)) {
+				if hasDevice(sysfsRoot, name) {
+					counting[name] = counters
+				}
+			}
+			return counting, true
+		},
+		Wait: wait,
+		Now:  now,
 	}
-	moment := source.now()
-	counting := map[string]interfaceCounters{}
-	for name, counters := range parseNetDev(string(content)) {
-		if hasDevice(source.sysfsRoot, name) {
-			counting[name] = counters
-		}
-	}
-	return networkSample{moment: moment, interfaces: counting}, true
-}
-
-func (source *network) Read(stop context.Context, wanted func(name string) bool) []sensors.Reading {
-	if !wanted(sensors.NetworkUp) && !wanted(sensors.NetworkDown) {
-		return nil
-	}
-	if source.previous == nil {
-		first, ok := source.take()
-		if !ok {
-			return nil
-		}
-		source.previous = &first
-		source.wait(sampleInterval)
-	}
-	current, ok := source.take()
-	if !ok {
-		return nil
-	}
-	previous := *source.previous
-	source.previous = &current
-	seconds := current.moment.Sub(previous.moment).Seconds()
-	transmitted, received, shared := growth(previous, current)
-	if shared == 0 || seconds <= 0 {
-		return nil
-	}
-	var readings []sensors.Reading
-	if wanted(sensors.NetworkUp) {
-		readings = append(readings, sensors.Reading{Name: sensors.NetworkUp, Value: float64(transmitted) / seconds / bytesPerKibibyte})
-	}
-	if wanted(sensors.NetworkDown) {
-		readings = append(readings, sensors.Reading{Name: sensors.NetworkDown, Value: float64(received) / seconds / bytesPerKibibyte})
-	}
-	return readings
-}
-
-// growth sums the bytes transmitted and received between two samples over the interfaces that are in both, and tells
-// how many those are. A counter that went back adds nothing to its direction, and is not subtracted as unsigned.
-func growth(previous, current networkSample) (transmitted, received uint64, shared int) {
-	for name, now := range current.interfaces {
-		before, found := previous.interfaces[name]
-		if !found {
-			continue
-		}
-		shared++
-		if now.transmitted >= before.transmitted {
-			transmitted += now.transmitted - before.transmitted
-		}
-		if now.received >= before.received {
-			received += now.received - before.received
-		}
-	}
-	return transmitted, received, shared
 }

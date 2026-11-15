@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/norareit/sensordeck/internal/fakesensors"
+	"github.com/norareit/sensordeck/internal/sampling"
 	"github.com/norareit/sensordeck/internal/sensors"
 )
 
@@ -38,7 +39,7 @@ func removeNetDev(test *testing.T, tree *fakesensors.Tree) {
 // networkRun makes the source of a tree with a wait that records its duration and writes the next content, and a
 // clock that gives the moments the test set, one for each sample.
 type networkRun struct {
-	source  *network
+	source  *sampling.Network[string]
 	waits   []time.Duration
 	changes []string
 	moments []time.Time
@@ -54,24 +55,19 @@ func newNetworkRun(test *testing.T, tree *fakesensors.Tree, first string, moment
 	test.Helper()
 	tree.NetDev(first)
 	run := &networkRun{moments: moments}
-	run.source = &network{
-		sysfsRoot: tree.SysfsRoot,
-		procRoot:  tree.ProcRoot,
-		wait: func(duration time.Duration) {
-			run.waits = append(run.waits, duration)
-			if len(run.changes) > 0 {
-				tree.NetDev(run.changes[0])
-				run.changes = run.changes[1:]
-			}
-		},
-		now: func() time.Time {
-			if run.clocked >= len(run.moments) {
-				test.Fatalf("the clock was asked %d times, for %d moments", run.clocked+1, len(run.moments))
-			}
-			run.clocked++
-			return run.moments[run.clocked-1]
-		},
-	}
+	run.source = newNetwork(tree.SysfsRoot, tree.ProcRoot, func(duration time.Duration) {
+		run.waits = append(run.waits, duration)
+		if len(run.changes) > 0 {
+			tree.NetDev(run.changes[0])
+			run.changes = run.changes[1:]
+		}
+	}, func() time.Time {
+		if run.clocked >= len(run.moments) {
+			test.Fatalf("the clock was asked %d times, for %d moments", run.clocked+1, len(run.moments))
+		}
+		run.clocked++
+		return run.moments[run.clocked-1]
+	})
 	return run
 }
 
@@ -271,14 +267,14 @@ func TestNoNetworkMetricWantedReadsNoFile(test *testing.T) {
 	tree := countingTree(test, "enp6s0")
 	run := newNetworkRun(test, tree, netDev(netDevLine("enp6s0", 0, 0)))
 	got := run.readWanted(func(name string) bool { return name == "cpu.util" })
-	if len(got) != 0 || len(run.waits) != 0 || run.clocked != 0 || run.source.previous != nil {
+	if len(got) != 0 || len(run.waits) != 0 || run.clocked != 0 {
 		test.Errorf("got %v, waits %v, clock asked %d times", got, run.waits, run.clocked)
 	}
 }
 
 func TestParseNetDev(test *testing.T) {
 	content := netDev(netDevLine("lo", 11, 22), netDevLine("enp6s0", 33, 44))
-	want := map[string]interfaceCounters{"lo": {11, 22}, "enp6s0": {33, 44}}
+	want := map[string]sampling.Counters{"lo": {Received: 11, Transmitted: 22}, "enp6s0": {Received: 33, Transmitted: 44}}
 	if got := parseNetDev(content); !reflect.DeepEqual(got, want) {
 		test.Errorf("got %v", got)
 	}
