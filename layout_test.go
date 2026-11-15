@@ -133,6 +133,7 @@ func TestOnlyTheSeamOnWindowsImportsTheWindowsPackage(test *testing.T) {
 	allowed := []string{
 		"internal/winhid/seam_windows.go", "internal/winhid/seam_windows_test.go",
 		"internal/windowssensors/seam_windows.go", "internal/windowssensors/seam_windows_test.go",
+		"internal/winbackground/seam_windows.go", "internal/winbackground/seam_windows_test.go",
 	}
 	for _, path := range goFiles(test) {
 		for _, imported := range importsOf(test, path) {

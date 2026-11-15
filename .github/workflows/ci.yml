@@ -49,4 +49,4 @@ jobs:
       - name: Vet
         run: go vet ./...
       - name: Test
-        run: go test ./internal/winhid ./internal/commandercore ./internal/windowssensors
+        run: go test ./internal/winhid ./internal/commandercore ./internal/windowssensors ./internal/winbackground

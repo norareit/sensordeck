@@ -320,19 +320,19 @@ func taskStatusLines(taskFile, enabled, active, log string) []string
 
 ### 2. The package of the Windows calls
 
-- [ ] Add `internal/winbackground/seam_windows.go` and `internal/winbackground/seam_windows_test.go` to the allowed list
+- [x] Add `internal/winbackground/seam_windows.go` and `internal/winbackground/seam_windows_test.go` to the allowed list
   of `TestOnlyTheSeamOnWindowsImportsTheWindowsPackage` in `layout_test.go` (R31)
-- [ ] Write `internal/winbackground/seam_windows_test.go`, `//go:build windows`: create an event under
+- [x] Write `internal/winbackground/seam_windows_test.go`, `//go:build windows`: create an event under
   `Local\sensordeck-test-<pid>-<nanoseconds>`, check that `Create` of the same name gives `ErrExists`, that `Exists`
   finds it, that `Signal` gives true and the channel of `Signalled` closes within 5 seconds, that after `Close` `Exists`
   gives false and `Signal` gives false; `FreeConsole` is not called (R24, R32)
-- [ ] Write `internal/winbackground/doc.go` and `internal/winbackground/seam_windows.go` as the approach says, with
+- [x] Write `internal/winbackground/doc.go` and `internal/winbackground/seam_windows.go` as the approach says, with
   `kernel32.dll` loaded by `windows.NewLazySystemDLL` for `FreeConsole` alone (R23, R24, R25, R31)
-- [ ] Add `./internal/winbackground` to the step `go test ./internal/winhid ./internal/commandercore
+- [x] Add `./internal/winbackground` to the step `go test ./internal/winhid ./internal/commandercore
   ./internal/windowssensors` of the job `windows` in `.github/workflows/ci.yml`, after the three, and to the command
   that `checkWindowsJob` of `release_test.go` checks (R33)
-- [ ] Run `GOOS=windows GOARCH=amd64 go vet ./...`, which vets the test of the package, and `go test .` (R31 to R33)
-- [ ] Commit: `feature-0019 Add the stop event and the detach of a background run on Windows`
+- [x] Run `GOOS=windows GOARCH=amd64 go vet ./...`, which vets the test of the package, and `go test .` (R31 to R33)
+- [x] Commit: `feature-0019 Add the stop event and the detach of a background run on Windows`
 
 ### 3. The log
 
