@@ -1,6 +1,6 @@
 ---
 kind: feature
-status: draft
+status: approved
 timestamp: 2026-11-15T08:25:25Z
 ---
 
@@ -19,5 +19,6 @@ timestamp: 2026-11-15T08:25:25Z
   sandbox with synthetic files. No device check is needed. Items 1 to 6 of "Beyond the request" are declined: R8 and
   the truncation test of R22 cover the reader's robustness for this unit, and the others are small enough to come with
   the compiler if it needs them. The approval that follows is made under that delegation
+- 2026-11-15T08:27:47Z [human] approved the spec. The status is `approved`
 
 ## Amendments
