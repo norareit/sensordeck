@@ -49,3 +49,17 @@ timestamp: 2026-11-15T13:32:18Z
   once, so R34 needs no change of it. The status stays `approved`
 - 2026-11-15T22:45:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, began the work on the plan, task 1 first. The status is
   `in-progress`
+- 2026-11-15T23:40:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, built the unit in the eight
+  commits of the plan after its own, `1ae1fa8` to `ce51e0a`, and ticked every box of `plan.md`. Two choices of the plan
+  were left open and went as `## Changes while building` of `plan.md` says: the time limit as an argument of `complete`
+  with no field for being in time, and the near misses of `Screens` given only when there is no screen. The commit
+  trailer that the harness asks for was left out, as the standards say. Run on `ce51e0a`: `go test -count=1 ./...`
+  passes, `go vet ./...` and `GOOS=windows GOARCH=amd64 go vet ./...` report nothing, `gofmt -l .` prints nothing,
+  `GOOS=windows GOARCH=amd64 go build ./...` and `CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build ./...` succeed,
+  `GOOS=darwin GOARCH=arm64 go build ./...` and `GOOS=freebsd GOARCH=amd64 go vet ./internal/cli` succeed,
+  `GOOS=windows go test -c` builds the tests of `internal/winhid` and `internal/commandercore`, and
+  `go list -test -deps` of both for Windows names none of `fakecommander`, `internal/hidraw` and `fakepty`. The diff
+  against `origin/master` shows no change in `go.mod`, `go.sum`, `THIRD_PARTY_LICENSES` and `internal/smartmonitor`.
+  Not checked: any run on Windows, among them `seam_windows_test.go`, the layouts of `HIDD_ATTRIBUTES` and `HIDP_CAPS`
+  and the whole of R35 and R36, so every item of "Unverified until the human runs it" is still open. No review has
+  run yet. The status stays `in-progress`

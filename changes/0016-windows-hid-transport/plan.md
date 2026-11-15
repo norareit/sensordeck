@@ -348,26 +348,42 @@ What the tree on `feature-0016-windows-hid-transport` holds, and what the plan b
   interface 0 is told apart on Windows by the `mi_00` field and its usage and lengths (R30)
 - [x] Run the suite and commit: `feature-0016 Document the screen and the Commander on Windows`
 
+## Changes while building
+
+Found while building, and kept to what the plan left open:
+
+* `complete` takes the time limit as a fourth argument, because the text of the timeout of a read and of the failure of
+  a write names it, and its `result` has no field for whether the wait ended in time, since that is the same as whether
+  the transport cancelled the operation
+* `Screens` gives the near misses only when it found no screen, so that the rule of R33 is kept in one place and not in
+  each caller
+* `Finder`, `node` and `errNoAnswer` are in `internal/commandercore/node.go`, and `encode` and `writeSize` moved into
+  `hidraw_linux.go`, since only the Linux node writes 97 bytes. The test of `encode` moved with it
+* `internal/winhid/seam_windows.go` separates the error of finding a procedure from the last error of the thread, which
+  means something only when a call reports a failure
+* `Collection.Line` and `Transport.Serial` follow the Linux transport, which keeps the serial of the node opened last
+* `internal/winhid/helpers_test.go` holds what the tests of `winhid_test` share
+
 ## Verification
 
-- [ ] `go test ./...` passes (R5)
-- [ ] `go vet ./...` reports nothing (R5)
-- [ ] `gofmt -l .` prints no file name (R5)
-- [ ] `GOOS=windows GOARCH=amd64 go build ./...` succeeds and reports nothing (R5)
-- [ ] `GOOS=windows GOARCH=amd64 go vet ./...` succeeds and reports nothing (R5)
-- [ ] `CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build ./...` succeeds (R1)
-- [ ] `git diff master -- go.mod go.sum THIRD_PARTY_LICENSES internal/smartmonitor` shows no change, the
+- [x] `go test ./...` passes (R5)
+- [x] `go vet ./...` reports nothing (R5)
+- [x] `gofmt -l .` prints no file name (R5)
+- [x] `GOOS=windows GOARCH=amd64 go build ./...` succeeds and reports nothing (R5)
+- [x] `GOOS=windows GOARCH=amd64 go vet ./...` succeeds and reports nothing (R5)
+- [x] `CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build ./...` succeeds (R1)
+- [x] `git diff master -- go.mod go.sum THIRD_PARTY_LICENSES internal/smartmonitor` shows no change, the
   `transport` interface of `internal/cli/main.go` is unchanged, and `grep -rn '"C"'` finds no import of `C` (R1, R4)
-- [ ] `npm run check-changes` passes
+- [x] `npm run check-changes` passes
 
 ## Commit Points
 
-- [ ] `feature-0016 Write the plan of the HID transport on Windows`
-- [ ] `feature-0016 Share the texts of the screen discovery`
-- [ ] `feature-0016 Split the Commander package into its protocol and a node`
-- [ ] `feature-0016 Add the Windows HID layer on a seam, with its fake`
-- [ ] `feature-0016 Call the HID API of Windows behind the seam`
-- [ ] `feature-0016 Drive the Commander on Windows`
-- [ ] `feature-0016 Open the screen and the Commander on Windows`
-- [ ] `feature-0016 Build and test the Windows code on a Windows runner`
-- [ ] `feature-0016 Document the screen and the Commander on Windows`
+- [x] `feature-0016 Write the plan of the HID transport on Windows`
+- [x] `feature-0016 Share the texts of the screen discovery`
+- [x] `feature-0016 Split the Commander package into its protocol and a node`
+- [x] `feature-0016 Add the Windows HID layer on a seam, with its fake`
+- [x] `feature-0016 Call the HID API of Windows behind the seam`
+- [x] `feature-0016 Drive the Commander on Windows`
+- [x] `feature-0016 Open the screen and the Commander on Windows`
+- [x] `feature-0016 Build and test the Windows code on a Windows runner`
+- [x] `feature-0016 Document the screen and the Commander on Windows`
