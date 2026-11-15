@@ -1,6 +1,6 @@
 //go:build linux
 
-package linuxsensors
+package nvidiasmi
 
 import (
 	"context"
@@ -18,10 +18,16 @@ import (
 
 const fullLine = "44, 17, 3256, 32607"
 
+func everything(string) bool { return true }
+
+func read(source sensors.Source, wanted func(string) bool) []sensors.Reading {
+	return source.Read(context.Background(), wanted)
+}
+
 func readGPU(test *testing.T, script string, wanted func(string) bool) []sensors.Reading {
 	test.Helper()
 	test.Setenv("PATH", fakesensors.NvidiaSMI(test, script))
-	return read(gpu{timeLimit: 5 * time.Second}, wanted)
+	return read(Source{TimeLimit: 5 * time.Second}, wanted)
 }
 
 func allFour() []sensors.Reading {
@@ -29,14 +35,6 @@ func allFour() []sensors.Reading {
 		{Name: "gpu.temp", Value: 44}, {Name: "gpu.util", Value: 17},
 		{Name: "gpu.mem.used", Value: 3256}, {Name: "gpu.mem.total", Value: 32607},
 	}
-}
-
-func names(readings []sensors.Reading) []string {
-	var result []string
-	for _, reading := range readings {
-		result = append(result, reading.Name)
-	}
-	return result
 }
 
 func TestCompleteLine(test *testing.T) {
@@ -85,7 +83,7 @@ func TestExitStatusOneGivesNothing(test *testing.T) {
 
 func TestMissingProgramGivesNothing(test *testing.T) {
 	test.Setenv("PATH", test.TempDir())
-	if got := read(gpu{timeLimit: time.Second}, everything); len(got) != 0 {
+	if got := read(Source{TimeLimit: time.Second}, everything); len(got) != 0 {
 		test.Errorf("got %v", got)
 	}
 }
@@ -128,7 +126,7 @@ func TestProgramBeyondTheTimeLimitIsKilledEvenWithAChildHoldingItsOutput(test *t
 	test.Setenv("PATH", fakesensors.NvidiaSMI(test, script))
 	limit := 100 * time.Millisecond
 	begun := time.Now()
-	got := read(gpu{timeLimit: limit}, everything)
+	got := read(Source{TimeLimit: limit}, everything)
 	elapsed := time.Since(begun)
 	if _, err := os.Stat(started); err != nil {
 		test.Fatalf("the program did not start: %v", err)
@@ -149,7 +147,7 @@ func TestStopEndsTheRun(test *testing.T) {
 	stop, cancel := context.WithCancel(context.Background())
 	time.AfterFunc(300*time.Millisecond, cancel)
 	begun := time.Now()
-	got := gpu{timeLimit: 5 * time.Second}.Read(stop, everything)
+	got := Source{TimeLimit: 5 * time.Second}.Read(stop, everything)
 	elapsed := time.Since(begun)
 	if _, err := os.Stat(started); err != nil {
 		test.Fatalf("the program did not start: %v", err)
@@ -176,4 +174,12 @@ func TestParseGPULine(test *testing.T) {
 	if _, ok := parseGPULine("a,b,c,d,e"); ok {
 		test.Error("five fields were accepted")
 	}
+}
+
+func names(readings []sensors.Reading) []string {
+	var result []string
+	for _, reading := range readings {
+		result = append(result, reading.Name)
+	}
+	return result
 }

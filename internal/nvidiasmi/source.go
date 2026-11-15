@@ -1,6 +1,6 @@
-//go:build linux
-
-package linuxsensors
+// Package nvidiasmi reads the metrics of the first NVIDIA GPU from nvidia-smi, which the NVIDIA driver installs on
+// Linux and on Windows.
+package nvidiasmi
 
 import (
 	"bytes"
@@ -13,6 +13,9 @@ import (
 
 	"github.com/norareit/sensordeck/internal/sensors"
 )
+
+// TimeLimit leaves room for a slow first start of the driver and bounds a program that hangs.
+const TimeLimit = 2 * time.Second
 
 // pipeGrace is how long a run that was killed may keep a reading waiting for a child that holds its output open.
 const pipeGrace = 500 * time.Millisecond
@@ -27,14 +30,14 @@ var gpuQueryArguments = []string{
 
 var gpuNumber = regexp.MustCompile(`^[0-9]+(\.[0-9]+)?$`)
 
-// gpu reads the metrics of the first NVIDIA GPU with one run of nvidia-smi for each reading.
-type gpu struct{ timeLimit time.Duration }
+// Source reads the metrics of the first NVIDIA GPU with one run of nvidia-smi for each reading.
+type Source struct{ TimeLimit time.Duration }
 
-func (source gpu) Read(stop context.Context, wanted func(name string) bool) []sensors.Reading {
+func (source Source) Read(stop context.Context, wanted func(name string) bool) []sensors.Reading {
 	if !wantsAny(wanted) {
 		return nil
 	}
-	limited, cancel := context.WithTimeout(stop, source.timeLimit)
+	limited, cancel := context.WithTimeout(stop, source.TimeLimit)
 	defer cancel()
 	// Made anew for every reading, so that PATH is searched anew and a program installed later is used.
 	command := exec.CommandContext(limited, "nvidia-smi", gpuQueryArguments...)

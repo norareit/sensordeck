@@ -1,6 +1,6 @@
 //go:build linux
 
-// Package linuxsensors reads hardware readings on Linux: hwmon, cpufreq, /proc and nvidia-smi. Each source reads its
+// Package linuxsensors reads hardware readings on Linux: hwmon, cpufreq and /proc. Each source reads its
 // files with os.ReadFile and hands the content to a function that only parses it.
 package linuxsensors
 

@@ -195,15 +195,15 @@ What the tree on `feature-0018-windows-sensors` holds, and what the plan builds 
 
 ### 2. The GPU source, shared (refactoring)
 
-- [ ] Move `internal/linuxsensors/nvidiasmi.go` to `internal/nvidiasmi/source.go` with no build constraint, `gpu`
+- [x] Move `internal/linuxsensors/nvidiasmi.go` to `internal/nvidiasmi/source.go` with no build constraint, `gpu`
   becoming `Source{TimeLimit}` and `gpuTimeLimit` becoming `TimeLimit`; make `linuxsensors.Sources` use
   `nvidiasmi.Source{TimeLimit: nvidiasmi.TimeLimit}`, and drop nvidia-smi from the package comment of `hwmon.go` (R10)
-- [ ] Move `internal/linuxsensors/nvidiasmi_test.go` to `internal/nvidiasmi/source_test.go`, keeping `//go:build linux`
+- [x] Move `internal/linuxsensors/nvidiasmi_test.go` to `internal/nvidiasmi/source_test.go`, keeping `//go:build linux`
   and every test, with copies of `everything` and `read`; move `fullLine` and `names` into
   `internal/linuxsensors/helpers_test.go` (R10)
-- [ ] In the comment at the top of `e2e/commands_test.go`, name `internal/nvidiasmi` as the place of the tests of the
+- [x] In the comment at the top of `e2e/commands_test.go`, name `internal/nvidiasmi` as the place of the tests of the
   GPU source and of the time limit of nvidia-smi (R10)
-- [ ] Run the suite, check that the end-to-end tests pass unchanged, and commit:
+- [x] Run the suite, check that the end-to-end tests pass unchanged, and commit:
   `feature-0018 Share the GPU source`
 
 ### 3. The CR before the LF of nvidia-smi

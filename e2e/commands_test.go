@@ -13,9 +13,9 @@
 //   - a reopening that fails before it succeeds is covered by the tests of the feeder in internal/cli, which move the
 //     time themselves and fail the reopenings as they like
 //   - the GPU metrics in `run`, with no nvidia-smi in these tests, are covered by the tests of the feeder in
-//     internal/cli and of the GPU source in internal/linuxsensors
-//   - `cpu.util`, which needs two samples that differ, and the time limit of nvidia-smi are covered by the tests of
-//     the sources in internal/linuxsensors
+//     internal/cli and of the GPU source in internal/nvidiasmi
+//   - `cpu.util`, which needs two samples that differ, is covered by the tests of the sources in
+//     internal/linuxsensors, and the time limit of nvidia-smi by the tests of internal/nvidiasmi
 //   - the exact value of a network rate other than 0, which depends on the time between two rounds, counters that go
 //     back, and interfaces that appear or vanish, are covered by the tests of the network source in
 //     internal/linuxsensors
