@@ -58,3 +58,16 @@ timestamp: 2026-11-15T12:44:19Z
   `go test -count=1 ./...` including the end-to-end tests, and `npm run check-changes`, all successfully.
   Could not verify a real systemd session, the physical screen and controller, lingering with udev access, or execution
   on Windows; D18 leaves the real-system checks for later.
+- 2026-11-15T13:40:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, accepted finding P1 of the review
+  of round 1, as accepted by the definition of the orchestrator and not as a decision of the human. The finding was
+  right: the edit of `run.go` of the first commit of the shared load had not applied, so `run` still formatted the
+  prefix itself while the plan and the record said it shared `loadConfigFile`. Commit a55253b makes the startup load of
+  `run` call `loadConfigFile`; the reload path keeps its own error contract. On that tree `go test -count=1 ./...`
+  (the end-to-end tests of the stop on SIGTERM included), `go vet ./...`, `gofmt -l .` and the Windows build and vet
+  all succeeded
+- 2026-11-15T13:41:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, proposes declining P2, which is
+  non-blocking and not a requirement of the spec: the tests of uninstall, status and the other systems were written
+  after their code, as the record already says. Nothing in the tree can change it without rewriting commits, which
+  the review itself advises against, and the tests pass against the final code. The finding stays open until the human
+  decides it
+
