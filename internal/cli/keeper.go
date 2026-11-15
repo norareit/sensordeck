@@ -31,7 +31,7 @@ const (
 // keepalive does not wait for a round, which can wait for a source, for the screen or for its next start.
 type sessionKeeper struct {
 	start        func(stop context.Context) (heldSession, error) // a setup; on an error it has ended
-	probesMapped bool
+	probesMapped func() bool                                     // asked from readings, so by the goroutine that replaces the mappings
 	now          func() time.Time
 	after        func(duration time.Duration) <-chan time.Time
 	stderr       io.Writer
@@ -47,7 +47,7 @@ type sessionKeeper struct {
 }
 
 func newSessionKeeper(
-	start func(stop context.Context) (heldSession, error), probesMapped bool, now func() time.Time,
+	start func(stop context.Context) (heldSession, error), probesMapped func() bool, now func() time.Time,
 	after func(duration time.Duration) <-chan time.Time, stderr io.Writer,
 ) *sessionKeeper {
 	return &sessionKeeper{
@@ -94,7 +94,7 @@ func (keeper *sessionKeeper) arm() <-chan time.Time {
 // reading starts after the call, so after the round that asks, which is why the start of the round is not needed. The
 // parameter is there because periodicSource takes it.
 func (keeper *sessionKeeper) readings(stop context.Context, _ time.Time, wanted func(name string) bool) []sensors.Reading {
-	if !keeper.probesMapped {
+	if !keeper.probesMapped() {
 		return nil
 	}
 	reply := make(chan []sensors.Reading, 1)

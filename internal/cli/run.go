@@ -30,13 +30,22 @@ func (current *session) runCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
+			// The first stamp is taken before the file is read, so that a write in between is seen as a change.
+			stamp := stampOf(path)
 			content, err := readNamedFile("config file", path)
 			if err != nil {
 				return err
 			}
-			settings, err := config.Parse(content)
+			started, err := current.loadConfig(path, content)
 			if err != nil {
 				return fmt.Errorf("config file %s: %w", path, err)
+			}
+			settings := started.settings
+			// The keeper and the feeder write their lines from two goroutines, and so may the trace.
+			current.env.stderr = &lockedWriter{writer: current.env.stderr}
+			state, stateErr := current.stateFile()
+			if started.theme != nil && stateErr != nil {
+				return stateErr
 			}
 			sources, err := current.env.newSources(current.env.sysfsRoot, current.env.devRoot, current.env.procRoot)
 			if err != nil {
@@ -44,8 +53,6 @@ func (current *session) runCommand() *cobra.Command {
 			}
 			stop, cancel := current.env.notifyStop(context.Background())
 			defer cancel()
-			// The keeper and the feeder write their lines from two goroutines, and so may the trace.
-			current.env.stderr = &lockedWriter{writer: current.env.stderr}
 			opened, closeTransport, err := current.open()
 			if err != nil {
 				return err
@@ -56,13 +63,22 @@ func (current *session) runCommand() *cobra.Command {
 				others:     sources.others,
 				controller: &periodicSource{source: sources.controller, period: settings.CommanderPeriod()},
 				config:     settings,
-				now:        current.env.now,
-				wait:       current.env.wait,
-				stderr:     current.env.stderr,
+				holder:     newThemeHolder(started.theme, state, current.env.sleep, current.env.now, current.say, current.env.stderr),
+				watcher: &configWatcher{path: path, last: stamp, stderr: current.env.stderr, load: func(content []byte) (runConfig, error) {
+					reloaded, err := current.loadConfig(path, content)
+					// A theme needs the state file, and a run that started with tags may have none.
+					if err == nil && reloaded.theme != nil && stateErr != nil {
+						return runConfig{}, stateErr
+					}
+					return reloaded, err
+				}},
+				now:    current.env.now,
+				wait:   current.env.wait,
+				stderr: current.env.stderr,
 			}
 			endKeeping := func() {}
 			if settings.CommanderColour != nil {
-				keeper := current.newKeeper(sources, settings)
+				keeper := current.newKeeper(sources, settings, feeding.probesMapped)
 				keeping, cancelKeeping := context.WithCancel(stop)
 				go keeper.keep(keeping)
 				feeding.controller = keeper
@@ -87,11 +103,7 @@ func (current *session) runCommand() *cobra.Command {
 }
 
 // newKeeper makes the keeper of the session that lights the LEDs in the colour of the config.
-func (current *session) newKeeper(sources sourceSet, settings config.Config) *sessionKeeper {
-	probesMapped := false
-	for _, mapping := range settings.Mappings {
-		probesMapped = probesMapped || sensors.IsCommanderTemperature(mapping.Name)
-	}
+func (current *session) newKeeper(sources sourceSet, settings config.Config, probesMapped func() bool) *sessionKeeper {
 	start := func(stop context.Context) (heldSession, error) {
 		return sources.startSession(stop, *settings.CommanderColour)
 	}
@@ -140,24 +152,37 @@ func (locked *lockedWriter) Write(data []byte) (int, error) {
 // feeder sends the clock and the values of the mapped metrics to the screen in rounds, and reopens the transport
 // when the screen is lost. Without commander_color it reads the controller at most once per period and sends the kept
 // readings of its last reading in the other rounds. With it the controller is read through the keeper, which holds a
-// session of the controller, and a round with a probe mapped asks it for a reading of its own.
+// session of the controller, and a round with a probe mapped asks it for a reading of its own. The holder keeps the
+// theme of the config on the screen, and the watcher gives the config again when its file changed.
 type feeder struct {
 	transport  transport
 	others     []sensors.Source
 	controller controllerReader
 	config     config.Config
+	holder     *themeHolder
+	watcher    *configWatcher
 	now        func() time.Time
 	wait       func(stop context.Context, duration time.Duration) bool
 	stderr     io.Writer
 	lastClock  time.Time
+	clockDue   bool // the clock is to be sent in the next round that sends anything, whatever its age
 	lost       bool
+}
+
+// probesMapped tells whether a metric of the controller is mapped now. The keeper asks it from the goroutine of the
+// feeder, which is the one that replaces the mappings.
+func (feeding *feeder) probesMapped() bool {
+	for _, mapping := range feeding.config.Mappings {
+		if sensors.IsCommanderTemperature(mapping.Name) {
+			return true
+		}
+	}
+	return false
 }
 
 // feed works until stop is done, and gives an error only when the clock cannot be encoded.
 func (feeding *feeder) feed(stop context.Context) error {
-	if _, err := feeding.writeClock(stop); err != nil {
-		return err
-	}
+	feeding.clockDue = true
 	first := feeding.now()
 	interval := feeding.config.Interval
 	index := 0
@@ -180,19 +205,29 @@ func (feeding *feeder) feed(stop context.Context) error {
 // that follows a long one starts after its place on the grid.
 func (feeding *feeder) round(stop context.Context) error {
 	start := feeding.now()
+	feeding.reload()
 	if feeding.lost {
 		if feeding.transport.Reopen() != nil {
 			return nil
 		}
 		feeding.lost = false
 		_, _ = fmt.Fprintln(feeding.stderr, "screen back")
+		feeding.holder.screenBack()
+		feeding.clockDue = true
+	}
+	ready, uploaded, failed := feeding.holder.ensure(stop, feeding.transport)
+	if failed {
+		feeding.lost = true
+	}
+	if !ready {
+		return nil
+	}
+	feeding.clockDue = feeding.clockDue || uploaded
+	if feeding.clockDue || start.Sub(feeding.lastClock) >= clockPeriod {
 		if written, err := feeding.writeClock(stop); !written || err != nil {
 			return err
 		}
-	} else if start.Sub(feeding.lastClock) >= clockPeriod {
-		if written, err := feeding.writeClock(stop); !written || err != nil {
-			return err
-		}
+		feeding.clockDue = false
 	}
 	for _, report := range smartmonitor.EncodeValues(feeding.read(stop, start)) {
 		if !feeding.write(stop, report) {
@@ -200,6 +235,20 @@ func (feeding *feeder) round(stop context.Context) error {
 		}
 	}
 	return nil
+}
+
+// reload applies the config file when it changed: the mappings and the theme at once, and for the other keys a line
+// that a restart applies them.
+func (feeding *feeder) reload() {
+	reloaded, changed := feeding.watcher.poll()
+	if !changed {
+		return
+	}
+	for _, key := range restartKeys(feeding.config, reloaded.settings) {
+		_, _ = fmt.Fprintf(feeding.stderr, "config file %s: %s changed, restart run to apply it\n", feeding.watcher.path, key)
+	}
+	feeding.config.Mappings = reloaded.settings.Mappings
+	feeding.holder.setTheme(reloaded.theme)
 }
 
 // read gives the pairs of the mapped metrics that have a value, in the order of their tags. The other sources are
