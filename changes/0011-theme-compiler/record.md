@@ -1,6 +1,6 @@
 ---
 kind: feature
-status: draft
+status: approved
 timestamp: 2026-11-15T08:52:10Z
 ---
 
@@ -21,3 +21,4 @@ timestamp: 2026-11-15T08:52:10Z
   human's and the unit does not depend on it. Items 1 to 6 of "Beyond the request" are declined: none is needed for a
   correct compiler, and the built-in theme of the next unit compiles a real theme end to end. The approval that follows
   is made under that delegation
+- 2026-11-15T08:54:52Z [human] approved the spec. The status is `approved`
