@@ -288,7 +288,7 @@ with --config: <cause>` as it is.
 - [x] `GOOS=windows GOARCH=amd64 go build ./...` succeeds and reports nothing
 - [x] `GOOS=windows GOARCH=amd64 go vet ./...` succeeds and reports nothing
 - [x] `go generate ./internal/builtinthemes/` leaves `git status` clean
-- [ ] `npm run check-changes` passes on the committed work
+- [x] `npm run check-changes` passes on the committed work
 
 ## Commit Points
 
