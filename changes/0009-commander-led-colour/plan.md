@@ -512,7 +512,7 @@ puts into the `sourceSet`.
 
 ### The end-to-end tests
 
-- [ ] Add `e2e/lighting_test.go`, with `//go:build linux`, a helper that starts `run` with the screen, the tree of
+- [x] Add `e2e/lighting_test.go`, with `//go:build linux`, a helper that starts `run` with the screen, the tree of
   `runningTree`, a fake controller `Add(9, 10)` and the config of R26 with a given interval, and a helper that encodes a
   command as the driver writes it. Add (R26):
     - a value report holds (4, 37); after `SetProbes` with 40.0 °C for the first probe, a value report holding (4, 40)
@@ -526,7 +526,7 @@ puts into the `sourceSet`.
       after SIGTERM standard error holds `controller lost: `
     - a config with `commander_color: #ff0000` unquoted and no screen: status 1 and the first text of R2 on standard
       error after `sensordeck: config file <path>: `
-- [ ] Run the five commands of the suite and commit: `feature-0009 Test the colour of the controller end to end`
+- [x] Run the five commands of the suite and commit: `feature-0009 Test the colour of the controller end to end`
 
 ### The documents
 
