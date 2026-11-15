@@ -179,12 +179,12 @@ the test.
 
 ### The shared load of the config
 
-- [ ] Add to `internal/cli/runconfig_test.go` a test of `loadConfigFile`: a config with `tags` loaded, and the error
+- [x] Add to `internal/cli/runconfig_test.go` a test of `loadConfigFile`: a config with `tags` loaded, and the error
   `config file <path>: <error>` for a file that does not parse and for a theme that does not compile (R7, R18)
-- [ ] Write `loadConfigFile` in `internal/cli/runconfig.go`, make `run` in `internal/cli/run.go` call it in place of
+- [x] Write `loadConfigFile` in `internal/cli/runconfig.go`, make `run` in `internal/cli/run.go` call it in place of
   its own `fmt.Errorf`, and make the tests pass, with the tests of `run` and the end-to-end tests of the stop on SIGTERM
   unchanged and passing (R7, R18)
-- [ ] Commit, as a change that keeps the behaviour of `run`
+- [x] Commit, as a change that keeps the behaviour of `run`
 
 ### The unit file
 

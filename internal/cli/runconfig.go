@@ -47,6 +47,15 @@ func (current *session) loadConfig(path string, content []byte) (runConfig, erro
 	}, nil
 }
 
+// loadConfigFile loads the content of the config file at the path as run does at its start, its error naming the file.
+func (current *session) loadConfigFile(path string, content []byte) (runConfig, error) {
+	loaded, err := current.loadConfig(path, content)
+	if err != nil {
+		return runConfig{}, fmt.Errorf("config file %s: %w", path, err)
+	}
+	return loaded, nil
+}
+
 // compileConfigTheme compiles the theme a config file names. A folder path that is not absolute is relative to the
 // directory of the config file, so that it means the same wherever run was started. The joined path is compiled as a
 // folder and not looked up again, because a join can lose the separator that makes a text a folder path.

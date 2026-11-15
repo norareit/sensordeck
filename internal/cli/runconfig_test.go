@@ -212,3 +212,20 @@ func TestPollTakesADeletedFileAsAChangeThatIsNotApplied(test *testing.T) {
 		test.Errorf("stderr %q", stderr.String())
 	}
 }
+
+func TestLoadConfigFileLoadsTagsAndNamesTheFileInItsErrors(test *testing.T) {
+	loaded, err := newSession().loadConfigFile("/c/config.yaml", []byte(twoTags))
+	if err != nil || loaded.theme != nil || len(loaded.settings.Mappings) != 2 {
+		test.Errorf("got %+v, %v", loaded, err)
+	}
+	for name, content := range map[string]string{"a file that does not parse": "tags: [", "a theme that does not compile": "theme: no-such-theme\n"} {
+		_, err := newSession().loadConfigFile("/c/config.yaml", []byte(content))
+		if err == nil || !strings.HasPrefix(err.Error(), "config file /c/config.yaml: ") {
+			test.Errorf("%s: error %v", name, err)
+		}
+		_, inner := newSession().loadConfig("/c/config.yaml", []byte(content))
+		if err != nil && inner != nil && err.Error() != "config file /c/config.yaml: "+inner.Error() {
+			test.Errorf("%s: error %q holds more than the prefix and %q", name, err, inner)
+		}
+	}
+}
