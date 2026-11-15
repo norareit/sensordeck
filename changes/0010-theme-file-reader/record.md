@@ -1,6 +1,6 @@
 ---
 kind: feature
-status: in-progress
+status: implemented
 timestamp: 2026-11-15T08:25:25Z
 ---
 
@@ -24,9 +24,9 @@ timestamp: 2026-11-15T08:25:25Z
   branch: a fake theme builder, the reader, the renderer, the dump and the command `theme dump`, each in its own
   package, then the end-to-end tests and the documents, with every requirement R1 to R24 traced to a task. The status
   stays `approved`
-- 2026-11-15T08:33:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, began the work on the unit's branch. The status is
+- 2026-11-15T08:34:56Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, began the work on the unit's branch. The status is
   `in-progress`
-- 2026-11-15T09:10:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, built the unit on its branch in
+- 2026-11-15T08:39:32Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, built the unit on its branch in
   seven commits: the reader and the fake theme, the images and the preview, the dump, a refactor that moves the
   unwrapping of the cause of a file error into `innerError` so that `theme dump` and `readNamedFile` share it (not in
   the plan, behavior preserving, and committed apart from the feature), the command, the end-to-end tests and the
@@ -34,7 +34,7 @@ timestamp: 2026-11-15T08:25:25Z
   the dump the code was written first and its tests right after, and the `theme.json` expected in the dump test was
   taken from the first output after checking it field by field against the bytes of `faketheme.Sample`. No new
   dependency. None of the items of "Beyond the request" was built. All tasks of `plan.md` are ticked
-- 2026-11-15T09:12:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, ran the five commands of the suite
+- 2026-11-15T08:39:32Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, ran the five commands of the suite
   on the final tree of the code and documents (`go test ./...`, `go vet ./...`, `gofmt -l .`, and the Windows build and
   vet): all succeeded with no output other than the passing packages. Not checked: a run on Windows, which `AGENTS.md`
   leaves to the human, and a dump of a real vendor theme file, which the sandbox does not have. The status stays
@@ -44,7 +44,7 @@ timestamp: 2026-11-15T08:25:25Z
   findings P1, P2, P3, C1 and C2, saved in `.reviews/0010-theme-file-reader/review-round1.md`. Ran the five
   suite commands, an uncached `go test -count=1 ./...` and `npm run check-changes`; all passed. Could not verify
   execution on Windows or dumps of the unavailable vendor samples. The status stays `in-progress`
-- 2026-11-15T09:40:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, took the review of round 1 from
+- 2026-11-15T08:43:24Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, took the review of round 1 from
   `.reviews/changes/0010-theme-file-reader/review-round1.md`. Accepted under the definition of the orchestrator, and
   not as a decision of the human: C1 (the records of the dump are typed with a sealed `recordJSON` in place of `any`,
   with the output tests unchanged and passing) and C2 (the one-character coordinate names in `faketheme`,
@@ -53,13 +53,13 @@ timestamp: 2026-11-15T08:25:25Z
   note that the extraction was added after it was made and not before, and the handover task is ticked on the run
   below. Proposed decline: P2, the departure from tests first for `faketheme` and the dump cannot be undone, and the
   record already states it in the entry above, so there is nothing to change
-- 2026-11-15T09:41:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, ran the five commands of the suite
+- 2026-11-15T08:43:24Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, ran the five commands of the suite
   on the tree after these corrections and `npm run check-changes`; see the next entry for the result. The handover
   check of R1 to R24 was made against the tests, each requirement by the test that covers it in the plan's task list
   (R1 to R10 `themefile` and the layout test, R11 and R12 `themeimage`, R13 to R15 and R19 `themedump`, R16 to R18
   `internal/cli/theme_test.go` and `e2e/theme_test.go`, R20 and R21 by reading the documents against the spec, R22 to
   R24 by the suite). The documents were not checked by a program. The status stays `in-progress`
-- 2026-11-15T09:44:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, ran the five commands of the suite
+- 2026-11-15T08:43:27Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, ran the five commands of the suite
   and `npm run check-changes` on the committed tree after the corrections: all succeeded with no output other than
   the passing packages. Not checked: Windows execution, and dumps of vendor files
 - 2026-11-15T08:43:46Z [Claude Code, anthropic/claude-opus-5-5] under the delegation in `AGENTS.md`, decided the
@@ -72,5 +72,12 @@ timestamp: 2026-11-15T08:25:25Z
   findings. Saved the review in `.reviews/0010-theme-file-reader/review-round2.md`. The five suite commands,
   an uncached `go test -count=1 ./...` and `npm run check-changes` all passed. Could not verify Windows
   execution or dumps of the unavailable vendor samples. The status stays `in-progress`
+- 2026-11-15T08:46:52Z [Claude Code, anthropic/claude-opus-5-5] under the delegation in `AGENTS.md`, decided the findings: C1 and
+  C2 of round 1 were corrected, P1 and P3 were corrected in the documents, P2 was declined, and round 2 returned none,
+  so no blocking finding is open. The timestamps of six entries of the implementer, which did not match their commits,
+  were corrected to the times of the commits that added them. Every task of `plan.md` is ticked, and the five commands
+  of the suite passed on the branch. On the host, `sensordeck theme dump` of the three vendor samples in
+  `local-themes/` gave previews that match the ones the orchestrating session had composed when it learned the format.
+  The status is `implemented`
 
 ## Amendments
