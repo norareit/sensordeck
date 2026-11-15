@@ -1,6 +1,6 @@
 ---
 kind: feature
-status: draft
+status: approved
 timestamp: 2026-11-15T09:21:42Z
 ---
 
@@ -22,3 +22,4 @@ timestamp: 2026-11-15T09:21:42Z
   with a metric it cannot read, and every requirement can be tested in the sandbox. The device check is the human's and
   the unit does not depend on it. Items 1 to 4 of "Beyond the request" are declined: none is needed for the theme or
   the lookup to be correct. The approval that follows is made under that delegation
+- 2026-11-15T09:24:28Z [human] approved the spec. The status is `approved`
