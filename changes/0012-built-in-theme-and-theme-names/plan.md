@@ -155,7 +155,7 @@ with --config: <cause>` as it is.
 
 ### The refactoring
 
-- [ ] Extract `ownConfigDirectory` in `internal/cli/run.go` and make `configPath` use it, with its message unchanged.
+- [x] Extract `ownConfigDirectory` in `internal/cli/run.go` and make `configPath` use it, with its message unchanged.
   The existing tests of `run` with no config directory pass unchanged (R12)
 
 ### The background
@@ -289,7 +289,7 @@ with --config: <cause>` as it is.
 
 ## Commit Points
 
-- [ ] `feature-0012 Extract the config directory of sensordeck`, the refactoring alone
+- [x] `feature-0012 Extract the config directory of sensordeck`, the refactoring alone
 - [ ] `feature-0012 Add the built-in theme minimal-dark`, the background, its generator, the theme folder and
   `internal/builtinthemes` with their tests
 - [ ] `feature-0012 Find a theme by name in theme compile and theme preview`, the lookup with its tests and the help

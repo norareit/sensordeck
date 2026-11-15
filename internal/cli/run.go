@@ -103,11 +103,21 @@ func (current *session) configPath(named string) (string, error) {
 	if named != "" {
 		return named, nil
 	}
-	directory, err := current.env.userConfigDir()
+	directory, err := current.ownConfigDirectory()
 	if err != nil {
 		return "", fmt.Errorf("cannot find the config directory, name the file with --config: %w", err)
 	}
-	return filepath.Join(directory, "sensordeck", "config.yaml"), nil
+	return filepath.Join(directory, "config.yaml"), nil
+}
+
+// ownConfigDirectory gives the directory sensordeck in the config directory of the user, with the error of
+// userConfigDir unwrapped, so that each caller writes its own message.
+func (current *session) ownConfigDirectory() (string, error) {
+	directory, err := current.env.userConfigDir()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(directory, "sensordeck"), nil
 }
 
 // controllerReader gives the readings of the controller for a round that started at roundStart.

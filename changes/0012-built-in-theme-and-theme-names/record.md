@@ -1,6 +1,6 @@
 ---
 kind: feature
-status: approved
+status: in-progress
 timestamp: 2026-11-15T09:21:42Z
 ---
 
@@ -28,3 +28,5 @@ timestamp: 2026-11-15T09:21:42Z
   a background drawn by the rule of R4: it compiles, its dump gives no warning, and its tags file holds the mapping of
   R6, so the spec fits the tree. Every requirement has a task and every task names the requirements it delivers. None
   of the items of "Beyond the request" is planned, as decided before the approval. The status stays `approved`
+- 2026-11-15T09:35:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, began the work. The status is
+  `in-progress`
