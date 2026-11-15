@@ -1,6 +1,6 @@
 ---
 kind: feature
-status: in-progress
+status: implemented
 timestamp: 2026-11-15T12:44:19Z
 ---
 
@@ -27,7 +27,7 @@ timestamp: 2026-11-15T12:44:19Z
   machine is the human's check and the unit does not depend on it. The approval that follows is made under that
   delegation
 - 2026-11-15T12:46:17Z [human] approved the spec. The status is `approved`
-- 2026-11-15T12:52:10Z [Claude Code, anthropic/claude-opus-5-5] as the planner, wrote the plan against the tree of the
+- 2026-11-15T12:50:09Z [Claude Code, anthropic/claude-opus-5-5] as the planner, wrote the plan against the tree of the
   branch. The spec fits the tree: `run` gives the errors of R7 through `readNamedFile` and `loadConfig`, and
   `os.UserConfigDir()` gives an absolute directory. The plan moves the prefix that `run` puts on an error of the load
   into one function that `install` shares, in a commit that keeps the behaviour of `run`; puts the calls, the path of
@@ -35,9 +35,9 @@ timestamp: 2026-11-15T12:44:19Z
   commands. It decides one case the spec leaves unnamed: a check of the presence of the unit file that fails other than
   by its absence fails `status` and `uninstall` with exit status 1 and makes no call. No item of "Beyond the request" is
   built
-- 2026-11-15T13:20:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, began the work. The status is
+- 2026-11-15T12:53:51Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, began the work. The status is
   `in-progress`
-- 2026-11-15T13:21:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, built the plan in its order: the
+- 2026-11-15T12:53:51Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, built the plan in its order: the
   shared `loadConfigFile` first, in a commit that leaves `run` unchanged, then the pure functions of the unit file, the
   seam of `system`, `executable` and `systemctl` with `service install`, `uninstall`, `status` and the check of the
   system, the end-to-end tests with a fake `systemctl`, and the README section and status line. Deviations from the
@@ -45,7 +45,7 @@ timestamp: 2026-11-15T12:44:19Z
   commit as `install`, before the tests of those three, so that their tests were written against existing code and
   were not seen to fail first; the fake `systemctl` of the end-to-end tests checks that its first argument is `--user`
   and logs the arguments after it. No item of "Beyond the request" is built
-- 2026-11-15T13:22:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, ran on the tree of `cbf3dfb`,
+- 2026-11-15T12:53:51Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, ran on the tree of `cbf3dfb`,
   whose code the later commits of this unit do not change: `go test ./...`, `go vet ./...`, `gofmt -l .`,
   `GOOS=windows GOARCH=amd64 go build ./...` and `GOOS=windows GOARCH=amd64 go vet ./...`. All five succeeded and
   reported nothing but passing packages. Not checked: a real systemd, the unit started on the developer's machine,
@@ -58,14 +58,14 @@ timestamp: 2026-11-15T12:44:19Z
   `go test -count=1 ./...` including the end-to-end tests, and `npm run check-changes`, all successfully.
   Could not verify a real systemd session, the physical screen and controller, lingering with udev access, or execution
   on Windows; D18 leaves the real-system checks for later.
-- 2026-11-15T13:40:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, accepted finding P1 of the review
+- 2026-11-15T12:58:06Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, accepted finding P1 of the review
   of round 1, as accepted by the definition of the orchestrator and not as a decision of the human. The finding was
   right: the edit of `run.go` of the first commit of the shared load had not applied, so `run` still formatted the
   prefix itself while the plan and the record said it shared `loadConfigFile`. Commit a55253b makes the startup load of
   `run` call `loadConfigFile`; the reload path keeps its own error contract. On that tree `go test -count=1 ./...`
   (the end-to-end tests of the stop on SIGTERM included), `go vet ./...`, `gofmt -l .` and the Windows build and vet
   all succeeded
-- 2026-11-15T13:41:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, proposes declining P2, which is
+- 2026-11-15T12:58:06Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, proposes declining P2, which is
   non-blocking and not a requirement of the spec: the tests of uninstall, status and the other systems were written
   after their code, as the record already says. Nothing in the tree can change it without rewriting commits, which
   the review itself advises against, and the tests pass against the final code. The finding stays open until the human
@@ -81,7 +81,7 @@ timestamp: 2026-11-15T12:44:19Z
   the end-to-end tests, `go vet ./...`, `gofmt -l .`, and the Windows amd64 build and vet, all successfully.
   `npm run check-changes` failed on the log entry after a blank line. Could not verify real systemd operation,
   the physical screen and controller, lingering with udev access, or execution on Windows.
-- 2026-11-15T14:10:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, accepted finding C1 of the review
+- 2026-11-15T13:00:37Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, accepted finding C1 of the review
   of round 2, as accepted by the definition of the orchestrator and not as a decision of the human. The finding was
   right: a blank line stood between the proposed decline of P2 and the decision on it. Removed that line only, so that
   no entry holds its meaning changed. `npm run check-changes` is rerun on the committed content after this entry
@@ -92,3 +92,9 @@ timestamp: 2026-11-15T12:44:19Z
   the end-to-end tests, `go vet ./...`, `gofmt -l .`, the Windows amd64 build and vet, and
   `npm run check-changes`, all successfully. Could not verify real systemd operation, the physical screen and
   controller, lingering with udev access, or execution on Windows.
+- 2026-11-15T13:03:22Z [Claude Code, anthropic/claude-opus-5-5] under the delegation in `AGENTS.md`, decided the findings: P1 of
+  round 1 and C1 of round 2 were corrected, P2 was declined, and round 3 returned none, so no blocking finding is open.
+  The timestamps of seven entries, which did not match their commits, were corrected to the times of the commits that
+  added them. Every task of `plan.md` is ticked, and the five commands of the suite passed on the branch. On the host,
+  `service status` reported `installed: no`; the service was not installed, because installing it on the human's
+  machine and running it with the device is the human's check, which follows the merge. The status is `implemented`
