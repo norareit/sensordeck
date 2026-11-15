@@ -249,11 +249,11 @@ the test.
   with no subcommand on `linux` ends with exit status 0 and its help (R17, R21)
 - [x] Write `supported` in `internal/cli/service.go` and call it first in the four commands, and make the tests pass
   (R17)
-- [ ] Commit
+- [x] Commit
 
 ### The end-to-end tests
 
-- [ ] Write `e2e/service_test.go` with the fake `systemctl` of the approach, and the tests: `theme use minimal-dark` and
+- [x] Write `e2e/service_test.go` with the fake `systemctl` of the approach, and the tests: `theme use minimal-dark` and
   then `service install`, with the two lines, the unit file naming the built executable and the config file of
   `XDG_CONFIG_HOME`, and the three calls in the log; `install` with no config file and with a config file of
   `theme: no-such-theme`, each with exit status 1, no unit file and an empty log; `install` with the fake failing at
