@@ -333,3 +333,171 @@ func expectCallFailure(test *testing.T, harness *harness, want string) {
 		test.Errorf("status %d, stderr %q, want %q", status, harness.stderr.String(), want)
 	}
 }
+
+func TestUninstallWithNoUnitFileSaysSoAndMakesNoCall(test *testing.T) {
+	harness := serviceHarness(test)
+	if status := harness.run("service", "uninstall"); status != 0 {
+		test.Fatalf("status %d, %q", status, harness.stderr.String())
+	}
+	if harness.stdout.String() != "sensordeck.service is not installed\n" || harness.stderr.Len() != 0 || len(harness.calls) != 0 {
+		test.Errorf("stdout %q, stderr %q, calls %v", harness.stdout.String(), harness.stderr.String(), harness.calls)
+	}
+}
+
+func TestUninstallDisablesRemovesTheFileAndReloads(test *testing.T) {
+	harness := serviceHarness(test)
+	writeTestFile(test, unitFileOf(harness), "unit\n")
+	harness.answer = func(arguments []string) (string, string, error) {
+		_, err := os.Stat(unitFileOf(harness))
+		removed := errors.Is(err, os.ErrNotExist)
+		if removed != (len(harness.calls) == 2) {
+			test.Errorf("call %v: the unit file removed is %v", arguments, removed)
+		}
+		return "", "", nil
+	}
+	if status := harness.run("service", "uninstall"); status != 0 {
+		test.Fatalf("status %d, %q", status, harness.stderr.String())
+	}
+	want := [][]string{{"disable", "--now", "sensordeck.service"}, {"daemon-reload"}}
+	if !reflect.DeepEqual(harness.calls, want) || harness.stdout.String() != "sensordeck.service is stopped, disabled and removed\n" {
+		test.Errorf("calls %v, stdout %q", harness.calls, harness.stdout.String())
+	}
+}
+
+func TestUninstallFailureOfTheDisableKeepsTheFileAndMakesNoFurtherCall(test *testing.T) {
+	harness := serviceHarness(test)
+	writeTestFile(test, unitFileOf(harness), "unit\n")
+	harness.answer = func([]string) (string, string, error) { return "", "no such unit\n", errors.New("exit status 1") }
+	harness.expectFailure(test, "systemctl --user disable --now sensordeck.service failed: no such unit", "service", "uninstall")
+	if _, err := os.Stat(unitFileOf(harness)); err != nil || len(harness.calls) != 1 {
+		test.Errorf("unit file %v, calls %v", err, harness.calls)
+	}
+}
+
+func TestUninstallFailureOfTheRemovalMakesNoFurtherCall(test *testing.T) {
+	harness := serviceHarness(test)
+	writeTestFile(test, filepath.Join(unitFileOf(harness), "inside"), "a file in a directory\n")
+	if status := harness.run("service", "uninstall"); status != 1 ||
+		!strings.HasPrefix(harness.stderr.String(), "sensordeck: cannot remove the unit file "+unitFileOf(harness)+": ") ||
+		strings.Count(harness.stderr.String(), unitFileOf(harness)) != 1 {
+		test.Errorf("status %d, %q", status, harness.stderr.String())
+	}
+	if len(harness.calls) != 1 {
+		test.Errorf("calls %v", harness.calls)
+	}
+}
+
+func TestUninstallFailureOfTheLastCallLeavesTheFileRemoved(test *testing.T) {
+	harness := serviceHarness(test)
+	writeTestFile(test, unitFileOf(harness), "unit\n")
+	harness.answer = func(arguments []string) (string, string, error) {
+		if arguments[0] == "daemon-reload" {
+			return "", "bus down\n", errors.New("exit status 1")
+		}
+		return "", "", nil
+	}
+	harness.expectFailure(test, "systemctl --user daemon-reload failed: bus down", "service", "uninstall")
+	if _, err := os.Stat(unitFileOf(harness)); !errors.Is(err, os.ErrNotExist) {
+		test.Errorf("unit file: %v", err)
+	}
+}
+
+func TestUninstallAndStatusFailWithoutAConfigDirectoryAndMakeNoCall(test *testing.T) {
+	for _, name := range []string{"uninstall", "status"} {
+		harness := serviceHarness(test)
+		harness.configDirErr = errors.New("no home")
+		harness.expectFailure(test, "cannot find the config directory: no home", "service", name)
+		if len(harness.calls) != 0 {
+			test.Errorf("%s: calls %v", name, harness.calls)
+		}
+	}
+}
+
+func TestUninstallAndStatusFailWhenThePresenceOfTheUnitFileCannotBeChecked(test *testing.T) {
+	for _, name := range []string{"uninstall", "status"} {
+		harness := serviceHarness(test)
+		// A file where the directory systemd is expected makes the check fail with ENOTDIR and not with an absence.
+		writeTestFile(test, filepath.Join(harness.configDir, "systemd"), "a file\n")
+		if status := harness.run("service", name); status != 1 ||
+			!strings.HasPrefix(harness.stderr.String(), "sensordeck: cannot read the unit file "+unitFileOf(harness)+": ") {
+			test.Errorf("%s: status %d, %q", name, status, harness.stderr.String())
+		}
+		if len(harness.calls) != 0 {
+			test.Errorf("%s: calls %v", name, harness.calls)
+		}
+	}
+}
+
+func TestStatusWithNoUnitFileSaysSoAndMakesNoCall(test *testing.T) {
+	harness := serviceHarness(test)
+	if status := harness.run("service", "status"); status != 0 {
+		test.Fatalf("status %d", status)
+	}
+	if harness.stdout.String() != "installed: no\n" || len(harness.calls) != 0 {
+		test.Errorf("stdout %q, calls %v", harness.stdout.String(), harness.calls)
+	}
+}
+
+func TestStatusWritesTheThreeLinesFromOneCall(test *testing.T) {
+	for name, tc := range map[string]struct{ output, want string }{
+		"three properties":   {"UnitFileState=enabled\nActiveState=active\nSubState=running\n", "enabled: enabled\nactive: active (running)\n"},
+		"a missing property": {"ActiveState=inactive\nSubState=dead\n", "enabled: unknown\nactive: inactive (dead)\n"},
+		"an empty value":     {"UnitFileState=\nActiveState=failed\nSubState=failed\n", "enabled: unknown\nactive: failed (failed)\n"},
+	} {
+		harness := serviceHarness(test)
+		writeTestFile(test, unitFileOf(harness), "unit\n")
+		harness.answer = func([]string) (string, string, error) { return tc.output, "", nil }
+		if status := harness.run("service", "status"); status != 0 {
+			test.Fatalf("%s: status %d", name, status)
+		}
+		want := "installed: yes, " + unitFileOf(harness) + "\n" + tc.want
+		wantCalls := [][]string{{"show", "--property=UnitFileState", "--property=ActiveState", "--property=SubState", "sensordeck.service"}}
+		if harness.stdout.String() != want || !reflect.DeepEqual(harness.calls, wantCalls) {
+			test.Errorf("%s: stdout %q, calls %v", name, harness.stdout.String(), harness.calls)
+		}
+	}
+}
+
+func TestStatusFailureOfTheCallFailsAsInstallDoes(test *testing.T) {
+	harness := serviceHarness(test)
+	writeTestFile(test, unitFileOf(harness), "unit\n")
+	harness.answer = func([]string) (string, string, error) { return "", "", errors.New("exit status 4") }
+	harness.expectFailure(test, "systemctl --user show --property=UnitFileState --property=ActiveState --property=SubState sensordeck.service failed: exit status 4", "service", "status")
+}
+
+func TestEveryServiceCommandFailsOnAnotherSystemAndTouchesNothing(test *testing.T) {
+	const want = "the service is not supported on windows yet; on Windows a startup task is planned"
+	for _, args := range [][]string{
+		{"service"}, {"service", "install"}, {"service", "install", "--config", "/missing.yaml"}, {"service", "status"}, {"service", "uninstall"},
+	} {
+		harness := serviceHarness(test)
+		harness.system = "windows"
+		harness.expectFailure(test, want, args...)
+		if harness.configDirCalls != 0 || harness.executableCalls != 0 || len(harness.calls) != 0 {
+			test.Errorf("%v: userConfigDir %d, executable %d, calls %v", args, harness.configDirCalls, harness.executableCalls, harness.calls)
+		}
+		entries, err := os.ReadDir(harness.configDir)
+		if err != nil || len(entries) != 1 || entries[0].Name() != "sensordeck" {
+			test.Errorf("%v: the config directory holds %v, %v", args, entries, err)
+		}
+	}
+}
+
+func TestServiceHelpNamesTheSubcommandsOnEverySystemAndServiceAloneShowsItOnLinux(test *testing.T) {
+	for _, system := range []string{"windows", "linux"} {
+		harness := serviceHarness(test)
+		harness.system = system
+		if status := harness.run("service", "--help"); status != 0 {
+			test.Errorf("%s: status %d", system, status)
+		}
+		for _, name := range []string{"install", "status", "uninstall"} {
+			if !strings.Contains(harness.stdout.String(), name) {
+				test.Errorf("%s: the help does not name %s", system, name)
+			}
+		}
+	}
+	harness := serviceHarness(test)
+	if status := harness.run("service"); status != 0 || !strings.Contains(harness.stdout.String(), "uninstall") || harness.stderr.Len() != 0 {
+		test.Errorf("service: status %d, %q, %q", status, harness.stdout.String(), harness.stderr.String())
+	}
+}

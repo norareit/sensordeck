@@ -228,26 +228,26 @@ the test.
 
 ### `service uninstall` and `service status`
 
-- [ ] Add to `internal/cli/service_test.go` the tests of `uninstall`: no unit file, with its line, no call and exit
+- [x] Add to `internal/cli/service_test.go` the tests of `uninstall`: no unit file, with its line, no call and exit
   status 0; with a unit file, the call `disable --now sensordeck.service`, the unit file removed, checked by the answer
   of the second call finding it gone, then `daemon-reload`, the line and exit status 0; a failure of `disable --now`,
   with the unit file kept and no further call; a failure of the removal, as when the unit file is a directory that
   holds a file, with no further call; a failure of the last `daemon-reload`, with the unit file removed; and the config
   directory that cannot be found (R1, R12 to R14, R21)
-- [ ] Add the tests of `status`: no unit file, with `installed: no`, no call and exit status 0; with a unit file, the
+- [x] Add the tests of `status`: no unit file, with `installed: no`, no call and exit status 0; with a unit file, the
   one call of R16 and the three lines from an output that holds the three properties; an output with a property
   missing and one with a value empty; a failure of the call, as R10 says (R15, R16, R21)
-- [ ] Write `uninstall` and `status` in `internal/cli/service.go`, and make the tests pass (R12 to R16)
-- [ ] Commit
+- [x] Write `uninstall` and `status` in `internal/cli/service.go`, and make the tests pass (R12 to R16)
+- [x] Commit
 
 ### Other systems
 
-- [ ] Add to `internal/cli/service_test.go` a test that runs `service`, `service install`, `service install --config
+- [x] Add to `internal/cli/service_test.go` a test that runs `service`, `service install`, `service install --config
   <missing file>`, `service status` and `service uninstall` with `system` set to `windows`: each fails with exit
   status 1 and the error of R17, with `configDirCalls`, `executableCalls` and `calls` at zero and the temporary config
   directory empty; and that `service --help` names the three subcommands with `system` set to `windows`, and `service`
   with no subcommand on `linux` ends with exit status 0 and its help (R17, R21)
-- [ ] Write `supported` in `internal/cli/service.go` and call it first in the four commands, and make the tests pass
+- [x] Write `supported` in `internal/cli/service.go` and call it first in the four commands, and make the tests pass
   (R17)
 - [ ] Commit
 
