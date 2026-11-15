@@ -345,8 +345,8 @@ func TestThemeFolderRefusesAnImageLinkedOutOfTheFolder(test *testing.T) {
 		"theme", "compile", folder, filepath.Join(test.TempDir(), "out.dat"))
 }
 
-func TestThemeCompileAndPreviewHelpNameTheFirstArgumentAsANameOrFolder(test *testing.T) {
-	for _, command := range []string{"compile", "preview"} {
+func TestThemeCompilePreviewAndUseHelpNameTheFirstArgumentAsANameOrFolder(test *testing.T) {
+	for _, command := range []string{"compile", "preview", "use"} {
 		harness := newHarness()
 		if status := harness.run("theme", command, "--help"); status != 0 {
 			test.Fatalf("%s: status %d", command, status)

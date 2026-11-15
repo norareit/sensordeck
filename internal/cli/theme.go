@@ -23,7 +23,7 @@ func (current *session) themeCommand() *cobra.Command {
 		Short: "Work with theme files without a screen",
 	}
 	theme.AddCommand(current.themeDumpCommand(), current.themeCompileCommand(), current.themePreviewCommand(),
-		current.themeListCommand())
+		current.themeListCommand(), current.themeUseCommand())
 	return theme
 }
 
