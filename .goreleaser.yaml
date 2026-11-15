@@ -1,0 +1,42 @@
+version: 2
+
+project_name: sensordeck
+
+# GoReleaser deletes its output directory with --clean, and dist/ holds the captures of the checks on the device.
+dist: release
+
+builds:
+  - id: sensordeck
+    binary: sensordeck
+    main: .
+    env:
+      - CGO_ENABLED=0
+    flags:
+      - -trimpath
+    ldflags:
+      - -s -w -X main.version=v{{.Version}}
+    goos: [linux, windows]
+    goarch: [amd64, arm64]
+    ignore:
+      - goos: windows
+        goarch: arm64
+
+archives:
+  - formats: [tar.gz]
+    format_overrides:
+      - goos: windows
+        formats: [zip]
+    files:
+      - README.md
+      - LICENSE
+      - THIRD_PARTY_LICENSES
+      - udev/70-sensordeck.rules
+
+checksum:
+  algorithm: sha256
+
+release:
+  draft: true
+
+changelog:
+  disable: true

@@ -1,0 +1,37 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  suite:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5.0.0
+      - uses: actions/setup-go@v6.0.0
+        with:
+          go-version-file: go.mod
+      # The notices test needs the module that only the Windows build of cobra imports, which a Linux build leaves out
+      # of the module cache.
+      - name: Download the modules
+        run: go mod download
+      - name: Test
+        run: go test ./...
+      - name: Vet
+        run: go vet ./...
+      - name: Format
+        run: |
+          files=$(gofmt -l .)
+          if [ -n "$files" ]; then
+            echo "$files"
+            exit 1
+          fi
+      - name: Build for Windows
+        run: GOOS=windows GOARCH=amd64 go build ./...
+      - name: Vet for Windows
+        run: GOOS=windows GOARCH=amd64 go vet ./...

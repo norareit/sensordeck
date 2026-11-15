@@ -9,6 +9,9 @@ local-themes/
 
 node_modules/
 dist/
+
+# Output of GoReleaser
+release/
 *.log
 
 # Review findings, saved in full per unit and never committed
