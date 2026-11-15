@@ -179,8 +179,8 @@ What the tree on `feature-0016-windows-hid-transport` holds, and what the plan b
 
 ### 3. The fake of the seam and the pure parts of the Windows layer
 
-- [ ] Add `internal/winhid/seam.go` with `Seam`, `Handle`, `Caps` and `Operation`, as the choices above say (R3)
-- [ ] Add `internal/fakehid/fakehid.go`: a `Seam` built from a list of collections, each with its path, IDs, product
+- [x] Add `internal/winhid/seam.go` with `Seam`, `Handle`, `Caps` and `Operation`, as the choices above say (R3)
+- [x] Add `internal/fakehid/fakehid.go`: a `Seam` built from a list of collections, each with its path, IDs, product
   and serial strings, caps, an error for each of the opening with zero access, the attributes, the caps, the strings
   and the opening for reading and writing, and a function that makes the input report that follows a write. It
   records every opening with its kind, every closing, every wait with its milliseconds, every cancel, every start and
@@ -188,10 +188,10 @@ What the tree on `feature-0016-windows-hid-transport` holds, and what the plan b
   the wait, completed only at the reap after a cancel with a code and a count, or failed at the start with a code. A
   method tells whether any operation is pending and whether every handle opened is closed. Add
   `internal/fakehid/fakehid_test.go` for what the fake records (R31)
-- [ ] Add `internal/winhid/paths_test.go`, with each path of R9 and its expected answer, and
+- [x] Add `internal/winhid/paths_test.go`, with each path of R9 and its expected answer, and
   `internal/winhid/paths.go` with `InterfaceZero(path string) bool`: the part between the first and the second `#`,
   split on `&`, holds a field equal to `mi_00` without regard to case (R9, R31)
-- [ ] Add `internal/winhid/operation_test.go`, a table over `complete` and `milliseconds`: a read and a write in time;
+- [x] Add `internal/winhid/operation_test.go`, a table over `complete` and `milliseconds`: a read and a write in time;
   a read in time of fewer bytes; a short write in time, `short write: <count> of <length> bytes`; a read completed with
   data after the wait ended (the race), which gives its bytes; a cancelled read reaped with `errorOperationAborted`,
   for which `errors.Is` with `smartmonitor.ErrReadTimeout` is true; an `errorOperationAborted` of a read not
@@ -200,31 +200,31 @@ What the tree on `feature-0016-windows-hid-transport` holds, and what the plan b
   that failed; another code, worded `read failed: <text>` and `write failed: <text>`, with the code reachable with
   `errors.As`; and the rounding of 0, 1 ns, 1 ms, 1.5 ms, a negative limit and a limit beyond `0xFFFFFFFE` ms (R18,
   R19, R21, R31)
-- [ ] Add `internal/winhid/operation.go` with `complete`, `milliseconds` and `run`. The cases of `run` against
+- [x] Add `internal/winhid/operation.go` with `complete`, `milliseconds` and `run`. The cases of `run` against
   `fakehid` are tested through `Device` in `device_test.go` below, because `operation_test.go` is in the package
   `winhid` and cannot import the fake (R18, R19, R20)
-- [ ] Add `internal/winhid/errors_test.go`, with the wording of R14 for `errorAccessDenied`, `errorSharingViolation`
+- [x] Add `internal/winhid/errors_test.go`, with the wording of R14 for `errorAccessDenied`, `errorSharingViolation`
   and another code, and the code reachable with `errors.As` for each, and `internal/winhid/errors.go` with the opening
   error, its exact text and `Unwrap` to the `syscall.Errno`, on the pattern of `hidraw.openErrorValue` (R14, R31)
-- [ ] Add `internal/winhid/collections_test.go` (`winhid_test`): `List` orders by path without regard to case, leaves
+- [x] Add `internal/winhid/collections_test.go` (`winhid_test`): `List` orders by path without regard to case, leaves
   out a path that fails to open, to give its attributes or its caps, keeps a collection whose strings fail with empty
   strings, opens every path with zero access only, and closes every handle in every case; `Screens` keeps the
   collections of `0483:0065` with 65 and 65, gives the others of `0483:0065` as near misses, and ignores other devices;
   `NearMissLines` gives the lines of R33 in the order of R6 (R6, R7, R32, R33, R31)
-- [ ] Add `internal/winhid/collections.go` with `Collection` (path, IDs, name, serial, caps), `List(seam Seam)
+- [x] Add `internal/winhid/collections.go` with `Collection` (path, IDs, name, serial, caps), `List(seam Seam)
   ([]Collection, error)`, `Screens(collections []Collection) (screens, nearMisses []Collection)`, `Collection.Line()`
   by `screenlist.Line`, and `NearMissLines`. The length of the screen is `1 + len(smartmonitor.Report{})` and is
   written nowhere as 65 (R6, R7, R10, R32, R33)
-- [ ] Add `internal/winhid/device_test.go` (`winhid_test`): `Open` opens for reading and writing only the path given,
+- [x] Add `internal/winhid/device_test.go` (`winhid_test`): `Open` opens for reading and writing only the path given,
   reads its caps and serial, words a failed opening by R14, and closes the handle when the caps fail; `WriteReport`
   writes a buffer of the output length with `0x00`, the payload and zeros, with `WriteTimeLimit`; `ReadReport` reads a
   buffer of the input length, drops the first byte, gives `io.EOF` for 0 bytes, and gives the bytes of a short read;
   `run` cancels and reaps when the wait ends without completion, reaps without cancelling when the operation completes
   in time, waits the time limit rounded up, and starts nothing more after a failed start; and after each call no
   operation is pending (R15, R16, R18, R19, R20, R31)
-- [ ] Add `internal/winhid/device.go` with `Device`, `Open`, `WriteReport`, `ReadReport`, `Caps`, `Serial` and
+- [x] Add `internal/winhid/device.go` with `Device`, `Open`, `WriteReport`, `ReadReport`, `Caps`, `Serial` and
   `Close`, keeping the buffer of each operation referenced by the call until `Reap` returned (R15, R16, R20)
-- [ ] Add `internal/winhid/transport_test.go` (`winhid_test`): `OpenDiscovered` with no screen, `no supported screen
+- [x] Add `internal/winhid/transport_test.go` (`winhid_test`): `OpenDiscovered` with no screen, `no supported screen
   found`, with no screen and two near misses, the same followed by their lines, with a near miss beside a screen, no
   line, with one screen, opened, with two, the error of `screenlist.Several`; `OpenPath` with lengths of 65 and with
   lengths of 64 and 65, `cannot open <path>: its reports are 64 and 65 bytes, those of the screen are 65`, and the
@@ -232,10 +232,10 @@ What the tree on `feature-0016-windows-hid-transport` holds, and what the plan b
   `Read` by R16, filling up to 64 bytes; `Reopen` by the discovery anew and by the same path, a failed `Reopen` that
   leaves no handle, `Write` and `Read` then failing with an error that is not the timeout, a later `Reopen` that
   succeeds; `Close` twice; and nothing pending after any call (R10, R11, R12, R13, R15, R16, R20, R22, R33, R31)
-- [ ] Add `internal/winhid/transport.go` with `Transport` (`OpenDiscovered(seam)`, `OpenPath(seam, path)`, `Write`,
+- [x] Add `internal/winhid/transport.go` with `Transport` (`OpenDiscovered(seam)`, `OpenPath(seam, path)`, `Write`,
   `Read`, `Reopen`, `Serial`, `Close`), which implements the `transport` of the command line, on the pattern of
   `hidraw.Transport` (R11, R12, R13, R15, R16, R22, R23)
-- [ ] Run the suite and commit: `feature-0016 Add the Windows HID layer on a seam, with its fake`
+- [x] Run the suite and commit: `feature-0016 Add the Windows HID layer on a seam, with its fake`
 
 ### 4. The seam on Windows
 
