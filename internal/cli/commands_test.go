@@ -37,6 +37,14 @@ type harness struct {
 	cancelStop     context.CancelFunc
 	waits          []time.Duration
 	onWait         func(count int) // called after each wait has moved the clock, with the count of waits so far
+	system         string          // what the system is, linux unless a test sets it
+	executablePath string          // what executable gives
+	executableErr  error
+	calls          [][]string // the arguments of each call of systemctl
+	// answer gives the result of a call of systemctl, and a call succeeds with no output when it is nil.
+	answer          func(arguments []string) (stdout, stderr string, err error)
+	configDirCalls  int // how often userConfigDir was called
+	executableCalls int // how often executable was called
 }
 
 func newHarness() *harness {
@@ -46,6 +54,7 @@ func newHarness() *harness {
 		clock: clock, transport: &fakeTransport{clock: clock}, controller: &fakeSource{}, stopped: stopped, cancelStop: cancelStop,
 		// No test writes a state file outside a temporary directory of its own: it sets cacheDir and clears this.
 		cacheDirErr: errors.New("no cache directory in this test"),
+		system:      "linux",
 	}
 }
 
@@ -69,8 +78,11 @@ func (harness *harness) run(args ...string) int {
 			}
 			return harness.transport, nil
 		},
-		userConfigDir: func() (string, error) { return harness.configDir, harness.configDirErr },
-		userCacheDir:  func() (string, error) { return harness.cacheDir, harness.cacheDirErr },
+		userConfigDir: func() (string, error) {
+			harness.configDirCalls++
+			return harness.configDir, harness.configDirErr
+		},
+		userCacheDir: func() (string, error) { return harness.cacheDir, harness.cacheDirErr },
 		newSources: func(sysfsRoot, devRoot, procRoot string) (sourceSet, error) {
 			if sysfsRoot != "/sysroot" || devRoot != "/devroot" || procRoot != "/procroot" {
 				return sourceSet{}, errors.New("the roots were not passed on")
@@ -90,6 +102,18 @@ func (harness *harness) run(args ...string) int {
 				harness.onWait(len(harness.waits))
 			}
 			return stop.Err() == nil
+		},
+		system: harness.system,
+		executable: func() (string, error) {
+			harness.executableCalls++
+			return harness.executablePath, harness.executableErr
+		},
+		systemctl: func(arguments ...string) (string, string, error) {
+			harness.calls = append(harness.calls, arguments)
+			if harness.answer == nil {
+				return "", "", nil
+			}
+			return harness.answer(arguments)
 		},
 	})
 }
@@ -114,7 +138,7 @@ func TestHelpNamesTheCommandsAndTheOptions(test *testing.T) {
 			test.Errorf("%v: status %d", args, status)
 		}
 		help := harness.stdout.String()
-		for _, name := range []string{"devices", "clock", "values", "upload", "listen", "raw", "sensors", "run", "theme", "--device", "--trace"} {
+		for _, name := range []string{"devices", "clock", "values", "upload", "listen", "raw", "sensors", "run", "theme", "service", "--device", "--trace"} {
 			if !strings.Contains(help, name) {
 				test.Errorf("%v: the help does not name %s", args, name)
 			}

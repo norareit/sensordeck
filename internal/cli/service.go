@@ -1,0 +1,244 @@
+package cli
+
+import (
+	"errors"
+	"fmt"
+	"io/fs"
+	"os"
+	"path/filepath"
+	"strings"
+
+	"github.com/spf13/cobra"
+)
+
+// serviceCommand is service and its three subcommands. On a system other than Linux each of them fails at once.
+func (current *session) serviceCommand() *cobra.Command {
+	service := &cobra.Command{
+		Use:   "service",
+		Short: "Run sensordeck run as a systemd user service",
+		Args:  cobra.NoArgs,
+		RunE: func(command *cobra.Command, args []string) error {
+			if err := current.supported(); err != nil {
+				return err
+			}
+			return command.Help()
+		},
+	}
+	service.AddCommand(current.serviceInstallCommand(), current.serviceStatusCommand(), current.serviceUninstallCommand())
+	return service
+}
+
+// supported fails on a system other than Linux, before a command reads or writes anything.
+func (current *session) supported() error {
+	if current.env.system != "linux" {
+		return fmt.Errorf("the service is not supported on %s yet; on Windows a startup task is planned", current.env.system)
+	}
+	return nil
+}
+
+// unitFile gives the path of the unit file in the config directory of the user.
+func (current *session) unitFile() (string, error) {
+	directory, err := current.env.userConfigDir()
+	if err != nil {
+		return "", fmt.Errorf("cannot find the config directory: %w", err)
+	}
+	return unitFilePath(directory), nil
+}
+
+// systemctl makes one call and gives its standard output. A failure names the call and gives the standard error of
+// the call as its cause, or the error of the call when it wrote none.
+func (current *session) systemctl(arguments ...string) (string, error) {
+	stdout, stderr, err := current.env.systemctl(arguments...)
+	if err == nil {
+		return stdout, nil
+	}
+	cause := strings.TrimSpace(stderr)
+	if cause == "" {
+		cause = err.Error()
+	}
+	return "", fmt.Errorf("systemctl --user %s failed: %s", strings.Join(arguments, " "), cause)
+}
+
+// installed tells whether the unit file exists. A link at its path counts as a unit file.
+func installed(unitFile string) (bool, error) {
+	_, err := os.Lstat(unitFile)
+	if errors.Is(err, fs.ErrNotExist) {
+		return false, nil
+	}
+	if err != nil {
+		return false, fmt.Errorf("cannot read the unit file %s: %w", unitFile, innerError(err))
+	}
+	return true, nil
+}
+
+// serviceInstallCommand writes the unit file, and enables and starts the service. It opens no device and reads no
+// sensor.
+func (current *session) serviceInstallCommand() *cobra.Command {
+	var configPath string
+	command := &cobra.Command{
+		Use:   "install",
+		Short: "Write, enable and start the systemd user service of run",
+		Args:  cobra.NoArgs,
+		RunE: func(command *cobra.Command, args []string) error {
+			if err := current.supported(); err != nil {
+				return err
+			}
+			unitFile, err := current.unitFile()
+			if err != nil {
+				return err
+			}
+			content, config, err := current.unitFileFor(configPath)
+			if err != nil {
+				return err
+			}
+			if err := current.checkConfig(config); err != nil {
+				return err
+			}
+			if err := writeUnitFile(unitFile, content); err != nil {
+				return err
+			}
+			current.say("wrote " + unitFile)
+			for _, arguments := range [][]string{{"daemon-reload"}, {"enable", unitName}, {"restart", unitName}} {
+				if _, err := current.systemctl(arguments...); err != nil {
+					return err
+				}
+			}
+			current.say(unitName + " is enabled and started")
+			return nil
+		},
+	}
+	command.Flags().StringVar(&configPath, "config", "", "name this config file in the service instead of the one of the user")
+	return command
+}
+
+// unitFileFor gives the content of the unit file for the running executable and the config file, which is the one named
+// or the one of the user, and the path of the config file.
+func (current *session) unitFileFor(named string) (content, config string, err error) {
+	executable, err := current.executablePath()
+	if err != nil {
+		return "", "", err
+	}
+	config, err = current.configPath(named)
+	if err != nil {
+		return "", "", err
+	}
+	// The links of the config file are kept, so that a file that is a link into a repository is read through the link.
+	absolute, err := filepath.Abs(config)
+	if err != nil {
+		return "", "", fmt.Errorf("cannot make the path %s absolute: %w", config, err)
+	}
+	config = absolute
+	content, err = unitFileContent(executable, config)
+	return content, config, err
+}
+
+// executablePath gives the path of the running executable, with its links resolved and made absolute.
+func (current *session) executablePath() (string, error) {
+	executable, err := current.env.executable()
+	if err == nil {
+		executable, err = filepath.EvalSymlinks(executable)
+	}
+	if err == nil {
+		executable, err = filepath.Abs(executable)
+	}
+	if err != nil {
+		return "", fmt.Errorf("cannot find the path of the executable: %w", innerError(err))
+	}
+	return executable, nil
+}
+
+// checkConfig loads the config file as run does at its start, so that a service is never installed for a config that
+// run refuses.
+func (current *session) checkConfig(path string) error {
+	content, err := readNamedFile("config file", path)
+	if errors.Is(err, fs.ErrNotExist) {
+		return fmt.Errorf("%w; sensordeck theme use <theme> creates it", err)
+	}
+	if err != nil {
+		return err
+	}
+	_, err = current.loadConfigFile(path, content)
+	return err
+}
+
+// writeUnitFile writes the unit file, creating its directory and replacing a file that exists.
+func writeUnitFile(unitFile, content string) error {
+	if err := os.MkdirAll(filepath.Dir(unitFile), 0o755); err != nil {
+		return fmt.Errorf("cannot write the unit file %s: %w", unitFile, innerError(err))
+	}
+	if err := os.WriteFile(unitFile, []byte(content), 0o644); err != nil {
+		return fmt.Errorf("cannot write the unit file %s: %w", unitFile, innerError(err))
+	}
+	return nil
+}
+
+// serviceUninstallCommand stops and disables the service and removes the unit file.
+func (current *session) serviceUninstallCommand() *cobra.Command {
+	return &cobra.Command{
+		Use:   "uninstall",
+		Short: "Stop, disable and remove the systemd user service",
+		Args:  cobra.NoArgs,
+		RunE: func(command *cobra.Command, args []string) error {
+			if err := current.supported(); err != nil {
+				return err
+			}
+			unitFile, err := current.unitFile()
+			if err != nil {
+				return err
+			}
+			present, err := installed(unitFile)
+			if err != nil {
+				return err
+			}
+			if !present {
+				current.say(unitName + " is not installed")
+				return nil
+			}
+			if _, err := current.systemctl("disable", "--now", unitName); err != nil {
+				return err
+			}
+			if err := os.Remove(unitFile); err != nil {
+				return fmt.Errorf("cannot remove the unit file %s: %w", unitFile, innerError(err))
+			}
+			if _, err := current.systemctl("daemon-reload"); err != nil {
+				return err
+			}
+			current.say(unitName + " is stopped, disabled and removed")
+			return nil
+		},
+	}
+}
+
+// serviceStatusCommand writes whether the service is installed, enabled and active.
+func (current *session) serviceStatusCommand() *cobra.Command {
+	return &cobra.Command{
+		Use:   "status",
+		Short: "Show whether the service is installed, enabled and active",
+		Args:  cobra.NoArgs,
+		RunE: func(command *cobra.Command, args []string) error {
+			if err := current.supported(); err != nil {
+				return err
+			}
+			unitFile, err := current.unitFile()
+			if err != nil {
+				return err
+			}
+			present, err := installed(unitFile)
+			if err != nil {
+				return err
+			}
+			if !present {
+				current.say("installed: no")
+				return nil
+			}
+			output, err := current.systemctl("show", "--property=UnitFileState", "--property=ActiveState", "--property=SubState", unitName)
+			if err != nil {
+				return err
+			}
+			for _, line := range statusLines(unitFile, showProperties(output)) {
+				current.say(line)
+			}
+			return nil
+		},
+	}
+}

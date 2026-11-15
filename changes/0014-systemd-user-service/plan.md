@@ -199,10 +199,10 @@ the test.
 
 ### The seam and `service install`
 
-- [ ] Add `system`, `executable` and `systemctl` to `environment` in `internal/cli/main.go`, filled in `Main`, and write
+- [x] Add `system`, `executable` and `systemctl` to `environment` in `internal/cli/main.go`, filled in `Main`, and write
   `internal/cli/systemctl.go`. Give the harness of `internal/cli/commands_test.go` the fields of the approach, with
   `system` set to `linux` in `newHarness` (R21, D13)
-- [ ] Write the tests of `install` in `internal/cli/service_test.go`, with a helper that gives a harness whose config
+- [x] Write the tests of `install` in `internal/cli/service_test.go`, with a helper that gives a harness whose config
   directory is a temporary one holding `sensordeck/config.yaml` with `theme: minimal-dark`, and whose executable is a
   file in another temporary directory: the unit file byte for byte without `--config`, naming the default config file,
   and with an absolute `--config` and a relative one, made absolute against the working directory of the test; a
@@ -217,14 +217,14 @@ the test.
   left in place; the standard error of a call as the cause, trimmed, and an empty one giving `exit status <n>` from a
   real `*exec.ExitError` made by running `sh -c 'exit 3'`; and a call that cannot start giving the error of the start
   (R1 to R4, R6, R8 to R11, R21)
-- [ ] Add the tests of the check: a missing config file, with the hint; a file that does not parse; a theme that does
+- [x] Add the tests of the check: a missing config file, with the hint; a file that does not parse; a theme that does
   not compile; each with no unit file written and no call made, and the error compared with the standard error that
   `run --config <same file>` gives in another harness, so that the text is the one of `run` (R7, R21)
-- [ ] Write `serviceCommand` and `install` in `internal/cli/service.go`, add `serviceCommand` to the root in
+- [x] Write `serviceCommand` and `install` in `internal/cli/service.go`, add `serviceCommand` to the root in
   `internal/cli/main.go`, add `service` to the names that `TestHelpNamesTheCommandsAndTheOptions` checks, and make the
   tests pass; check that `install` opens no device and reads no sensor by `harness.opened` empty and `sourcesErr` set
   (R6 to R11)
-- [ ] Commit
+- [x] Commit
 
 ### `service uninstall` and `service status`
 

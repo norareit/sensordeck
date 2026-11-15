@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"os/signal"
+	"runtime"
 	"syscall"
 	"time"
 
@@ -44,6 +45,14 @@ type environment struct {
 	after func(duration time.Duration) <-chan time.Time
 	// wait waits for the duration and gives false when stop ended the wait.
 	wait func(stop context.Context, duration time.Duration) bool
+	// system is the name of the system, as runtime.GOOS gives it.
+	system string
+	// executable gives the path of the running executable, as os.Executable does.
+	executable func() (string, error)
+	// systemctl runs systemctl --user with the arguments and gives its standard output and standard error. Its error is
+	// nil when the call succeeded, an *exec.ExitError when it ended with another status, and the error of the start when
+	// it could not start.
+	systemctl func(arguments ...string) (stdout, stderr string, err error)
 }
 
 const (
@@ -74,8 +83,11 @@ func Main() int {
 		notifyStop: func(parent context.Context) (context.Context, context.CancelFunc) {
 			return signal.NotifyContext(parent, os.Interrupt, syscall.SIGTERM)
 		},
-		after: time.After,
-		wait:  waitFor,
+		after:      time.After,
+		wait:       waitFor,
+		system:     runtime.GOOS,
+		executable: os.Executable,
+		systemctl:  runSystemctl,
 	})
 }
 
@@ -139,6 +151,7 @@ func newRootCommand(env environment, start time.Time) *cobra.Command {
 		session.sensorsCommand(),
 		session.runCommand(),
 		session.themeCommand(),
+		session.serviceCommand(),
 	)
 	return root
 }
