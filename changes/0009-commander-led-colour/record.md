@@ -34,3 +34,13 @@ timestamp: 2026-11-15T00:48:51Z
   `exchange`, in which `valid` is replaced by `invalidity`, which names what is wrong with an answer, so that the
   session can name the failed check, and the test of `valid` now calls it. Behaviour of the reading is unchanged, checked by
   the five commands of the suite
+- 2026-11-15T02:30:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, built every task of `plan.md` in
+  order and ticked them. Deviations: the fake controller answers status `03` to every command but a mode command outside
+  software mode, as the plan's order says, and `FailCommand` and `OnCommand` hooks stack; `valid` became `invalidity`,
+  as logged above; `fakeLighting` has no `onRead` hook, because no test uses one; the lines of the keeper share one
+  locked writer with the trace by wrapping the standard error of the session at the start of `run`. Verified on `0983c2c`:
+  `go test ./...`, `go vet ./...`, `gofmt -l .`, and the build and vet with `GOOS=windows GOARCH=amd64` all report nothing
+  and succeed, and `go test -race ./internal/cli` passed before the last commits. `npm run check-changes` reported nothing.
+  Not checked: the device itself, which is the human's check, and Windows
+- 2026-11-15T02:31:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, noted that no review has been run
+  yet, so no finding is open. The status stays `in-progress`
