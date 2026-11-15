@@ -25,10 +25,10 @@ func TestCompileFormat(test *testing.T) {
 
 func TestCompileFormatErrors(test *testing.T) {
 	cases := map[string]string{
-		"YYY":                          `the character 'Y' at position 1 is not a token or a separator`,
-		"HH:mmx":                       `the character 'x' at position 6 is not a token or a separator`,
-		"HH h":                         `the character 'h' at position 4 is not a token or a separator`,
-		"hh":                           `the character 'h' at position 1 is not a token or a separator`,
+		"YYY":                          `the character "Y" at position 1 is not a token or a separator`,
+		"HH:mmx":                       `the character "x" at position 6 is not a token or a separator`,
+		"HH h":                         `the character "h" at position 4 is not a token or a separator`,
+		"hh":                           `the character "h" at position 1 is not a token or a separator`,
 		"":                             "want a non-empty format",
 		strings.Repeat("ss:", 9) + ":": "compiles to 19 bytes, more than 18",
 	}

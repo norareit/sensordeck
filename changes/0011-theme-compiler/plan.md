@@ -394,7 +394,7 @@ Nothing is written before the whole compilation and, for `preview`, the PNG enco
 
 ### The document and the compiler
 
-- [ ] Add `internal/themecompile/document_test.go`, table-driven over `fstest.MapFS` folders, each case a
+- [x] Add `internal/themecompile/document_test.go`, table-driven over `fstest.MapFS` folders, each case a
   `theme.yaml` text and the exact message wanted, for each fault of "Places and messages" that is checked before a
   file is opened (R1, R2, R4 to R9, R29): an unknown key at the top level, in a font and in a widget; a key given twice
   at the top level and in a widget; `name` missing, empty and with a tab; `author` with a newline; `background`
@@ -404,9 +404,9 @@ Nothing is written before the whole compilation and, for `preview`, the PNG enco
   -1 and as `a`; y missing; a text with an empty text and with a newline; a number with `digits` 0 and 6, and with
   `cpu.tmp`; a datetime with a format of R6's errors; a widget that names a font `fonts` does not have; 63 widgets;
   and a folder with two faults, compiled twice, gives the first in the order of "The steps of Compile" both times
-- [ ] Add `internal/themecompile/nodes.go`, `document.go` and the steps 1 to 3 of `compile.go`, until the test passes
+- [x] Add `internal/themecompile/nodes.go`, `document.go` and the steps 1 to 3 of `compile.go`, until the test passes
   (R1, R2, R4 to R9)
-- [ ] Add `internal/themecompile/records_test.go` (R12 to R16, R29), one test for each record type in a theme of the
+- [x] Add `internal/themecompile/records_test.go` (R12 to R16, R29), one test for each record type in a theme of the
   background and that one widget, with the Go regular font: every byte of its slot is compared with a slot written by
   `faketheme.Head`, `faketheme.Put16` and `faketheme.Put32` from the values of "The records", independent of
   `Encode`; slot 0 is `0x96` and 63 zeros, slots 3 to 63 are zero, the background's offset is `0x1000` and the
@@ -414,9 +414,9 @@ Nothing is written before the whole compilation and, for `preview`, the PNG enco
   is 307200 bytes of its colour; a PNG background's pixel is composited over black; the text's box is `textWidth` by
   `height`; a number of `digits` 4 is `4 x digitWidth` wide; the datetime of `HH:mm` is `4 x digitWidth` plus the width
   of `:`; the slot of the second of two widgets has index 2
-- [ ] Add `internal/themecompile/files.go`, `records.go`, `layout.go` and the steps 4 to 6 of `compile.go`, until the
+- [x] Add `internal/themecompile/files.go`, `records.go`, `layout.go` and the steps 4 to 6 of `compile.go`, until the
   test passes (R3, R10 to R16)
-- [ ] Add `internal/themecompile/compile_test.go` (R3, R9, R10, R25, R26, R29):
+- [x] Add `internal/themecompile/compile_test.go` (R3, R9, R10, R25, R26, R29):
     - the round trip: a theme with a PNG background, a `file:` font written into the `MapFS` from `gomono.TTF`, a
       builtin font, and a text, an image, two numbers of the same metric, a third number and a datetime; `themefile.Parse`
       of `File` gives no error and no warning, header byte 0 `0x96`, an entry in each of the slots 1 to 7 and none
@@ -432,9 +432,9 @@ Nothing is written before the whole compilation and, for `preview`, the PNG enco
       a text too wide for the screen gives the box error
     - 62 widgets compile; 9 image widgets of 480 x 320 give the flash limit error with the size 4458496
     - R25: the same `MapFS` compiled twice gives equal `File` bytes and equal tags
-- [ ] Run the five commands of the suite until all tests pass and commit: `feature-0011 Compile a theme folder into a
+- [x] Run the five commands of the suite until all tests pass and commit: `feature-0011 Compile a theme folder into a
   theme file`
-- [ ] Add to `layout_test.go` a test that no non-test file of `internal/themecompile` imports `os`, `os/exec`,
+- [x] Add to `layout_test.go` a test that no non-test file of `internal/themecompile` imports `os`, `os/exec`,
   `os/signal`, `net`, `syscall`, `unsafe` or a package of the device, the transport or the sensors readers
   (`internal/hidraw`, `internal/linuxsensors`, `internal/commandercore`, `internal/smartmonitor`), and commit with the
   suite passing: `feature-0011 Test that the theme compiler does no I/O` (R24)

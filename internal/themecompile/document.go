@@ -1,0 +1,361 @@
+package themecompile
+
+import (
+	"fmt"
+	"strings"
+
+	"go.yaml.in/yaml/v3"
+
+	"github.com/norareit/sensordeck/internal/config"
+	"github.com/norareit/sensordeck/internal/sensors"
+)
+
+const (
+	maxWidgets   = 62
+	maxFontSize  = 320
+	maxDigits    = 5
+	defaultDigit = 3
+)
+
+type document struct {
+	background backgroundSpec
+	fonts      []fontSpec   // in the order of the file
+	widgets    []widgetSpec // in the order of the list
+}
+
+type backgroundSpec struct {
+	colour config.Colour
+	path   string // empty for a colour
+}
+
+type fontSpec struct {
+	name, file, builtin string
+	size                int
+	colour              config.Colour
+}
+
+type widgetSpec struct {
+	number       int    // counted from 1
+	kind         string // "text", "number", "datetime" or "image"
+	x, y         int64
+	font         int // the position of its font in document.fonts
+	text, metric string
+	digits       int
+	format       []byte // compiled
+	file         string
+}
+
+var (
+	topKeys    = []string{"author", "background", "fonts", "license", "name", "widgets"}
+	fontKeys   = []string{"builtin", "color", "file", "size"}
+	widgetKeys = map[string][]string{
+		"text":     {"font", "text", "type", "x", "y"},
+		"number":   {"digits", "font", "metric", "type", "x", "y"},
+		"datetime": {"font", "format", "type", "x", "y"},
+		"image":    {"file", "type", "x", "y"},
+	}
+)
+
+// parseDocument reads the content of theme.yaml and checks everything about it that needs no other file.
+func parseDocument(content []byte) (document, error) {
+	var root yaml.Node
+	if err := yaml.Unmarshal(content, &root); err != nil {
+		return document{}, err
+	}
+	if root.Kind != yaml.DocumentNode || len(root.Content) == 0 || resolve(root.Content[0]).Kind != yaml.MappingNode {
+		return document{}, problem("", "want a mapping")
+	}
+	values, err := fields(resolve(root.Content[0]), "", topKeys)
+	if err != nil {
+		return document{}, err
+	}
+	var parsed document
+	if err := checkIdentity(values); err != nil {
+		return document{}, err
+	}
+	if parsed.background, err = readBackground(values); err != nil {
+		return document{}, err
+	}
+	if parsed.fonts, err = readFonts(values["fonts"]); err != nil {
+		return document{}, err
+	}
+	parsed.widgets, err = readWidgets(values["widgets"], parsed.fonts)
+	return parsed, err
+}
+
+// checkIdentity checks name, author and license, whose values nothing of the file holds.
+func checkIdentity(values map[string]*yaml.Node) error {
+	name, err := required(values, "", "name")
+	if err != nil {
+		return err
+	}
+	if _, err := readString(name, "", "name", true); err != nil {
+		return err
+	}
+	for _, key := range []string{"author", "license"} {
+		if value, found := values[key]; found {
+			if _, err := readString(value, "", key, false); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func readBackground(values map[string]*yaml.Node) (backgroundSpec, error) {
+	node, err := required(values, "", "background")
+	if err != nil {
+		return backgroundSpec{}, err
+	}
+	if !isString(node) {
+		if node.Kind == yaml.ScalarNode {
+			colour, err := readColour(node, "", "background")
+			return backgroundSpec{colour: colour}, err
+		}
+		return backgroundSpec{}, problem("background", "want a string")
+	}
+	if strings.HasPrefix(node.Value, "#") {
+		colour, err := readColour(node, "", "background")
+		return backgroundSpec{colour: colour}, err
+	}
+	path, err := readString(node, "", "background", true)
+	return backgroundSpec{path: path}, err
+}
+
+func readFonts(node *yaml.Node) ([]fontSpec, error) {
+	if node == nil {
+		return nil, nil
+	}
+	if node.Kind != yaml.MappingNode {
+		return nil, problem("fonts", "want a mapping from a font name to a font")
+	}
+	found, err := entries(node, "fonts", nil)
+	if err != nil {
+		return nil, err
+	}
+	var fonts []fontSpec
+	for _, each := range found {
+		if each.key == "" {
+			return nil, problem("fonts", "a font name must not be empty")
+		}
+		font, err := readFont(each.key, each.value)
+		if err != nil {
+			return nil, err
+		}
+		fonts = append(fonts, font)
+	}
+	return fonts, nil
+}
+
+func readFont(name string, node *yaml.Node) (fontSpec, error) {
+	place := "font " + name
+	if node.Kind != yaml.MappingNode {
+		return fontSpec{}, problem(place, "want a mapping")
+	}
+	values, err := fields(node, place, fontKeys)
+	if err != nil {
+		return fontSpec{}, err
+	}
+	font := fontSpec{name: name}
+	fileNode, hasFile := values["file"]
+	builtinNode, hasBuiltin := values["builtin"]
+	if hasFile == hasBuiltin {
+		return fontSpec{}, problem(place, "give exactly one of builtin and file")
+	}
+	if hasFile {
+		font.file, err = readString(fileNode, place, "file", true)
+	} else {
+		font.builtin, err = readString(builtinNode, place, "builtin", true)
+		if err == nil && !isGoFont(font.builtin) {
+			err = problem(join(place, "builtin"), "%q is not a Go font, the Go fonts are %s", font.builtin, goFontNames())
+		}
+	}
+	if err != nil {
+		return fontSpec{}, err
+	}
+	size, err := required(values, place, "size")
+	if err != nil {
+		return fontSpec{}, err
+	}
+	number, err := readWholeNumber(size, place, "size", 1, maxFontSize)
+	if err != nil {
+		return fontSpec{}, err
+	}
+	font.size = int(number)
+	colour, err := required(values, place, "color")
+	if err != nil {
+		return fontSpec{}, err
+	}
+	font.colour, err = readColour(colour, place, "color")
+	return font, err
+}
+
+func readWidgets(node *yaml.Node, fonts []fontSpec) ([]widgetSpec, error) {
+	if node == nil {
+		return nil, nil
+	}
+	if node.Kind != yaml.SequenceNode {
+		return nil, problem("widgets", "want a list of widgets")
+	}
+	if len(node.Content) > maxWidgets {
+		return nil, problem("widgets", "%d widgets, more than the %d that fit beside the background", len(node.Content), maxWidgets)
+	}
+	var widgets []widgetSpec
+	for position, item := range node.Content {
+		widget, err := readWidget(position+1, resolve(item), fonts)
+		if err != nil {
+			return nil, err
+		}
+		widgets = append(widgets, widget)
+	}
+	return widgets, nil
+}
+
+func widgetPlace(number int, kind string) string {
+	if kind == "" {
+		return fmt.Sprintf("widget %d", number)
+	}
+	return fmt.Sprintf("widget %d (%s)", number, kind)
+}
+
+// widgetKind reads the type of a widget, which decides the keys that the rest of it may have.
+func widgetKind(number int, node *yaml.Node) (string, error) {
+	place := widgetPlace(number, "")
+	found, err := entries(node, place, nil)
+	if err != nil {
+		return "", err
+	}
+	for _, each := range found {
+		if each.key != "type" {
+			continue
+		}
+		kind, err := readString(each.value, place, "type", true)
+		if err != nil {
+			return "", err
+		}
+		if _, known := widgetKeys[kind]; !known {
+			return "", problem(place, "type: %q is not a widget type, the types are datetime, image, number and text", kind)
+		}
+		return kind, nil
+	}
+	return "", problem(place, "the key type is missing")
+}
+
+func readWidget(number int, node *yaml.Node, fonts []fontSpec) (widgetSpec, error) {
+	if node.Kind != yaml.MappingNode {
+		return widgetSpec{}, problem(widgetPlace(number, ""), "want a mapping")
+	}
+	kind, err := widgetKind(number, node)
+	if err != nil {
+		return widgetSpec{}, err
+	}
+	place := widgetPlace(number, kind)
+	values, err := fields(node, place, widgetKeys[kind])
+	if err != nil {
+		return widgetSpec{}, err
+	}
+	widget := widgetSpec{number: number, kind: kind, digits: defaultDigit}
+	if widget.x, widget.y, err = readPosition(values, place); err != nil {
+		return widgetSpec{}, err
+	}
+	switch kind {
+	case "image":
+		err = readImageKeys(&widget, values, place)
+	default:
+		err = readFontReference(&widget, values, place, fonts)
+		if err == nil {
+			err = readTypeKeys(&widget, values, place)
+		}
+	}
+	return widget, err
+}
+
+func readPosition(values map[string]*yaml.Node, place string) (x, y int64, err error) {
+	for _, axis := range []struct {
+		key   string
+		value *int64
+	}{{"x", &x}, {"y", &y}} {
+		node, err := required(values, place, axis.key)
+		if err != nil {
+			return 0, 0, err
+		}
+		if *axis.value, err = readWholeNumber(node, place, axis.key, 0, -1); err != nil {
+			return 0, 0, err
+		}
+	}
+	return x, y, nil
+}
+
+func readImageKeys(widget *widgetSpec, values map[string]*yaml.Node, place string) error {
+	node, err := required(values, place, "file")
+	if err != nil {
+		return err
+	}
+	widget.file, err = readString(node, place, "file", true)
+	return err
+}
+
+func readFontReference(widget *widgetSpec, values map[string]*yaml.Node, place string, fonts []fontSpec) error {
+	node, err := required(values, place, "font")
+	if err != nil {
+		return err
+	}
+	name, err := readString(node, place, "font", true)
+	if err != nil {
+		return err
+	}
+	for position, font := range fonts {
+		if font.name == name {
+			widget.font = position
+			return nil
+		}
+	}
+	return problem(place, "font: %q is not a font of fonts", name)
+}
+
+func readTypeKeys(widget *widgetSpec, values map[string]*yaml.Node, place string) error {
+	switch widget.kind {
+	case "text":
+		node, err := required(values, place, "text")
+		if err != nil {
+			return err
+		}
+		widget.text, err = readString(node, place, "text", true)
+		return err
+	case "number":
+		return readNumberKeys(widget, values, place)
+	}
+	node, err := required(values, place, "format")
+	if err != nil {
+		return err
+	}
+	text, err := readString(node, place, "format", true)
+	if err != nil {
+		return err
+	}
+	if widget.format, err = compileFormat(text); err != nil {
+		return problem(join(place, "format"), "%s", err)
+	}
+	return nil
+}
+
+func readNumberKeys(widget *widgetSpec, values map[string]*yaml.Node, place string) error {
+	node, err := required(values, place, "metric")
+	if err != nil {
+		return err
+	}
+	if widget.metric, err = readString(node, place, "metric", true); err != nil {
+		return err
+	}
+	if !sensors.IsName(widget.metric) {
+		return problem(join(place, "metric"), "%q is not a metric name", widget.metric)
+	}
+	if digits, found := values["digits"]; found {
+		number, err := readWholeNumber(digits, place, "digits", 1, maxDigits)
+		if err != nil {
+			return err
+		}
+		widget.digits = int(number)
+	}
+	return nil
+}

@@ -42,7 +42,7 @@ func compileFormat(text string) ([]byte, error) {
 			compiled = append(compiled, byte(runes[position]))
 			position++
 		default:
-			return nil, fmt.Errorf("the character %q at position %d is not a token or a separator", runes[position], position+1)
+			return nil, fmt.Errorf("the character \"%c\" at position %d is not a token or a separator", runes[position], position+1)
 		}
 	}
 	if len(compiled) > maxFormatLength {

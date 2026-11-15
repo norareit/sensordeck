@@ -75,3 +75,11 @@ func (glyphs glyphFont) textMask(text string, width int) []byte {
 func (glyphs glyphFont) blank() []byte {
 	return make([]byte, glyphs.digitWidth*glyphs.height)
 }
+
+// glyphOf gives the mask and width of a glyph of a number or of a datetime: a digit or a separator.
+func (glyphs glyphFont) glyphOf(character rune) ([]byte, int) {
+	if character >= '0' && character <= '9' {
+		return glyphs.digit(character), glyphs.digitWidth
+	}
+	return glyphs.separator(character)
+}
