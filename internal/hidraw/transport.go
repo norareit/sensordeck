@@ -25,46 +25,77 @@ var errNoNode = errors.New("no node is open")
 
 // Transport reads and writes the hidraw node of a screen. It is not safe for use from several goroutines.
 type Transport struct {
-	open func() (*os.File, error) // the way it was opened first, used again by Reopen
-	file *os.File                 // nil while no node is open
+	open   func() (*os.File, string, error) // the way it was opened first, used again by Reopen; gives the serial too
+	file   *os.File                         // nil while no node is open
+	serial string                           // HID_UNIQ of the node opened last
 }
 
 // OpenDiscovered opens the node of the one supported screen under the roots. A Reopen does the discovery anew.
 func OpenDiscovered(sysfsRoot, devRoot string) (*Transport, error) {
-	return openWith(func() (*os.File, error) { return openDiscovered(sysfsRoot, devRoot) })
+	return openWith(func() (*os.File, string, error) { return openDiscovered(sysfsRoot, devRoot) })
 }
 
-// OpenPath opens the node at the path as it is. A Reopen opens the same path.
-func OpenPath(path string) (*Transport, error) {
-	return openWith(func() (*os.File, error) { return openNode(path) })
+// OpenPath opens the node at the path as it is. A Reopen opens the same path. Its serial is that of the entry under
+// the roots whose node is the same file as the path, and empty when no entry is.
+func OpenPath(sysfsRoot, devRoot, path string) (*Transport, error) {
+	return openWith(func() (*os.File, string, error) {
+		file, err := openNode(path)
+		if err != nil {
+			return nil, "", err
+		}
+		return file, serialOfNode(sysfsRoot, devRoot, path), nil
+	})
 }
 
-func openWith(open func() (*os.File, error)) (*Transport, error) {
-	file, err := open()
+func openWith(open func() (*os.File, string, error)) (*Transport, error) {
+	file, serial, err := open()
 	if err != nil {
 		return nil, err
 	}
-	return &Transport{open: open, file: file}, nil
+	return &Transport{open: open, file: file, serial: serial}, nil
 }
 
-func openDiscovered(sysfsRoot, devRoot string) (*os.File, error) {
+func openDiscovered(sysfsRoot, devRoot string) (*os.File, string, error) {
 	screens, err := Discover(sysfsRoot, devRoot)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	switch len(screens) {
 	case 0:
-		return nil, errors.New("no supported screen found")
+		return nil, "", errors.New("no supported screen found")
 	case 1:
-		return openNode(screens[0].Node)
+		file, err := openNode(screens[0].Node)
+		return file, screens[0].Serial, err
 	}
 	lines := make([]string, len(screens))
 	for position, screen := range screens {
 		lines[position] = screen.Line()
 	}
-	return nil, errors.New("more than one supported screen is connected, name one with --device:\n" +
+	return nil, "", errors.New("more than one supported screen is connected, name one with --device:\n" +
 		strings.Join(lines, "\n"))
 }
+
+// serialOfNode gives the HID_UNIQ of the entry whose node is the same file as the path, and the empty text when no
+// entry is, or when the listing or a stat fails. os.SameFile follows the links of the fake screen and of udev alike.
+func serialOfNode(sysfsRoot, devRoot, path string) string {
+	wanted, err := os.Stat(path)
+	if err != nil {
+		return ""
+	}
+	entries, err := List(sysfsRoot, devRoot)
+	if err != nil {
+		return ""
+	}
+	for _, entry := range entries {
+		if candidate, err := os.Stat(entry.Node); err == nil && os.SameFile(wanted, candidate) {
+			return entry.Serial
+		}
+	}
+	return ""
+}
+
+// Serial is the serial of the node opened last, which is empty when the entry of the node has none.
+func (transport *Transport) Serial() string { return transport.serial }
 
 // OpenNode opens the node for reading and writing, without making it the controlling terminal, and checks that it
 // takes a time limit for reading, so that no read waits without one. O_NOCTTY matters only for the node of a fake
@@ -161,11 +192,11 @@ func (transport *Transport) Reopen() error {
 		_ = transport.file.Close()
 		transport.file = nil
 	}
-	file, err := transport.open()
+	file, serial, err := transport.open()
 	if err != nil {
 		return err
 	}
-	transport.file = file
+	transport.file, transport.serial = file, serial
 	return nil
 }
 

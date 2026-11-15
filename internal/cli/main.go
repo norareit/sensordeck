@@ -18,6 +18,8 @@ import (
 // transport is what the commands need of a device: the transport of the protocol and a close.
 type transport interface {
 	smartmonitor.Transport
+	// Serial is the serial of the node opened last, empty when it has none.
+	Serial() string
 	Close() error
 }
 
@@ -33,6 +35,7 @@ type environment struct {
 	listScreens    func(sysfsRoot, devRoot string) ([]string, error)
 	openTransport  func(sysfsRoot, devRoot, device string) (transport, error)
 	userConfigDir  func() (string, error)
+	userCacheDir   func() (string, error)
 	newSources     func(sysfsRoot, devRoot, procRoot string) (sourceSet, error)
 	// notifyStop gives a context that ends at SIGINT or SIGTERM. Only run and the reading of sensors call it, so that
 	// the other commands keep the default handling of Ctrl+C.
@@ -66,6 +69,7 @@ func Main() int {
 		listScreens:   listScreens,
 		openTransport: openTransport,
 		userConfigDir: os.UserConfigDir,
+		userCacheDir:  os.UserCacheDir,
 		newSources:    newSources,
 		notifyStop: func(parent context.Context) (context.Context, context.CancelFunc) {
 			return signal.NotifyContext(parent, os.Interrupt, syscall.SIGTERM)

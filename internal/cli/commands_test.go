@@ -29,6 +29,8 @@ type harness struct {
 	sourcesErr     error
 	configDir      string // what userConfigDir gives
 	configDirErr   error
+	cacheDir       string // what userCacheDir gives
+	cacheDirErr    error
 	stopped        context.Context // ends when cancelStop is called, which is what a signal does in the real command
 	cancelStop     context.CancelFunc
 	waits          []time.Duration
@@ -38,7 +40,11 @@ type harness struct {
 func newHarness() *harness {
 	stopped, cancelStop := context.WithCancel(context.Background())
 	clock := &fakeClock{current: time.Date(2026, 11, 14, 15, 4, 5, 0, time.UTC), armed: make(chan struct{}, 1), release: stopped.Done()}
-	return &harness{clock: clock, transport: &fakeTransport{clock: clock}, controller: &fakeSource{}, stopped: stopped, cancelStop: cancelStop}
+	return &harness{
+		clock: clock, transport: &fakeTransport{clock: clock}, controller: &fakeSource{}, stopped: stopped, cancelStop: cancelStop,
+		// No test writes a state file outside a temporary directory of its own: it sets cacheDir and clears this.
+		cacheDirErr: errors.New("no cache directory in this test"),
+	}
 }
 
 func (harness *harness) run(args ...string) int {
@@ -62,6 +68,7 @@ func (harness *harness) run(args ...string) int {
 			return harness.transport, nil
 		},
 		userConfigDir: func() (string, error) { return harness.configDir, harness.configDirErr },
+		userCacheDir:  func() (string, error) { return harness.cacheDir, harness.cacheDirErr },
 		newSources: func(sysfsRoot, devRoot, procRoot string) (sourceSet, error) {
 			if sysfsRoot != "/sysroot" || devRoot != "/devroot" || procRoot != "/procroot" {
 				return sourceSet{}, errors.New("the roots were not passed on")

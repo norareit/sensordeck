@@ -172,7 +172,7 @@ func TestOpenPathOpensTheNodeGiven(test *testing.T) {
 	fake := fakescreen.New(test)
 	first := fake.Add(2, "name", "")
 	second := fake.Add(4, "name", "")
-	transport, err := OpenPath(second.Node())
+	transport, err := OpenPath(fake.SysfsRoot, fake.DevRoot, second.Node())
 	if err != nil {
 		test.Fatal(err)
 	}
@@ -196,7 +196,7 @@ func TestOpenPathOnANodeWithoutATimeLimit(test *testing.T) {
 	if err := os.WriteFile(path, nil, 0o644); err != nil {
 		test.Fatal(err)
 	}
-	_, err := OpenPath(path)
+	_, err := OpenPath(test.TempDir(), test.TempDir(), path)
 	if err == nil || !strings.Contains(err.Error(), "does not support a time limit for reading") {
 		test.Fatalf("got %v", err)
 	}
@@ -221,7 +221,7 @@ func TestOpenErrorForOtherFailures(test *testing.T) {
 	if !errors.Is(err, fs.ErrNotExist) {
 		test.Error("the system error is not reachable")
 	}
-	_, err = OpenPath(filepath.Join(test.TempDir(), "missing"))
+	_, err = OpenPath(test.TempDir(), test.TempDir(), filepath.Join(test.TempDir(), "missing"))
 	if err == nil || !strings.HasSuffix(err.Error(), ": no such file or directory") || !strings.HasPrefix(err.Error(), "cannot open ") {
 		test.Errorf("got %v", err)
 	}
@@ -236,5 +236,71 @@ func TestOpenNodeGivesTheErrorOfTheSystem(test *testing.T) {
 	var pathError *fs.PathError
 	if !errors.As(err, &pathError) || err.Error() != pathError.Error() {
 		test.Fatalf("the text is not the one of the system: %v", err)
+	}
+}
+
+func TestSerialOfADiscoveredScreen(test *testing.T) {
+	fake := fakescreen.New(test)
+	fake.Add(3, "name", "2022100600")
+	transport := openFake(test, fake)
+	if got := transport.Serial(); got != "2022100600" {
+		test.Errorf("Serial = %q", got)
+	}
+}
+
+func TestSerialOfAScreenWithNone(test *testing.T) {
+	fake := fakescreen.New(test)
+	fake.Add(3, "name", "")
+	if got := openFake(test, fake).Serial(); got != "" {
+		test.Errorf("Serial = %q", got)
+	}
+}
+
+func TestSerialOfAPathIsThatOfTheEntryOfTheNode(test *testing.T) {
+	fake := fakescreen.New(test)
+	fake.Add(2, "name", "FIRST")
+	second := fake.Add(4, "name", "SECOND")
+	behind, err := os.Readlink(second.Node())
+	if err != nil {
+		test.Fatal(err)
+	}
+	for _, path := range []string{second.Node(), behind} {
+		transport, err := OpenPath(fake.SysfsRoot, fake.DevRoot, path)
+		if err != nil {
+			test.Fatal(err)
+		}
+		if got := transport.Serial(); got != "SECOND" {
+			test.Errorf("%s: Serial = %q", path, got)
+		}
+		_ = transport.Close()
+	}
+}
+
+func TestSerialOfAPathWithNoEntryIsEmpty(test *testing.T) {
+	fake := fakescreen.New(test)
+	other := fakescreen.New(test)
+	stranger := other.Add(4, "name", "SECOND")
+	transport, err := OpenPath(fake.SysfsRoot, fake.DevRoot, stranger.Node())
+	if err != nil {
+		test.Fatal(err)
+	}
+	defer transport.Close()
+	if got := transport.Serial(); got != "" {
+		test.Errorf("Serial = %q", got)
+	}
+}
+
+func TestSerialAfterAReopenIsThatOfTheNodeOpenedThen(test *testing.T) {
+	fake := fakescreen.New(test)
+	screen := fake.Add(3, "name", "2022100600")
+	transport := openFake(test, fake)
+	screen.Remove()
+	replacement := fake.Add(7, "name", "OTHER")
+	_ = replacement
+	if err := transport.Reopen(); err != nil {
+		test.Fatal(err)
+	}
+	if got := transport.Serial(); got != "OTHER" {
+		test.Errorf("Serial = %q", got)
 	}
 }

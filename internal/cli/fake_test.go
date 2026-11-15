@@ -95,7 +95,11 @@ type fakeTransport struct {
 	reopenErr     error
 	closed        int
 	readLimits    []time.Duration
+	serial        string
+	afterWrite    func(count int) // called after each write that succeeded, with the count of writes so far
 }
+
+func (fake *fakeTransport) Serial() string { return fake.serial }
 
 func (fake *fakeTransport) Write(report smartmonitor.Report) error {
 	if len(fake.failWrites) > 0 {
@@ -109,6 +113,9 @@ func (fake *fakeTransport) Write(report smartmonitor.Report) error {
 		return fake.writeErr
 	}
 	fake.writes = append(fake.writes, report)
+	if fake.afterWrite != nil {
+		fake.afterWrite(len(fake.writes))
+	}
 	return nil
 }
 

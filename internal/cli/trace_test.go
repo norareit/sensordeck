@@ -89,3 +89,11 @@ func TestTraceCloseWritesNothingAndCallsReachTheInnerTransport(test *testing.T) 
 		test.Errorf("the inner transport saw %+v", fake)
 	}
 }
+
+func TestTraceGivesTheSerialOfTheInnerTransportAndWritesNoLine(test *testing.T) {
+	fake := &fakeTransport{clock: &fakeClock{}, serial: "2022100600"}
+	tracing, out := newTracing(fake, 0)
+	if got := tracing.Serial(); got != "2022100600" || out.Len() != 0 {
+		test.Errorf("Serial = %q, trace %q", got, out.String())
+	}
+}
