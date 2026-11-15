@@ -188,14 +188,14 @@ the test.
 
 ### The unit file
 
-- [ ] Write `internal/cli/unitfile_test.go`: `unitFilePath` under a directory; `quoteUnitPath` of a plain path, of
+- [x] Write `internal/cli/unitfile_test.go`: `unitFilePath` under a directory; `quoteUnitPath` of a plain path, of
   paths with a space, `"`, `\`, `%` and `$`, of `\$` and `%%` in a path written as `\\$$` and `%%%%`, and its error
   for a path with a line feed, a carriage return and a tab, naming the path; `unitFileContent` against the whole
   content of R2 written in the test byte for byte, ending in one line feed; `showProperties` of the three lines, of a
   line with no `=`, of a value holding `=`; `statusLines` for the three properties, for each missing, for each empty,
   and for `ActiveState` missing with `SubState` given, written `active: unknown` (R1, R2, R5, R16)
-- [ ] Write `internal/cli/unitfile.go` as the approach says, and make the tests pass (R1, R2, R5, R16)
-- [ ] Commit
+- [x] Write `internal/cli/unitfile.go` as the approach says, and make the tests pass (R1, R2, R5, R16)
+- [x] Commit
 
 ### The seam and `service install`
 
