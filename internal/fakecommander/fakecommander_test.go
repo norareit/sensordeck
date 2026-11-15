@@ -240,3 +240,201 @@ func TestAddInterfaceOneMakesOnlyThatEntry(test *testing.T) {
 		test.Fatalf("got %d writes", len(writes))
 	}
 }
+
+var (
+	enterSoftware  = []byte{0x08, 0x01, 0x03, 0x00, 0x02}
+	returnHardware = []byte{0x08, 0x01, 0x03, 0x00, 0x01}
+)
+
+// openReadClose makes the four exchanges of a reading of the endpoint on channel 1 and gives the answer of the read.
+func (harness *harness) openReadClose(endpoint byte) []byte {
+	harness.test.Helper()
+	harness.send([]byte{0x08, 0x05, 0x01, 0x01, endpoint})
+	harness.send([]byte{0x08, 0x0D, 0x01, endpoint})
+	answer := harness.send([]byte{0x08, 0x08, 0x01, endpoint})
+	harness.send([]byte{0x08, 0x05, 0x01, 0x01, endpoint})
+	return answer
+}
+
+func TestEndpointsOnChannelOneGiveTheirAnswers(test *testing.T) {
+	harness := newHarness(test)
+	harness.send(enterSoftware)
+	host := padded(0x00, 0x08, 0x00, 0x0F, 0x00, 0x07,
+		0, 0, 0, 0, 3, 0, 0, 0, 3, 0, 0, 0, 2, 0, 4, 0, 2, 0, 4, 0, 2, 0, 4, 0, 2, 0, 4, 0)
+	if got := harness.openReadClose(0x20); !bytes.Equal(got, host) {
+		test.Errorf("0x20: got % x", got)
+	}
+	harness.controller.SetPorts(Port{2, 8}, Port{2, 8}, Port{2, 8})
+	three := padded(0x00, 0x08, 0x00, 0x0F, 0x00, 0x03, 2, 0, 8, 0, 2, 0, 8, 0, 2, 0, 8, 0)
+	if got := harness.openReadClose(0x20); !bytes.Equal(got, three) {
+		test.Errorf("0x20 with three ports: got % x", got)
+	}
+	if got, want := harness.openReadClose(0x1A), padded(0x00, 0x08, 0x00, 0x09, 0x00, 0x06, 1, 1, 1, 1, 1, 1); !bytes.Equal(got, want) {
+		test.Errorf("0x1A: got % x", got)
+	}
+	if got, want := harness.openReadClose(0x17), padded(0x00, 0x08, 0x00, 0x06, 0x00, 0x06); !bytes.Equal(got, want) {
+		test.Errorf("0x17: got % x", got)
+	}
+	want := padded(0x00, 0x08, 0x00, 0x10, 0x00, 0x02, 0x00, 0x75, 0x01, 0x00, 0xE3, 0x00)
+	if got := harness.openReadClose(0x21); !bytes.Equal(got, want) {
+		test.Errorf("0x21: got % x", got)
+	}
+}
+
+func TestAnOpenOnAChannelThatHasAnEndpointOpenAnswersStatusThree(test *testing.T) {
+	harness := newHarness(test)
+	harness.send(enterSoftware)
+	harness.send([]byte{0x08, 0x0D, 0x00, 0x22})
+	for _, endpoint := range []byte{0x21, 0x22} {
+		if got := harness.send([]byte{0x08, 0x0D, 0x00, endpoint}); got == nil || got[2] != 0x03 {
+			test.Fatalf("open of %#x: got % x", endpoint, got)
+		}
+		if harness.controller.OpenEndpoint(0) != 0x22 {
+			test.Fatal("the open endpoint changed")
+		}
+	}
+	harness.send([]byte{0x08, 0x05, 0x01, 0x00, 0x22})
+	if got := harness.send([]byte{0x08, 0x0D, 0x00, 0x21}); got == nil || got[2] != 0x00 || harness.controller.OpenEndpoint(0) != 0x21 {
+		test.Fatalf("after the close: got % x", got)
+	}
+}
+
+func TestSetOpenEndpointBlocksTheLedEndpoint(test *testing.T) {
+	harness := newHarness(test)
+	harness.send(enterSoftware)
+	harness.controller.SetOpenEndpoint(0, 0x21)
+	if got := harness.send([]byte{0x08, 0x0D, 0x00, 0x22}); got == nil || got[2] != 0x03 {
+		test.Fatalf("got % x", got)
+	}
+}
+
+func TestOutsideSoftwareModeOnlyTheModeCommandsAnswerZero(test *testing.T) {
+	commandsOutside := [][]byte{{0x08, 0x0D, 0x00, 0x22}, {0x08, 0x08, 0x00}, {0x08, 0x05, 0x01, 0x00, 0x22}, {0x08, 0x06, 0x00}}
+	check := func(when string, harness *harness) {
+		for _, command := range commandsOutside {
+			if got := harness.send(command); got == nil || got[2] != 0x03 {
+				test.Errorf("%s, % x: got % x", when, command, got)
+			}
+		}
+	}
+	harness := newHarness(test)
+	check("before any mode command", harness)
+	harness.send(enterSoftware)
+	if got := harness.send(returnHardware); got == nil || got[2] != 0x00 {
+		test.Fatalf("return to hardware mode: got % x", got)
+	}
+	check("after the return", harness)
+}
+
+func TestLightingFollowsTheModeAndTheColourWrites(test *testing.T) {
+	harness := newHarness(test)
+	controller := harness.controller
+	lighting := func(want Lighting, colour [3]byte) {
+		test.Helper()
+		if got, gotColour := controller.Lighting(); got != want || (want == SentColour && gotColour != colour) {
+			test.Errorf("lighting %d, colour %v", got, gotColour)
+		}
+	}
+	lighting(StoredLighting, [3]byte{})
+	harness.send(enterSoftware)
+	lighting(Dark, [3]byte{})
+	if got := harness.send([]byte{0x08, 0x06, 0x00, 0x32}); got == nil || got[2] != 0x03 {
+		test.Fatalf("a colour write with nothing open: got % x", got)
+	}
+	if len(controller.ColourWrites()) != 0 {
+		test.Fatal("a write was kept with nothing open")
+	}
+	harness.send([]byte{0x08, 0x0D, 0x00, 0x22})
+	command := append([]byte{0x08, 0x06, 0x00, 0x32, 0x00, 0x00, 0x00, 0x12, 0x00}, bytes.Repeat([]byte{0xFF, 0x00, 0x00}, 16)...)
+	if got := harness.send(command); got == nil || got[2] != 0x00 {
+		test.Fatalf("a colour write: got % x", got)
+	}
+	lighting(SentColour, [3]byte{0xFF, 0, 0})
+	writes := controller.ColourWrites()
+	if len(writes) != 1 || len(writes[0]) != answerSize || !bytes.Equal(writes[0][:len(command)], command) {
+		test.Fatalf("writes % x", writes)
+	}
+	harness.send(returnHardware)
+	lighting(StoredLighting, [3]byte{})
+}
+
+func TestTheSoftwareModeTimeout(test *testing.T) {
+	open := func(harness *harness) {
+		harness.send(enterSoftware)
+		harness.send([]byte{0x08, 0x0D, 0x00, 0x22})
+		harness.send([]byte{0x08, 0x06, 0x00, 0x03, 0x00, 0x00, 0x00, 0x12, 0x00, 1, 2, 3})
+	}
+	test.Run("fires", func(test *testing.T) {
+		harness := newHarness(test)
+		harness.controller.SetSoftwareModeTimeout(100 * time.Millisecond)
+		open(harness)
+		time.Sleep(300 * time.Millisecond)
+		if lighting, _ := harness.controller.Lighting(); harness.controller.Mode() != HardwareMode ||
+			harness.controller.OpenEndpoint(0) != 0 || lighting != StoredLighting {
+			test.Fatal("the controller did not fall back to hardware mode")
+		}
+		harness.send(enterSoftware)
+		if lighting, _ := harness.controller.Lighting(); lighting != Dark {
+			test.Fatalf("lighting %d after a new software mode", lighting)
+		}
+	})
+	test.Run("commands keep it awake", func(test *testing.T) {
+		harness := newHarness(test)
+		harness.controller.SetSoftwareModeTimeout(100 * time.Millisecond)
+		open(harness)
+		for range 6 {
+			time.Sleep(50 * time.Millisecond)
+			harness.send([]byte{0x08, 0x05, 0x01, 0x01, 0x21})
+		}
+		if harness.controller.Mode() != SoftwareMode {
+			test.Fatal("the controller fell back")
+		}
+	})
+	test.Run("off by default", func(test *testing.T) {
+		harness := newHarness(test)
+		open(harness)
+		time.Sleep(300 * time.Millisecond)
+		if harness.controller.Mode() != SoftwareMode {
+			test.Fatal("the controller fell back")
+		}
+	})
+}
+
+func TestFailCommandChangesOnlyTheCommandsWithThePrefix(test *testing.T) {
+	for _, testCase := range []struct {
+		name    string
+		failure Failure
+		check   func(answer []byte) bool
+	}{
+		{"no answer", NoAnswer, func(answer []byte) bool { return answer == nil }},
+		{"wrong echo", WrongEcho, func(answer []byte) bool { return answer[1] != 0x08 }},
+		{"bad status", BadStatus, func(answer []byte) bool { return answer[2] == 0x01 }},
+	} {
+		test.Run(testCase.name, func(test *testing.T) {
+			harness := newHarness(test)
+			harness.controller.FailCommand([]byte{0x08, 0x08, 0x01, 0x21}, testCase.failure)
+			harness.send(enterSoftware)
+			if answer := harness.openReadClose(0x17); answer == nil || answer[2] != 0x00 || answer[1] != 0x08 {
+				test.Fatalf("another read: got % x", answer)
+			}
+			answer := harness.openReadClose(0x21)
+			if !testCase.check(answer) {
+				test.Fatalf("got % x", answer)
+			}
+		})
+	}
+}
+
+func TestOnCommandRunsAfterTheWriteAndBeforeTheAnswer(test *testing.T) {
+	harness := newHarness(test)
+	arrived := make(chan int, 4)
+	harness.controller.OnCommand([]byte{0x08, 0x0D, 0x00, 0x22}, func() {
+		writes, _ := harness.controller.WaitWrites(2, limit)
+		arrived <- len(writes)
+	})
+	harness.send(enterSoftware)
+	answer := harness.send([]byte{0x08, 0x0D, 0x00, 0x22})
+	if answer == nil || <-arrived != 2 {
+		test.Fatal("the action did not run once the write had arrived, before the answer")
+	}
+}

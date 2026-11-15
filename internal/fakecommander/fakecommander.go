@@ -2,8 +2,9 @@
 
 // Package fakecommander is test support: a directory tree that looks like the sysfs and the device nodes of a Corsair
 // Commander Core XT on Linux, with pseudo terminals behind the nodes. The node of interface 0 answers the commands
-// of the controller as the controller did in the trace that docs/commander-core-xt.md describes. It is shared by the
-// tests of the driver and the end-to-end tests.
+// of the controller as the controller did in the traces and the device tests that docs/commander-core-xt.md describes:
+// the eight commands of unit 0005, the endpoints on two channels, the LED endpoint with its colour write, the modes and
+// a software-mode timeout. It is shared by the tests of the driver and the end-to-end tests.
 package fakecommander
 
 import (
@@ -34,6 +35,11 @@ const (
 
 	fanEndpoint         = 0x17
 	temperatureEndpoint = 0x21
+	portsEndpoint       = 0x20
+	unknownEndpoint     = 0x1A
+	ledEndpoint         = 0x22
+
+	statusUnavailable = 0x03
 )
 
 // Probe is one entry of the answer of step 6.
@@ -61,6 +67,25 @@ const (
 	SoftwareMode
 	HardwareMode
 )
+
+// Port is one entry of the answer of the endpoint 0x20: the mode of a port of the controller and its LED count.
+type Port struct{ Mode, LEDs uint16 }
+
+// Lighting is what the LEDs of the controller show.
+type Lighting int
+
+const (
+	StoredLighting Lighting = iota // in hardware mode, and before any mode command
+	Dark                           // in software mode before a colour write
+	SentColour                     // in software mode after a colour write
+)
+
+// commandHook is a failure or an action chosen by the bytes a command starts with.
+type commandHook struct {
+	prefix  []byte
+	failure Failure
+	action  func()
+}
 
 // Fake holds the roots that the discovery reads.
 type Fake struct {
@@ -97,6 +122,7 @@ func (fake *Fake) newController() *Controller {
 	controller := &Controller{
 		fake:     fake,
 		probes:   []Probe{{Status: 0, Tenths: 373}, {Status: 0, Tenths: 227}},
+		ports:    []Port{{0, 0}, {3, 0}, {3, 0}, {2, 4}, {2, 4}, {2, 4}, {2, 4}},
 		failures: map[int]Failure{},
 		actions:  map[int]func(){},
 	}
@@ -104,17 +130,26 @@ func (fake *Fake) newController() *Controller {
 	return controller
 }
 
-// Controller is one fake controller.
+// Controller is one fake controller. It keeps the mode, the endpoint open on each channel, the colour writes and what
+// its LEDs show, and every command on interface 0 gets the answer that handle works out.
 type Controller struct {
 	fake  *Fake
 	nodes [2]*node // by interface; nil where the controller has none
 
-	mutex    sync.Mutex
-	probes   []Probe
-	failures map[int]Failure
-	actions  map[int]func()
-	endpoint byte // the endpoint that the last open command named, 0 once it was closed
-	mode     Mode
+	mutex          sync.Mutex
+	probes         []Probe
+	failures       map[int]Failure
+	actions        map[int]func()
+	open           [2]byte // the endpoint open on each channel, 0 when none is
+	mode           Mode
+	ports          []Port
+	lighting       Lighting
+	colour         [3]byte
+	writtenColours [][]byte
+	hooks          []commandHook
+	timeout        time.Duration
+	timer          *time.Timer
+	idle           int // counts the commands in software mode, so that a timer that fired late can tell it is stale
 }
 
 // node is the hidraw node of one interface.
@@ -178,6 +213,69 @@ func (controller *Controller) OnStep(step int, action func()) {
 	controller.mutex.Lock()
 	defer controller.mutex.Unlock()
 	controller.actions[step] = action
+}
+
+// SetPorts sets the entries of the answer of the endpoint 0x20. The default is those of the trace of the host: mode 0
+// with 0 LEDs, mode 3 with 0 LEDs twice, and mode 2 with 4 LEDs four times.
+func (controller *Controller) SetPorts(ports ...Port) {
+	controller.mutex.Lock()
+	defer controller.mutex.Unlock()
+	controller.ports = ports
+}
+
+// SetOpenEndpoint makes the endpoint open on the channel, as a program that was killed leaves it.
+func (controller *Controller) SetOpenEndpoint(channel, endpoint byte) {
+	controller.mutex.Lock()
+	defer controller.mutex.Unlock()
+	controller.open[channel] = endpoint
+}
+
+// OpenEndpoint gives the endpoint open on the channel, or 0 when none is.
+func (controller *Controller) OpenEndpoint(channel byte) byte {
+	controller.mutex.Lock()
+	defer controller.mutex.Unlock()
+	return controller.open[channel]
+}
+
+// SetSoftwareModeTimeout makes the controller go to hardware mode when no command arrives for that long in software
+// mode, as the device is thought to do, closing every channel and forgetting the colour. Zero, the default, is off.
+func (controller *Controller) SetSoftwareModeTimeout(timeout time.Duration) {
+	controller.mutex.Lock()
+	defer controller.mutex.Unlock()
+	controller.timeout = timeout
+}
+
+// FailCommand makes the answer of every later command that starts with the prefix wrong as the failure says. It
+// applies after the failure that Fail sets for a step.
+func (controller *Controller) FailCommand(prefix []byte, failure Failure) {
+	controller.mutex.Lock()
+	defer controller.mutex.Unlock()
+	controller.hooks = append(controller.hooks, commandHook{prefix: bytes.Clone(prefix), failure: failure})
+}
+
+// OnCommand runs the action for every command that starts with the prefix, before its answer is sent.
+func (controller *Controller) OnCommand(prefix []byte, action func()) {
+	controller.mutex.Lock()
+	defer controller.mutex.Unlock()
+	controller.hooks = append(controller.hooks, commandHook{prefix: bytes.Clone(prefix), action: action})
+}
+
+// ColourWrites gives the 96 data bytes of every colour write that was kept, in order.
+func (controller *Controller) ColourWrites() [][]byte {
+	controller.mutex.Lock()
+	defer controller.mutex.Unlock()
+	writes := make([][]byte, len(controller.writtenColours))
+	for position, write := range controller.writtenColours {
+		writes[position] = bytes.Clone(write)
+	}
+	return writes
+}
+
+// Lighting tells what the LEDs show, and for SentColour the red, green and blue of the last colour write.
+func (controller *Controller) Lighting() (Lighting, [3]byte) {
+	controller.mutex.Lock()
+	defer controller.mutex.Unlock()
+	return controller.lighting, controller.colour
 }
 
 // RemoveNode removes the node of interface 0 and leaves the sysfs entries.
@@ -298,88 +396,178 @@ func (controller *Controller) accept(interfaceNumber int, current *node, data []
 	}
 }
 
-// answer works out which step the command is, runs the action of the step and sends its answer.
+// answer works out what the command is, runs its actions and sends its answer.
 func (controller *Controller) answer(current *node, command []byte) {
 	controller.mutex.Lock()
-	step := controller.identify(command)
-	if step == 0 {
+	controller.keepAwake()
+	step, status, body, recognised := controller.handle(command)
+	if !recognised {
 		controller.mutex.Unlock()
 		return
 	}
-	switch step {
-	case 1:
-		controller.mode = SoftwareMode
-	case 8:
-		controller.mode = HardwareMode
+	failures := []Failure{controller.failures[step]}
+	actions := []func(){controller.actions[step]}
+	for _, hook := range controller.hooks {
+		if bytes.HasPrefix(command, hook.prefix) {
+			failures = append(failures, hook.failure)
+			actions = append(actions, hook.action)
+		}
 	}
-	failure := controller.failures[step]
-	action := controller.actions[step]
-	reply := controller.reply(step, command)
+	reply := controller.report(command, status, body)
 	controller.mutex.Unlock()
 
-	if action != nil {
-		action()
+	for _, action := range actions {
+		if action != nil {
+			action()
+		}
 	}
-	if failure == NoAnswer {
-		return
+	for _, failure := range failures {
+		if failure == NoAnswer {
+			return
+		}
 	}
-	applyFailure(reply, failure)
+	for _, failure := range failures {
+		applyFailure(reply, failure)
+	}
 	_, _ = current.master.Write(reply)
 }
 
-// identify gives the step of the command, 1 to 8, or 0 for a command that is none of the eight. It follows the
-// endpoint that the last open command named. The caller holds the mutex.
-func (controller *Controller) identify(command []byte) int {
+// keepAwake restarts the software-mode timeout. The caller holds the mutex.
+func (controller *Controller) keepAwake() {
+	if controller.timer != nil {
+		controller.timer.Stop()
+		controller.timer = nil
+	}
+	if controller.mode != SoftwareMode || controller.timeout == 0 {
+		return
+	}
+	controller.idle++
+	idle := controller.idle
+	controller.timer = time.AfterFunc(controller.timeout, func() {
+		controller.mutex.Lock()
+		defer controller.mutex.Unlock()
+		if controller.idle != idle || controller.mode != SoftwareMode {
+			return
+		}
+		controller.mode = HardwareMode
+		controller.open = [2]byte{}
+		controller.lighting = StoredLighting
+	})
+}
+
+// handle changes the state as the command does and gives the step of unit 0005 that it is, 0 for none, the status of
+// the answer, the bytes of the answer from byte 3, and whether the command gets an answer at all. The caller holds the
+// mutex. The endpoint steps are those of channel 0 and of the endpoints 0x17 and 0x21 alone.
+func (controller *Controller) handle(command []byte) (step int, status byte, body []byte, answered bool) {
 	switch {
 	case bytes.HasPrefix(command, []byte{0x08, 0x01, 0x03, 0x00, 0x02}):
-		return 1
+		controller.mode = SoftwareMode
+		controller.lighting = Dark
+		controller.keepAwake()
+		return 1, 0, nil, true
 	case bytes.HasPrefix(command, []byte{0x08, 0x01, 0x03, 0x00, 0x01}):
-		return 8
+		controller.mode = HardwareMode
+		controller.lighting = StoredLighting
+		controller.keepAwake()
+		return 8, 0, nil, true
+	}
+	step = controller.stepOnChannelZero(command)
+	if controller.mode != SoftwareMode {
+		return step, statusUnavailable, nil, true
+	}
+	switch {
+	case bytes.HasPrefix(command, []byte{0x08, 0x0D}) && len(command) > 3:
+		channel, endpoint := command[2], command[3]
+		if channel > 1 {
+			return 0, 0, nil, false
+		}
+		if controller.open[channel] != 0 {
+			return step, statusUnavailable, nil, true
+		}
+		controller.open[channel] = endpoint
+		return step, 0, nil, true
+	case bytes.HasPrefix(command, []byte{0x08, 0x08}) && len(command) > 2:
+		channel := command[2]
+		if channel > 1 || controller.open[channel] == 0 {
+			return 0, 0, nil, false
+		}
+		return step, 0, controller.answerOf(controller.open[channel]), true
+	case bytes.HasPrefix(command, []byte{0x08, 0x05, 0x01}):
+		if len(command) > 3 && command[3] <= 1 {
+			controller.open[command[3]] = 0
+		} else {
+			controller.open[0] = 0
+		}
+		return step, 0, nil, true
+	case bytes.HasPrefix(command, []byte{0x08, 0x06, 0x00}):
+		if controller.open[0] != ledEndpoint {
+			return 0, statusUnavailable, nil, true
+		}
+		controller.writtenColours = append(controller.writtenColours, bytes.Clone(command))
+		controller.lighting = SentColour
+		copy(controller.colour[:], command[9:12])
+		return 0, 0, nil, true
+	}
+	return 0, 0, nil, false
+}
+
+// stepOnChannelZero gives the step of unit 0005 of the command, from the endpoint open on channel 0 before the command
+// changes it. The caller holds the mutex.
+func (controller *Controller) stepOnChannelZero(command []byte) int {
+	endpoint := controller.open[0]
+	switch {
 	case bytes.HasPrefix(command, []byte{0x08, 0x0D, 0x00, fanEndpoint}):
-		controller.endpoint = fanEndpoint
 		return 2
 	case bytes.HasPrefix(command, []byte{0x08, 0x0D, 0x00, temperatureEndpoint}):
-		controller.endpoint = temperatureEndpoint
 		return 5
-	case bytes.HasPrefix(command, []byte{0x08, 0x08, 0x00}):
-		return controller.stepOfOpenEndpoint(3, 6)
-	case bytes.HasPrefix(command, []byte{0x08, 0x05, 0x01}):
-		return controller.stepOfOpenEndpoint(4, 7)
+	case bytes.HasPrefix(command, []byte{0x08, 0x08, 0x00}) && endpoint == fanEndpoint:
+		return 3
+	case bytes.HasPrefix(command, []byte{0x08, 0x08, 0x00}) && endpoint == temperatureEndpoint:
+		return 6
+	case bytes.HasPrefix(command, []byte{0x08, 0x05, 0x01}) && endpoint == fanEndpoint:
+		return 4
+	case bytes.HasPrefix(command, []byte{0x08, 0x05, 0x01}) && endpoint == temperatureEndpoint:
+		return 7
 	}
 	return 0
 }
 
-func (controller *Controller) stepOfOpenEndpoint(fanStep, temperatureStep int) int {
-	switch controller.endpoint {
+// answerOf gives the bytes from byte 3 of the answer to a read of the endpoint. The caller holds the mutex.
+func (controller *Controller) answerOf(endpoint byte) []byte {
+	switch endpoint {
 	case fanEndpoint:
-		return fanStep
+		return []byte{0x06, 0x00, 0x06}
+	case unknownEndpoint:
+		return []byte{0x09, 0x00, 0x06, 1, 1, 1, 1, 1, 1}
+	case portsEndpoint:
+		body := []byte{0x0F, 0x00, byte(len(controller.ports))}
+		for _, port := range controller.ports {
+			if len(body)+4 > answerSize-3 {
+				break
+			}
+			body = append(body, byte(port.Mode), byte(port.Mode>>8), byte(port.LEDs), byte(port.LEDs>>8))
+		}
+		return body
 	case temperatureEndpoint:
-		return temperatureStep
+		count := min(len(controller.probes), maxProbes)
+		body := []byte{0x10, 0x00, byte(count)}
+		for _, probe := range controller.probes[:count] {
+			body = append(body, probe.Status, byte(uint16(probe.Tenths)), byte(uint16(probe.Tenths)>>8))
+		}
+		return body
 	}
-	return 0
+	return nil
 }
 
-// reply makes the 384 bytes of the report of the step: the 96 bytes of the answer, as the trace showed them, and 0xFF
-// after them, which is not zero so that a test can show that the driver does not interpret it. The caller holds the
-// mutex.
-func (controller *Controller) reply(step int, command []byte) []byte {
+// report makes the 384 bytes of the report of an answer: the 96 bytes of the answer, as the trace showed them, and
+// 0xFF after them, which is not zero so that a test can show that the driver does not interpret it.
+func (controller *Controller) report(command []byte, status byte, body []byte) []byte {
 	report := bytes.Repeat([]byte{0xFF}, reportSize)
 	answer := report[:answerSize]
 	clear(answer)
 	answer[1] = command[1]
-	switch step {
-	case 3:
-		copy(answer[3:], []byte{0x06, 0x00, 0x06})
-	case 6:
-		count := min(len(controller.probes), maxProbes)
-		copy(answer[3:], []byte{0x10, 0x00, byte(count)})
-		for position, probe := range controller.probes[:count] {
-			offset := 6 + 3*position
-			answer[offset] = probe.Status
-			answer[offset+1] = byte(uint16(probe.Tenths))
-			answer[offset+2] = byte(uint16(probe.Tenths) >> 8)
-		}
-	}
+	answer[2] = status
+	copy(answer[3:], body)
 	return report
 }
 
