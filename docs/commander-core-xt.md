@@ -1,15 +1,27 @@
-# The temperature probes of the Corsair iCUE Commander Core XT
+# The temperature probes and the LEDs of the Corsair iCUE Commander Core XT
 
-This document describes how the computer reads the temperature probes of a Corsair iCUE Commander Core XT, as far as
-sensordeck uses the controller. It is written in the project's own words.
+This document describes how the computer reads the temperature probes of a Corsair iCUE Commander Core XT and lights
+its LEDs in one colour, as far as sensordeck uses the controller. It is written in the project's own words.
 
 ## How it was learned
 
-The facts below come from a black-box trace, made with `strace`, of the hidraw traffic of another tool during one run of
-its status command on one machine, and from the sysfs of that machine. The sizes of the reports come from the report
-descriptor of interface 0 in that sysfs and from a trace of sensordeck itself on the same machine. No code of that tool
-was read, translated or copied. The trace itself is kept locally and is not part of the project. Everything here is therefore what one run
-showed, and what is not shown is named under "Unknown" and "Assumptions".
+The facts below come from four sources, and from nothing else:
+
+* A black-box trace, made with `strace`, of the hidraw traffic of liquidctl during one run of its status command on one
+  machine, and the sysfs of that machine (unit 0005). It gave the eight commands, the endpoints `0x17` and `0x21` and the
+  temperatures
+* A trace of sensordeck itself on the same machine (unit 0006). It gave the sizes of the reports, together with the
+  report descriptor of interface 0 in that sysfs
+* A black-box trace, made with `strace`, of the hidraw traffic of OpenLinkHub on the same machine. It gave the channels,
+  the endpoints `0x20`, `0x1A`, `0x21` and `0x22`, the colour write, the LED count and the rate of its readings
+* Tests made by hand on the device with the LEDs watched (units 0008 and 0009). They showed the effect of software mode
+  on the LEDs, the status `0x03` of commands outside software mode and of a second endpoint opened on a channel, and that
+  one colour write lights the LEDs
+
+liquidctl's public description of the protocol was read for facts only, for the keepalive. No code of liquidctl,
+OpenLinkHub or OpenRGB was read, translated or copied. The traces themselves are kept locally and are not part of the
+project. Everything here is therefore what these showed, and what is not shown is named under "Unknown" and
+"Assumptions".
 
 ## Identity
 
@@ -62,6 +74,19 @@ sensordeck makes the same eight steps in a reading, so that the controller is ou
 as it can be: it enters software mode, reads and returns at once. What the controller does in software mode when
 nobody sends it settings is not known.
 
+## Channels and endpoints
+
+Every command is `08 <command> <channel> ...`: the byte after the command is a channel. An endpoint is opened on a
+channel with `08 0D <channel> <endpoint>`, read with `08 08 <channel> <endpoint>` and closed with
+`08 05 01 <channel> <endpoint>`. The eight commands above are those of channel 0, with zeros in the place of the
+endpoint byte of a read and a close, which worked.
+
+A channel holds one open endpoint. While the endpoint `0x22` was open on channel 0, opening `0x21` on channel 0 answered
+status `03`. After a close of channel 0, the open worked. The status `03` is therefore also the answer to an open on a
+channel that has an endpoint open. The trace of OpenLinkHub made every read of a sensor endpoint on channel 1, as four
+exchanges: close, open, read, close, such as `08 05 01 01 21`, `08 0D 01 21`, `08 08 01 21` and `08 05 01 01 21`. Every
+answer of the trace had status `00`, the close of an endpoint that was not open among them.
+
 ## The layout of an answer
 
 Byte 0 is `0x00`. Byte 1 is the second written byte of the command, so `01`, `0D`, `08` or `05`: the answer echoes its
@@ -82,6 +107,37 @@ a connected probe. The next two are the temperature in tenths of a degree Celsiu
 37.3 °C and `0x00E3` is 22.7 °C. The entries fit into the 96 bytes that sensordeck interprets only for a count of 30 or
 less.
 
+### The endpoint `0x1A`
+
+The read of `0x1A` answered the data type `09 00` in bytes 3 and 4, the count 6 in byte 5 and six bytes `01`. Their
+meaning is unknown. sensordeck checks the answer as every other and does not use its content.
+
+### The endpoint `0x20`, the ports
+
+The read of `0x20` on channel 1 answered the data type `0F 00` in bytes 3 and 4, a count *c* in byte 5, and from byte 6
+*c* entries of 4 bytes: a mode of 16 bits and an LED count of 16 bits, both low byte first. They are the entries for the
+connector EXT and the ports 1 to 6. On the host they were mode `00` with 0 LEDs for EXT, mode `03` with 0 LEDs for ports
+1 and 2, and mode `02` with 4 LEDs for ports 3 to 6, so 16 LEDs: three front fans and one back fan.
+
+sensordeck takes the LED count as the sum of the LED counts of the entries whose mode is 2, and accepts a count from 1 to
+29, for 6 + 4·*c* up to 96. This assumes that mode 2 means connected and mode 3 disconnected, and that the triples of a
+colour write are taken in the order of the entries, the LEDs of a port one after the other. A single colour does not
+depend on the order, and nothing has checked it.
+
+### The endpoint `0x22`, the LEDs, and the colour write
+
+The endpoint `0x22` is the LED endpoint. In software mode, `08 0D 00 22` answered status `00`, and a colour write then
+answered status `00` and lit the fans. The colour write is the command `06` on channel 0: `08 06 00`, then in bytes 3
+and 4 a length, low byte first, `32 00` for 16 LEDs, then `00 00` in bytes 5 and 6, then the data type `12 00` in bytes 7
+and 8, and from byte 9 one triple of red, green and blue for each LED. The length counts the two bytes of the data type
+and three bytes for each LED. A write of 97 bytes holds at most 29 triples. For 16 LEDs and `#ff0000` the data bytes start
+with `08 06 00 32 00 00 00 12 00` and hold 16 times `FF 00 00`.
+
+For a static colour OpenLinkHub wrote a colour write of all zero triples and, about 2 milliseconds later, the one with
+the colour, and wrote neither again until the colour changed. For an animated effect it wrote one about every 22
+milliseconds. It wrote the full output report of 385 bytes with the report ID. sensordeck writes one colour write of 97
+bytes, without the write of zero triples, because the device test lit the LEDs with it.
+
 ## Stale bytes
 
 The bytes of an answer past what its command fills keep the content of an earlier answer. The answer of step 1 held the
@@ -95,17 +151,47 @@ milliseconds. A reading takes about 140 milliseconds. sensordeck waits at most 1
 
 ## Software mode and the LEDs
 
-On the device, the LEDs of the fans on the controller flicker once at each reading. Nothing drives them while the
-controller is in software mode, and the return to hardware mode lights them again. The status command of the other tool
-makes them flicker in the same way.
+In hardware mode the controller shows the lighting stored in it. In software mode it shows only what the host sends, and
+the LEDs are dark when nothing is sent. This is the flicker of a reading of unit 0005: the LEDs of the fans flicker once
+at each reading, because the reading enters software mode and returns at once. The status command of liquidctl makes
+them flicker in the same way. After a colour write in software mode all the fans turned the colour at once, and after
+`08 01 03 00 01` they went back to the stored lighting.
 
 A reading without software mode was tried: the endpoint `0x21` was opened and read with no step 1 before it. Every answer
 then had byte 2 `0x03` and stale data in the rest, so a reading without software mode is not possible with what is known.
 Byte 2 of an answer is therefore a status, `0x00` in the answers of a sequence that step 1 opened and `0x03` for the
 commands made without it.
 
-To make the LEDs flicker less often, `sensordeck run` reads the controller at most once per period, of 1 minute unless
-the config file says otherwise.
+Without `commander_color`, `sensordeck run` reads the controller at most once per period, of 1 minute unless the config
+file says otherwise, to make the LEDs flicker less often. With `commander_color` it holds software mode and sends the
+colour, so the LEDs do not flicker.
+
+## The keepalive
+
+liquidctl's description says that the device must be woken after some seconds without data, without saying how many, and
+that `08 01 03 00 01` returns it to hardware mode. The timeout is unknown. The trace of OpenLinkHub shows that reads once
+a second held software mode with the colour shown for the minutes of the trace. sensordeck keeps one reading a second,
+at most 1 second between the start of one reading and the start of the next, whatever the interval is.
+
+## A session of run
+
+With `commander_color`, `run` makes a session. The commands are those after the report ID byte.
+
+* The setup: `08 01 03 00 02`; the read of `0x20` on channel 1 as four exchanges, `08 05 01 01 20`, `08 0D 01 20`,
+  `08 08 01 20` and `08 05 01 01 20`; `08 0D 00 22`; and the colour write. The first exchange that does not succeed ends
+  the setup
+* A reading, made at least once a second: for each of `0x1A`, `0x17` and `0x21` in that order, the four exchanges close,
+  open, read and close on channel 1. Only the answer of `0x21` is used. They are the traffic of the trace, copied whole
+  because it is the one traffic seen to hold software mode, and take about 24 milliseconds
+* The teardown, which follows every setup once `08 01 03 00 02` was written and ends every session: `08 05 01 00 22`, the
+  close of channel 0, and `08 01 03 00 01`. The close is left out after a write that failed or an answer that did not
+  come, so that a controller that stopped answering costs a stop at most two time limits. The return to hardware mode is
+  never left out
+
+OpenLinkHub also wrote at setup `08 02 13`, `08 14 0N 01` for N from 1 to 6, writes with the command `06` to the
+endpoints `0x18`, data type `07 00`, and `0x1E`, data type `0D 00`, opened on channel 1, and `08 15 01`. sensordeck does
+not send them, and nor does it send a colour write of zero triples or a command that opens another endpoint on channel
+0. Their meaning is unknown, and the device test lit the LEDs without them.
 
 ## Unknown
 
@@ -116,11 +202,19 @@ the config file says otherwise.
 * Which probe sits at which port of the controller
 * Whether the fan steps 2 to 4 are needed before the temperature steps. They are made, because that is the one
   sequence seen to work
-* What the controller does with the fans in software mode when nobody sends it fan or lighting settings. It does not
-  drive the LEDs
+* What the controller does with the fans that it runs in software mode when nobody sends it fan settings. For the LEDs
+  this is known: they show what is sent. On the host the controller reported a speed of 0 on all six fan outputs, so it
+  runs none of the fans there
 * What bytes 96 to 383 of an answer hold. They are not interpreted
 * Whether the device needs a write of the full output report of 384 bytes. It was given 96 bytes after the report ID,
-  as the other tool gave it, and answered them
+  as the other tool gave it, and answered them. Whether it needs it for a colour write of more than 29 LEDs, which does
+  not fit into 97 bytes
+* The software-mode timeout
+* The meaning of the setup commands that sensordeck does not send, listed under "A session of run"
+* The meaning of the answer of `0x1A`
+* The modes of an entry of `0x20` other than 2 and 3
+* The order in which the triples of a colour write map to ports
+* Whether the trailing endpoint byte of a read or a close matters. The `08 05 01` of the first traces worked without it
 
 ## Assumptions
 

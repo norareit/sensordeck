@@ -125,6 +125,8 @@ whole number from 0 to 255.
 `commander_interval` is the shortest time between two readings of the Commander Core XT, in the same syntax as
 `interval`, such as `1m` or `30s`. It is at least `interval`, and is 1 minute without the key, or the interval when that
 is longer. Each reading makes the LEDs of the fans on the controller flicker once, which is why it is read less often.
+The period applies when `commander_color` is not given. With it, the controller is read in every round, as
+[The Corsair iCUE Commander Core XT](#the-corsair-icue-commander-core-xt) says.
 Between two readings `sensordeck run` sends the values of the last reading. `sensordeck sensors` reads the controller
 once each time it runs.
 
@@ -133,6 +135,64 @@ screen keeps its last value.
 
 `sensordeck run` sends the values until Ctrl+C or SIGTERM. It sets the clock of the screen when it starts and once a
 minute, and it keeps running when the screen is unplugged and plugged in again.
+
+## The Corsair iCUE Commander Core XT
+
+The controller has a hardware mode, in which it runs its fans and shows the lighting stored in it, and a software mode,
+in which it shows only what a program sends it, and is dark when nothing is sent. Reading the probes needs software
+mode, so without `commander_color` each reading of `sensordeck run` makes the LEDs flicker once, at most once per
+period of `commander_interval`, of 1 minute by default. `sensordeck sensors` makes them flicker once each time it runs.
+
+With `commander_color`, `run` holds software mode for as long as it runs. It lights the LEDs of every connected port in
+that one colour, reads the probes in every round and keeps the controller awake with a reading once a second. The value
+must be in quotes, because `#` starts a comment in YAML, and the key cannot be used with `commander_interval`. Choose one
+of the two ways. Without the colour:
+
+```yaml
+interval: 1s
+commander_interval: 1m
+tags:
+  cpu.temp: 1
+  commander.1.temp: 18
+  commander.2.temp: 19
+```
+
+With the colour:
+
+```yaml
+interval: 1s
+commander_color: "#00c8ff"
+tags:
+  cpu.temp: 1
+  commander.1.temp: 18
+  commander.2.temp: 19
+```
+
+What you see with the colour: at the start a moment of darkness and then the colour, steady while `run` runs, and after
+Ctrl+C or SIGTERM the lighting stored in the controller again.
+
+When the controller is unplugged or stops answering, `run` returns it to hardware mode if it can, writes
+`controller lost` to standard error, leaves the metrics of the controller out and keeps the screen going. It tries
+again after 10 seconds and then less often, up to every 5 minutes, and writes `controller back` and lights the colour
+again when it succeeds.
+
+Another program that talks to the controller at the same time, such as iCUE, liquidctl, OpenLinkHub or
+`sensordeck sensors`, is not supported: the commands of both mix, readings fail, the LEDs may show the stored lighting or
+go dark, and `run` sets the colour again at its next setup.
+
+What the controller does with fans that it runs, in software mode with no fan settings sent, is not known. sensordeck
+sends no fan settings, and the fans of the machine it was tested on are not run by the controller.
+
+At most 29 LEDs can be lit. A controller with more makes `run` write `controller setup failed`. A killed process, as
+with SIGKILL, or a loss of power can leave the controller in software mode with the colour or dark, until a program
+returns it to hardware mode or it is replugged.
+
+The controller needs the second rule of `udev/70-sensordeck.rules`, which gives the user of the active session access
+to its hidraw node:
+
+```
+SUBSYSTEM=="hidraw", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="0c2a", MODE="0660", TAG+="uaccess"
+```
 
 ## Credits
 

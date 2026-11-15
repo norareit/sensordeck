@@ -2,5 +2,5 @@
 # The uaccess tag is acted on by 73-seat-late.rules, so this file must sort before that name.
 SUBSYSTEM=="hidraw", ATTRS{idVendor}=="0483", ATTRS{idProduct}=="0065", MODE="0660", TAG+="uaccess"
 
-# Gives the same access to the Corsair iCUE Commander Core XT, USB ID 1b1c:0c2a, whose temperature probes sensordeck reads.
+# Gives the same access to the Corsair iCUE Commander Core XT, USB ID 1b1c:0c2a, whose temperature probes sensordeck reads and whose LEDs it lights.
 SUBSYSTEM=="hidraw", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="0c2a", MODE="0660", TAG+="uaccess"
