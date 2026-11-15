@@ -20,5 +20,9 @@ timestamp: 2026-11-15T08:25:25Z
   the truncation test of R22 cover the reader's robustness for this unit, and the others are small enough to come with
   the compiler if it needs them. The approval that follows is made under that delegation
 - 2026-11-15T08:27:47Z [human] approved the spec. The status is `approved`
+- 2026-11-15T08:32:01Z [Claude Code, anthropic/claude-opus-5-5] as the planner, wrote the plan against the tree of the unit's
+  branch: a fake theme builder, the reader, the renderer, the dump and the command `theme dump`, each in its own
+  package, then the end-to-end tests and the documents, with every requirement R1 to R24 traced to a task. The status
+  stays `approved`
 
 ## Amendments
