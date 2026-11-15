@@ -556,6 +556,14 @@ The command never calls `session.open`, `listScreens` or `newSources`, so it ope
     - a file of 100 bytes gives status 1, the stderr of R17, no stdout and no out-dir
 - [x] Run the five commands of the suite and commit: `feature-0010 Test theme dump end to end`
 
+### Added during the work
+
+- [x] Move the unwrapping of the cause of a file error into `innerError` in `internal/cli/commands.go`, so that
+  `readNamedFile` and `theme dump` share it. Behavior preserving, committed apart from the feature work. It was done
+  while building the command and added to this plan afterwards (see `record.md`)
+- [x] Review corrections C1 and C2: type the records of the dump with a sealed `recordJSON` instead of `any`, and
+  rename the one-character coordinate names to `left` and `top`
+
 ### The documents
 
 - [x] Add `docs/theme-format.md`, in the project's own words, with everything of "What is known of the format" of the
@@ -575,5 +583,5 @@ The command never calls `session.open`, `listScreens` or `newSources`, so it ope
 
 ### Before handing over
 
-- [ ] Run the five commands of the suite and `npm run check-changes`, and check every requirement R1 to R24 against
+- [x] Run the five commands of the suite and `npm run check-changes`, and check every requirement R1 to R24 against
   the tree, ticking the tasks in this plan (R24)
