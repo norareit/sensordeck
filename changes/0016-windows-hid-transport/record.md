@@ -63,3 +63,9 @@ timestamp: 2026-11-15T13:32:18Z
   Not checked: any run on Windows, among them `seam_windows_test.go`, the layouts of `HIDD_ATTRIBUTES` and `HIDP_CAPS`
   and the whole of R35 and R36, so every item of "Unverified until the human runs it" is still open. No review has
   run yet. The status stays `in-progress`
+- 2026-11-15T22:49:05Z [OpenCode, openai/gpt-6.1-sol] as the reviewer, completed a full review of unit
+  `0016-windows-hid-transport` at `aae8745`, against merge base `09031a2` with `origin/master`. Returned S1, C1 and
+  C2 in `.reviews/changes/0016-windows-hid-transport/review-round-1-20261115T224905Z.md`. Two full Linux test runs
+  failed in the removal end-to-end assertion; the focused test failed twice in five runs. Linux vet, formatting,
+  Windows build and vet, the no-cgo Windows build, the Darwin build, FreeBSD CLI vet and the change check passed.
+  Windows runtime, CI and physical-device behavior could not be verified. The status stays `in-progress`
