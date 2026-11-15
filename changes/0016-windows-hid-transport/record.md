@@ -69,3 +69,12 @@ timestamp: 2026-11-15T13:32:18Z
   failed in the removal end-to-end assertion; the focused test failed twice in five runs. Linux vet, formatting,
   Windows build and vet, the no-cgo Windows build, the Darwin build, FreeBSD CLI vet and the change check passed.
   Windows runtime, CI and physical-device behavior could not be verified. The status stays `in-progress`
+- 2026-11-15T23:59:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, took the findings of
+  `review-round-1-20261115T224905Z.md`, accepted by the definition of the orchestrator and not decided by the human.
+  S1: the assertion of `TestRunWithAColourGoesOnWhenTheControllerIsRemoved` now looks only at value reports after the
+  removal, requires at least one, and ignores clock reports, which hold no pairs; it passed six runs of its own in a
+  row. C1: `call` of `internal/winhid/seam_windows.go` carries `//go:uintptrescapes`, and the compiler now reports
+  `guid`, `attributes`, the string buffer, `preparsed` and `caps` moved to the heap; a test limited to Windows lists
+  after growing the stack and collecting garbage, which is built with `GOOS=windows go test -c` and not run. C2: the
+  parameters of the tests of `internal/screenlist` are named `test`. Suite run on `13342ef`: all five commands pass and
+  the change check passes. No finding was declined. The status stays `in-progress`
