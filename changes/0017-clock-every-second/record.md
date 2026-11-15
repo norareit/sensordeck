@@ -56,3 +56,9 @@ supersedes: 0004-linux-sensors-and-run
   P1 of round 1: declined. The tests were written after the code, against the order of the plan, but the order cannot
   be restored after the fact, the record states it, and the tests were shown to fail on the tree without the schedule,
   so they guard the fix. P1 does not block
+- 2026-11-15T22:25:06Z [OpenCode, openai/gpt-6.1-sol] as the reviewer, completed a delta review of
+  `0017-clock-every-second` at `4f2040f1a46085af3fc9e7f5429ba34f92ebabbd` from
+  `38849817278d54e226ed82b6bf036987f66ed43f`. Returned no findings; the full review is in
+  `.reviews/0017-clock-every-second/review-round-2.md`. The five suite commands, the change check and
+  `git diff --check` passed. Physical-screen behavior and Windows execution were not verified. The status stays
+  `in-progress`
