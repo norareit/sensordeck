@@ -1,6 +1,6 @@
 ---
 kind: feature
-status: in-progress
+status: implemented
 timestamp: 2026-11-15T00:29:10Z
 ---
 
@@ -26,9 +26,9 @@ timestamp: 2026-11-15T00:29:10Z
   `TestRunReopensALostScreenOncePerRound` keeps what it expects. The new period is a method of the config, so that the
   field holds what the file gives and the existing tests that compare a whole config keep what they expect, as R17
   asks
-- 2026-11-15T00:40:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, began the work. The status is
+- 2026-11-15T00:34:51Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, began the work. The status is
   `in-progress`
-- 2026-11-15T01:10:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, built the unit by the plan, with
+- 2026-11-15T00:37:12Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, built the unit by the plan, with
   the tests of each part before its code: the config key and its checks, the sources with the controller apart, the
   type `periodicSource` and the feeder of `run`, the two end-to-end tests and the two documents. The plan needed no
   change and the spec none. R8 was read as the plan reads it: a round whose reopening fails reads no source, and the
@@ -45,5 +45,10 @@ timestamp: 2026-11-15T00:29:10Z
   `GOOS=windows GOARCH=amd64 go build ./...`, `GOOS=windows GOARCH=amd64 go vet ./...`,
   `npm run check-changes` and the diff whitespace check; all passed. Could not verify physical-device operation,
   native Windows execution or test-first execution within implementation commits. The status stays `in-progress`
+- 2026-11-15T00:39:36Z [Claude Code, anthropic/claude-opus-5-5] under the delegation in `AGENTS.md`, read the review of round 1,
+  which returned no findings, so no blocking finding is open. The timestamps of two entries of the implementer, which
+  did not match their commits, were corrected to the times of the commits that added them. Every task of `plan.md` is
+  ticked. The check on the real controller and screen is the human's and follows the merge. The status is
+  `implemented`
 
 ## Amendments
