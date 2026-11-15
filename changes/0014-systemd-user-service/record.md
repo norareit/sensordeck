@@ -1,6 +1,6 @@
 ---
 kind: feature
-status: approved
+status: in-progress
 timestamp: 2026-11-15T12:44:19Z
 ---
 
@@ -35,3 +35,20 @@ timestamp: 2026-11-15T12:44:19Z
   commands. It decides one case the spec leaves unnamed: a check of the presence of the unit file that fails other than
   by its absence fails `status` and `uninstall` with exit status 1 and makes no call. No item of "Beyond the request" is
   built
+- 2026-11-15T13:20:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, began the work. The status is
+  `in-progress`
+- 2026-11-15T13:21:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, built the plan in its order: the
+  shared `loadConfigFile` first, in a commit that leaves `run` unchanged, then the pure functions of the unit file, the
+  seam of `system`, `executable` and `systemctl` with `service install`, `uninstall`, `status` and the check of the
+  system, the end-to-end tests with a fake `systemctl`, and the README section and status line. Deviations from the
+  plan, none of which changes the spec: the code of `uninstall`, `status` and `supported` was written in the same
+  commit as `install`, before the tests of those three, so that their tests were written against existing code and
+  were not seen to fail first; the fake `systemctl` of the end-to-end tests checks that its first argument is `--user`
+  and logs the arguments after it. No item of "Beyond the request" is built
+- 2026-11-15T13:22:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, ran on the tree of `cbf3dfb`,
+  whose code the later commits of this unit do not change: `go test ./...`, `go vet ./...`, `gofmt -l .`,
+  `GOOS=windows GOARCH=amd64 go build ./...` and `GOOS=windows GOARCH=amd64 go vet ./...`. All five succeeded and
+  reported nothing but passing packages. Not checked: a real systemd, the unit started on the developer's machine,
+  lingering, and Windows, which D18 leaves to the human. The README claims nothing as seen on the device. The status
+  stays `in-progress` for the review and the human
+

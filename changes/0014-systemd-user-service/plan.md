@@ -275,18 +275,18 @@ the test.
 - [x] Change the status line of `README.md` to name `sensordeck service install`, `status` and `uninstall` among what
   works on Linux and to say that Windows is still to come, removing that the service is still to come; keep "Planned
   usage" as it is (R20)
-- [ ] Commit
+- [x] Commit
 
 ### Handing over
 
-- [ ] Check each case that R21 lists against the unit tests written above, and add a test for any case missing (R21)
-- [ ] Run the five commands of the suite in `AGENTS.md` and `npm run check-changes`, all succeeding (R18, R23)
-- [ ] Log the implementation in `record.md`, tick the tasks, and commit
+- [x] Check each case that R21 lists against the unit tests written above, and add a test for any case missing (R21)
+- [x] Run the five commands of the suite in `AGENTS.md` and `npm run check-changes`, all succeeding (R18, R23)
+- [x] Log the implementation in `record.md`, tick the tasks, and commit
 
 ## Verification
 
-- [ ] `go test ./...` passes
-- [ ] `go vet ./...` reports nothing
-- [ ] `gofmt -l .` prints no file name
-- [ ] `GOOS=windows GOARCH=amd64 go build ./...` succeeds and reports nothing
-- [ ] `GOOS=windows GOARCH=amd64 go vet ./...` succeeds and reports nothing
+- [x] `go test ./...` passes
+- [x] `go vet ./...` reports nothing
+- [x] `gofmt -l .` prints no file name
+- [x] `GOOS=windows GOARCH=amd64 go build ./...` succeeds and reports nothing
+- [x] `GOOS=windows GOARCH=amd64 go vet ./...` succeeds and reports nothing
