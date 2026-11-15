@@ -85,9 +85,10 @@ GoReleaser configuration of this unit builds. "The preview image" is the PNG of 
 - **R11** The license section says the project is under the MIT licence and links to `LICENSE`
 - **R12** The README has a short section for the maintainer on making a release, as the last section before the
   credits: that CI runs the suite on pushes and pull requests, that pushing a tag of the form `v<major>.<minor>.<patch>`
-  makes the release workflow build the archives and the checksum file into a draft release, that the draft is checked
-  and published by hand on GitHub, and how to try the configuration locally with
-  `goreleaser release --snapshot --clean` and where that writes
+  makes the release workflow run the suite and, only when it succeeds, build the archives and the checksum file into a
+  draft release, that the draft is checked and published by hand on GitHub, how to try the configuration locally with
+  `goreleaser release --snapshot --clean` and where that writes, and the command that writes the notices file of R27
+  again after a dependency changed
 - **R13** Every change to the existing content of the README is one of these, and the record of the implementation
   accounts for each:
   1. The title's tagline: corrected by R4
@@ -116,19 +117,24 @@ GoReleaser configuration of this unit builds. "The preview image" is the PNG of 
 - **R14** A GoReleaser configuration, of version 2 of its format, builds the executable from the module root with
   `CGO_ENABLED=0` and `-trimpath` for exactly linux/amd64, linux/arm64 and windows/amd64. Its ldflags are
   `-s -w -X main.version=v{{.Version}}`
-- **R15** Each archive holds the executable, `README.md`, `LICENSE` and `udev/70-sensordeck.rules`. The Linux archives
+- **R15** Each archive holds the executable, `README.md`, `LICENSE`, `THIRD_PARTY_LICENSES` (the notices file of
+  R27) and `udev/70-sensordeck.rules`. The Linux archives
   are `.tar.gz` and the Windows archive is `.zip`. Their names are GoReleaser's default, as
   `sensordeck_<version>_<os>_<arch>`, and the README's install section names them in that form
 - **R16** The release has a SHA-256 checksum file of the archives, under GoReleaser's default name
   `sensordeck_<version>_checksums.txt`
 - **R17** The release is a draft, and GoReleaser writes no changelog into it
 - **R18** GoReleaser writes into a directory other than `dist/`, and git ignores that directory
-- **R19** A GitHub Actions workflow runs GoReleaser with `release --clean` when a tag that starts with `v` is pushed,
-  with the permission `contents: write` and no other, after checking out the full history and setting up the Go
-  version that `go.mod` names. The version of GoReleaser it runs is an exact release, not `latest` or a range
+- **R19** A GitHub Actions workflow runs when a tag that starts with `v` is pushed, and has two jobs. The first calls
+  the CI workflow of R20 as a reusable workflow, with the permission `contents: read` and no other. The second needs
+  the first, so that it does not run when the suite fails, and runs GoReleaser with `release --clean` after checking
+  out the full history and setting up the Go version that `go.mod` names, with the permission `contents: write` and
+  no other. The workflow grants no permission at its top level. The version of GoReleaser it runs is an exact
+  release, not `latest` or a range
 - **R20** A second GitHub Actions workflow runs the five commands of the suite on every push and every pull request,
-  on an Ubuntu runner named by its version, with the permission `contents: read` and no other, and with the Go
-  version that `go.mod` names. Its step for `gofmt -l .` fails when the command prints a file name
+  and when another workflow calls it, on an Ubuntu runner named by its version, with the permission `contents: read`
+  and no other, and with the Go version that `go.mod` names. Its step for `gofmt -l .` fails when the command prints
+  a file name
 - **R21** Each action that either workflow uses is pinned to an exact release tag, such as `v4.2.2`, and not to a
   branch or a major version tag
 
@@ -147,15 +153,35 @@ GoReleaser configuration of this unit builds. "The preview image" is the PNG of 
   - of the GoReleaser configuration: version 2, the three platforms of R14 and no other, `CGO_ENABLED=0`, the ldflags
     of R14, the files of R15 in the archives, the formats of R15, the draft and the disabled changelog of R17, and an
     output directory other than `dist`
-  - of the release workflow: the trigger on pushed tags that start with `v` and no other trigger, the permission of
-    R19, a step that runs GoReleaser with `release --clean` at an exact version, and that every `uses` names an exact
-    release tag
-  - of the CI workflow: the triggers `push` and `pull_request`, the permission of R20, that its steps run each of the
-    five commands of the suite, each holding the command as `AGENTS.md` writes it, and that every `uses` names an exact release tag
+  - of the release workflow: the trigger on pushed tags that start with `v` and no other trigger, no permission at the
+    top level, a job that calls the CI workflow by its path with `contents: read`, a job that needs that job, has
+    `contents: write` and has a step that runs GoReleaser with `release --clean` at an exact version, and that every
+    `uses` of a step names an exact release tag
+  - of the CI workflow: the triggers `push`, `pull_request` and `workflow_call`, the permission of R20, that its steps
+    run each of the five commands of the suite, each holding the command as `AGENTS.md` writes it, and that every
+    `uses` names an exact release tag
 - **R25** The unit tests cover R22: the printed line with a version set, with none set and a build information
   version, and with neither. An end-to-end test runs the built executable with `--version` and checks the form of
   the line and the exit status
 - **R26** The suite succeeds
+
+### Third-party notices
+
+- **R27** The repository holds a committed plain-text file `THIRD_PARTY_LICENSES` with the licence notices of the code
+  linked into the executable. It has one part for the Go standard library, with the text of the `LICENSE` file of the
+  Go toolchain, and one part for each module that `go.mod` requires, directly or indirectly, in the order of the
+  module paths. Each module's part opens with a line naming its path and the version `go.mod` requires, followed by
+  the text, unchanged, of every file at the root of the module whose name starts with `LICENSE`, `LICENCE`, `COPYING`
+  or `NOTICE`, in the order of the file names, each under a line with the file's name. It holds no Go toolchain
+  version, so that it does not change when the toolchain does
+- **R28** A program in the repository writes the file of R27, run with one `go run` command that R12 names. It finds
+  the directory of each module with `go list -m` and the toolchain's `LICENSE` under `go env GOROOT`, so it needs
+  nothing but the module cache and the module proxy. It fails, naming the module, when a module has no file of those
+  names or is not in the module cache, and writes nothing then
+- **R29** A test produces the content of R27 with the same code as the program of R28 and fails when it differs from
+  the committed file, with a message that names the command of R28. The text of the file is made by a pure function
+  of the module list and the licence texts, which is unit tested with plain values for the order, the headers, the
+  file names it takes and the failure on a module with no licence file
 
 ## Decisions
 
@@ -214,6 +240,20 @@ GoReleaser configuration of this unit builds. "The preview image" is the PNG of 
   `pflag`, `mousetrap` and `x/text`, are named too, because `pflag` is linked into every executable and `mousetrap`
   into the Windows one, and a credits list that leaves out linked code is wrong. Each licence is taken from the
   module's own licence file, not from memory.
+- **D13 The notices file is generated, committed and checked.** The BSD licences of `pflag`, the `golang.org/x`
+  modules and the Go standard library ask that a binary distribution reproduce their notice, and the Apache licence
+  of `cobra`, `mousetrap` and the YAML module asks that a `NOTICE` file shipped with the work be passed on. So each
+  archive carries the texts, not just the names in the credits. Copying licence texts is not copying code, so the
+  publishing rules allow it. The file is generated from the module cache rather than written by hand, because a hand
+  copy goes wrong silently; it is committed, rather than generated by GoReleaser at release time, so that its content
+  is reviewed in a diff and the release needs no step that the tests have not run; and a test compares it with what
+  the generator gives now, so that a new or updated dependency fails the suite until the file is written again.
+  Tools that collect licences, such as `go-licenses`, were rejected as a new dependency for a few lines of code.
+  Taking the files at the module root only is enough for the modules of `go.mod` today, whose licence files are all at
+  the root; the Go fonts are under the licence of `golang.org/x/image`.
+- **D14 The release waits for the suite.** A release must not be built from a commit whose suite fails. Calling the CI
+  workflow as a reusable workflow, rather than repeating its steps in the release workflow, keeps the five commands in
+  one place. The permissions are granted per job, so that the job that runs the suite never holds the write token.
 
 ## Non-goals
 
@@ -232,25 +272,27 @@ GoReleaser configuration of this unit builds. "The preview image" is the PNG of 
 1. Pinning each action to the full commit hash of its release tag, with the tag in a comment. Cost: looking up and
    checking a hash per action, on the host or with network access, and updating hashes rather than tags later.
    Without it, a moved release tag of an action changes the build unseen, which needs a compromise of that action's
-   repository.
+   repository. Declined.
 2. A file of the licence texts of the modules of `go.mod`, put into each archive. Cost: one committed file of copied
    licence texts, which is allowed because they are licence texts and not code, and a test that it names each module
    of `go.mod`. Without it, the archives carry the names and licences in the README's credits but not the licence
    texts, which the BSD licences of `pflag` and the `golang.org/x` modules ask a binary distribution to reproduce; it
-   is fixed in a later release when noticed.
+   is fixed in a later release when noticed. Taken: R27 to R29, D13.
 3. A test that the credits name each module of `go.mod`, so that a new dependency cannot be added without its credit.
    Cost: one test that reads `go.mod` and the README. Without it, a new dependency goes uncredited until someone
-   notices and adds a line.
+   notices and adds a line. Declined.
 4. A test that the README holds each identifier of R8. Cost: a few lines. Without it, a later edit can drop one
-   unseen, and searches stop finding the project until it is added back.
+   unseen, and searches stop finding the project until it is added back. Declined.
 5. The release workflow running the suite before GoReleaser, by calling the CI workflow as a reusable workflow and
    making the release wait for it. Cost: a `workflow_call` trigger on the CI workflow and a second job. Without it, a
    tag on a commit that fails the suite still makes a draft release, which the human sees in CI and deletes.
+   Taken: R19, R20, D14.
 6. The CI workflow also running `goreleaser check` on the configuration, so that a configuration GoReleaser refuses is
    seen on a push rather than at the first tag. Cost: one step with the pinned GoReleaser action. Without it, such a
-   configuration shows at the first release, which fails before it uploads anything and is fixed and tagged again.
+   configuration shows at the first release, which fails before it uploads anything and is fixed and tagged
+   again. Declined.
 7. The CI workflow also running `npm run check-changes`. Cost: Node setup and `npm ci` in CI. Without it, the change
-   check runs only where the process runs it today, before work is submitted.
-8. Putting `docs/` into the archives, so that the README's links to the documents and the preview image work offline. Cost: one entry in the
-   archive files and a line in R24. Without it, those links in an extracted README point to files that are not there,
-   and the documents are one click away on GitHub.
+   check runs only where the process runs it today, before work is submitted. Declined.
+8. Putting `docs/` into the archives, so that the README's links to the documents and the preview image work
+   offline. Cost: one entry in the archive files and a line in R24. Without it, those links in an extracted README
+   point to files that are not there, and the documents are one click away on GitHub. Declined.
