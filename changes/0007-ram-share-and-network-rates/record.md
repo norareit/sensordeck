@@ -1,6 +1,6 @@
 ---
 kind: feature
-status: draft
+status: approved
 timestamp: 2026-11-15T00:11:24Z
 ---
 
@@ -16,5 +16,6 @@ timestamp: 2026-11-15T00:11:24Z
   requirement can be tested in the sandbox with fake proc and sysfs trees, the names follow `cpu.util` and
   `gpu.util`, D4 counts the interfaces the kernel ties to a device, and D5 keeps the units of the table binary. The
   three items of "Beyond the request" are declined. The approval that follows is made under that delegation
+- 2026-11-15T00:12:12Z [human] approved the spec. The status is `approved`
 
 ## Amendments
