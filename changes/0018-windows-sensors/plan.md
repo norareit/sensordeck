@@ -85,8 +85,8 @@ What the tree on `feature-0018-windows-sensors` holds, and what the plan builds 
 * **The restart line of the key** compares the two URLs by `String()` through a helper of `runconfig.go` that takes a
   nil URL as the empty text, so that the `config.Config` values of the existing tests, which have none, stay equal
 * **The mapping of the tree** is a new package `internal/librehardwaremonitor`, with no build constraint, whose
-  `Map(body []byte) ([]sensors.Reading, error)` is R26. It decodes the body with `json.Unmarshal` into `any`, which
-  refuses a body that is more than one JSON value, gives `ErrNotJSON` (`the answer is not JSON`) when that fails and
+  `Map(body []byte) ([]sensors.Reading, error)` is R26. It decodes the body with `json.Unmarshal` into a `json.RawMessage`, which
+  refuses a body that is more than one JSON value, and then each node into a map of undecoded fields, with no `any`, gives `ErrNotJSON` (`the answer is not JSON`) when that fails and
   `ErrNotTree` (`the answer is not the tree of data.json`) when the value is not an object with a `Children` array, and
   walks the nodes depth first in the order of the document. It gives the readings in the order of the table, and within
   a numbered row by *n*, and gives no numbered metric with *n* above `MaxNumber = 64`, so that R18 holds whatever

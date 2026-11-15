@@ -10,15 +10,36 @@ import (
 	"github.com/norareit/sensordeck/internal/sensors"
 )
 
-// node is a node of the tree in the shape of "What is known" of the spec.
-type node map[string]any
+// node is a node of the tree in the shape of "What is known" of the spec. Its fields are left as JSON, so that a test
+// can give a field the wrong type.
+type node map[string]json.RawMessage
+
+// quoted is a JSON string.
+func quoted(text string) json.RawMessage {
+	encoded, err := json.Marshal(text)
+	if err != nil {
+		panic(err)
+	}
+	return encoded
+}
+
+// array is a JSON array of the nodes.
+func array(nodes ...node) json.RawMessage {
+	encoded, err := json.Marshal(append([]node{}, nodes...))
+	if err != nil {
+		panic(err)
+	}
+	return encoded
+}
 
 func group(text string, children ...node) node {
-	return node{"id": 1, "Text": text, "Min": "", "Value": "", "Max": "", "ImageURL": "", "Children": children}
+	return node{"id": json.RawMessage(`1`), "Text": quoted(text), "Min": quoted(""), "Value": quoted(""), "Max": quoted(""),
+		"ImageURL": quoted(""), "Children": array(children...)}
 }
 
 func sensor(id, kind, text, value string) node {
-	return node{"id": 2, "Text": text, "Min": value, "Value": value, "Max": value, "ImageURL": "", "SensorId": id, "Type": kind, "Children": []node{}}
+	return node{"id": json.RawMessage(`2`), "Text": quoted(text), "Min": quoted(value), "Value": quoted(value), "Max": quoted(value),
+		"ImageURL": quoted(""), "SensorId": quoted(id), "Type": quoted(kind), "Children": array()}
 }
 
 func temperature(id, text, value string) node { return sensor(id, "Temperature", text, value) }
@@ -27,8 +48,8 @@ func clock(id, text, value string) node       { return sensor(id, "Clock", text,
 // document wraps the hardware in the root and the computer.
 func document(test *testing.T, hardware ...node) []byte {
 	test.Helper()
-	root := node{"id": 0, "Text": "Sensor", "Min": "Min", "Value": "Value", "Max": "Max", "ImageURL": "",
-		"Children": []node{group("DESKTOP", hardware...)}}
+	root := node{"id": json.RawMessage(`0`), "Text": quoted("Sensor"), "Min": quoted("Min"), "Value": quoted("Value"),
+		"Max": quoted("Max"), "ImageURL": quoted(""), "Children": array(group("DESKTOP", hardware...))}
 	body, err := json.Marshal(root)
 	if err != nil {
 		test.Fatal(err)
@@ -275,24 +296,24 @@ func TestAModuleWithoutAValueKeepsItsNumber(test *testing.T) {
 
 func TestNodesOfAnotherShapeAreIgnoredAndTheRestIsRead(test *testing.T) {
 	odd := sensor("/amdcpu/0/temperature/9", "Temperature", "Core #9", "50.0 °C")
-	odd["Value"] = 50 // a field of another type: no sensor
+	odd["Value"] = json.RawMessage(`50`) // a field of another type: no sensor
 	notArray := group("Odd")
-	notArray["Children"] = "none"
+	notArray["Children"] = quoted("none")
 	withNumbers := temperature("/amdcpu/0/temperature/2", "Core (Tctl/Tdie)", "46.9 °C")
-	withNumbers["RawValue"] = 46.9 // master writes numbers
-	withNumbers["RawMin"] = nil
-	withNumbers["HardwareId"] = "/amdcpu/0"
+	withNumbers["RawValue"] = json.RawMessage(`46.9`) // master writes numbers
+	withNumbers["RawMin"] = json.RawMessage(`null`)
+	withNumbers["HardwareId"] = quoted("/amdcpu/0")
 	stringRaw := clock("/amdcpu/0/clock/1", "Core #1", "4000.0 MHz")
-	stringRaw["RawValue"] = "4000.0 MHz" // v0.9.6 writes strings
+	stringRaw["RawValue"] = quoted("4000.0 MHz") // v0.9.6 writes strings
 	short := sensor("/amdcpu/0/clock/2", "Clock", "Core #2", "9000.0 MHz")
-	short["SensorId"] = "/amdcpu/clock"
+	short["SensorId"] = quoted("/amdcpu/clock")
 	noDigits := sensor("/amdcpu/0/clock/x", "Clock", "Core #3", "9000.0 MHz")
 	noType := clock("/amdcpu/0/clock/4", "Core #4", "9000.0 MHz")
 	delete(noType, "Type")
-	root := node{"Version": "0.9.7", "Text": "Sensor", "Children": []node{
+	root := node{"Version": quoted("0.9.7"), "Text": quoted("Sensor"), "Children": array(
 		group("DESKTOP", hardwareGroup(
 			notArray, odd, withNumbers,
-			group("board", group("chip", group("Clocks", stringRaw, short, noDigits, noType)))))}}
+			group("board", group("chip", group("Clocks", stringRaw, short, noDigits, noType))))))}
 	body, err := json.Marshal(root)
 	if err != nil {
 		test.Fatal(err)
@@ -309,7 +330,7 @@ func TestNodesOfAnotherShapeAreIgnoredAndTheRestIsRead(test *testing.T) {
 
 func TestANodeWhoseChildrenAreNotAnArrayStillCountsAsASensor(test *testing.T) {
 	cpu := temperature("/amdcpu/0/temperature/2", "Core (Tctl/Tdie)", "46.9 °C")
-	cpu["Children"] = nil
+	cpu["Children"] = json.RawMessage(`null`)
 	got := mapped(test, hardwareGroup(cpu))
 	if want := []sensors.Reading{reading("cpu.temp", 46.9)}; !reflect.DeepEqual(got, want) {
 		test.Errorf("got %v", got)

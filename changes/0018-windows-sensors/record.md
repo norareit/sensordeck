@@ -66,3 +66,10 @@ timestamp: 2026-11-15T23:04:03Z
   `go test -count=1 ./...` including end-to-end tests, the Darwin cross-build, compilation of the Windows seam tests,
   and `npm run check-changes`, all successfully. Could not verify real Windows execution, the GitHub Windows job,
   physical hardware or a real LibreHardwareMonitor server. The status stays `in-progress`
+- 2026-11-16T00:20:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, accepted finding C1 of
+  `.reviews/0018-windows-sensors/review-round-1.md`, accepted by the definition of the orchestrator for this round and not
+  decided by the human. `internal/librehardwaremonitor/tree.go` no longer uses `any`: the body is decoded into a
+  `json.RawMessage`, each node into a map of `json.RawMessage` fields, and the strings and the children are decoded from
+  those, so a field of another type still costs that field only and the children of a node that is no sensor are still
+  searched. The fixtures of `tree_test.go` use the same representation. The plan's sentence on the decoding is corrected
+  to match. The trailing blank line of this record that the review named is removed

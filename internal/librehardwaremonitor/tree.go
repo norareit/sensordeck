@@ -43,16 +43,13 @@ var (
 // and, within a numbered row, by number. A body that is no tree is a failure; a tree that holds none of the metrics
 // gives no reading and no error. It does no input and output.
 func Map(body []byte) ([]sensors.Reading, error) {
-	var document any
+	var document json.RawMessage
 	if err := json.Unmarshal(body, &document); err != nil {
 		return nil, ErrNotJSON
 	}
-	root, isObject := document.(map[string]any)
-	if !isObject {
-		return nil, ErrNotTree
-	}
-	children, isArray := root["Children"].([]any)
-	if !isArray {
+	root := fieldsOf(document)
+	children, hasChildren := childrenOf(root)
+	if root == nil || !hasChildren {
 		return nil, ErrNotTree
 	}
 	var found []sensorNode
@@ -62,29 +59,55 @@ func Map(body []byte) ([]sensors.Reading, error) {
 	return readingsOf(found), nil
 }
 
+// fieldsOf gives the fields of a JSON object, each left undecoded so that a field of an unexpected type costs that
+// field only. It gives nil for anything that is no object.
+func fieldsOf(node json.RawMessage) map[string]json.RawMessage {
+	var fields map[string]json.RawMessage
+	if err := json.Unmarshal(node, &fields); err != nil {
+		return nil
+	}
+	return fields
+}
+
+// childrenOf gives the children of a node, and false when its Children is missing, null or no array.
+func childrenOf(fields map[string]json.RawMessage) ([]json.RawMessage, bool) {
+	var children []json.RawMessage
+	if err := json.Unmarshal(fields["Children"], &children); err != nil || children == nil {
+		return nil, false
+	}
+	return children, true
+}
+
+// textOf gives a field that is a JSON string, and false for a missing field, null and any other type.
+func textOf(fields map[string]json.RawMessage, name string) (string, bool) {
+	var text string
+	raw := fields[name]
+	if len(raw) == 0 || raw[0] != '"' || json.Unmarshal(raw, &text) != nil {
+		return "", false
+	}
+	return text, true
+}
+
 // collectSensors walks a node and its children depth first, in the order of the document. A node of an unexpected
 // shape is passed over, and its children are still searched, so that a field that a later version changes costs that
 // field only.
-func collectSensors(node any, found []sensorNode) []sensorNode {
-	object, isObject := node.(map[string]any)
-	if !isObject {
-		return found
-	}
-	if sensor, isSensor := asSensor(object); isSensor {
+func collectSensors(node json.RawMessage, found []sensorNode) []sensorNode {
+	fields := fieldsOf(node)
+	if sensor, isSensor := asSensor(fields); isSensor {
 		found = append(found, sensor)
 	}
-	children, _ := object["Children"].([]any)
+	children, _ := childrenOf(fields)
 	for _, child := range children {
 		found = collectSensors(child, found)
 	}
 	return found
 }
 
-func asSensor(object map[string]any) (sensorNode, bool) {
-	id, idIsText := object["SensorId"].(string)
-	kind, kindIsText := object["Type"].(string)
-	text, textIsText := object["Text"].(string)
-	value, valueIsText := object["Value"].(string)
+func asSensor(fields map[string]json.RawMessage) (sensorNode, bool) {
+	id, idIsText := textOf(fields, "SensorId")
+	kind, kindIsText := textOf(fields, "Type")
+	text, textIsText := textOf(fields, "Text")
+	value, valueIsText := textOf(fields, "Value")
 	if !idIsText || !kindIsText || !textIsText || !valueIsText {
 		return sensorNode{}, false
 	}
