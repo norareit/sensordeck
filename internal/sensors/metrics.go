@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-// The eight metrics of a fixed name.
+// The metrics of a fixed name.
 const (
 	CPUTemperature = "cpu.temp"
 	CPUUtilisation = "cpu.util"
@@ -18,6 +18,9 @@ const (
 	GPUMemoryTotal = "gpu.mem.total"
 	RAMUsed        = "ram.used"
 	RAMTotal       = "ram.total"
+	RAMUtilisation = "ram.util"
+	NetworkUp      = "net.up"
+	NetworkDown    = "net.down"
 )
 
 // metricKind is one row of the table of metrics: a fixed name, or a numbered one made of prefix, number and suffix.
@@ -39,8 +42,11 @@ var metricKinds = []metricKind{
 	{prefix: GPUMemoryTotal, unit: "MiB"},
 	{prefix: RAMUsed, unit: "GiB"},
 	{prefix: RAMTotal, unit: "GiB"},
+	{prefix: RAMUtilisation, unit: "%"},
 	{prefix: "ram.", suffix: ".temp", numbered: true, unit: "°C"},
 	{prefix: "nvme.", suffix: ".temp", numbered: true, unit: "°C"},
+	{prefix: NetworkUp, unit: "KiB/s"},
+	{prefix: NetworkDown, unit: "KiB/s"},
 	{prefix: "commander.", suffix: ".temp", numbered: true, unit: "°C"},
 }
 

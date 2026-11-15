@@ -1,6 +1,6 @@
 ---
 kind: feature
-status: approved
+status: in-progress
 timestamp: 2026-11-15T00:11:24Z
 ---
 
@@ -21,5 +21,7 @@ timestamp: 2026-11-15T00:11:24Z
   the branch: three rows of the registry, `ram.util` from the one read of `meminfo`, and a network source in
   `internal/linuxsensors` that keeps its sample as `cpu.util` does and takes a wait and a clock, with the test
   helpers, the end-to-end tests and the README. Every requirement has a task. The status stays `approved`
+- 2026-11-15T00:20:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, began the work. The status is
+  `in-progress`
 
 ## Amendments
