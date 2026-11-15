@@ -28,6 +28,7 @@ type harness struct {
 	controllerProblem error    // what the controller says of why it was not found
 	openErr           error
 	sources           []sensors.Source // the sources other than the controller
+	set               *sourceSet       // the whole set of sources when a test gives one, instead of the three fields above
 	controller        sensors.Source
 	startSession      func(stop context.Context, colour config.Colour) (heldSession, error)
 	sourcesErr        error
@@ -89,6 +90,9 @@ func (harness *harness) run(args ...string) int {
 		newSources: func(sysfsRoot, devRoot, procRoot string) (sourceSet, error) {
 			if sysfsRoot != "/sysroot" || devRoot != "/devroot" || procRoot != "/procroot" {
 				return sourceSet{}, errors.New("the roots were not passed on")
+			}
+			if harness.set != nil {
+				return *harness.set, harness.sourcesErr
 			}
 			return sourceSet{others: harness.sources, controller: harness.controller, startSession: harness.startSession,
 				controllerProblem: func() error { return harness.controllerProblem }}, harness.sourcesErr

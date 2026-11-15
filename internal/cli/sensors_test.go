@@ -152,3 +152,29 @@ func TestSensorsReadsTheControllerOnceAfterTheOthers(test *testing.T) {
 		test.Errorf("the controller got %d calls", controller.readsAt)
 	}
 }
+
+func TestSensorsOnASetWithoutAMonitorNeverLooksForTheConfig(test *testing.T) {
+	harness := newHarness()
+	harness.sources = []sensors.Source{&fakeSource{names: []string{"cpu.temp"}, values: map[string]float64{"cpu.temp": 1}}}
+	if status := harness.run("sensors"); status != 0 {
+		test.Fatalf("status %d", status)
+	}
+	if harness.configDirCalls != 0 {
+		test.Errorf("userConfigDir was called %d times", harness.configDirCalls)
+	}
+}
+
+func TestSensorsWritesReadingsGivenOutOfOrderInTheOrderOfTheTable(test *testing.T) {
+	harness := newHarness()
+	harness.sources = []sensors.Source{
+		&fakeSource{names: []string{"nvme.2.temp", "net.up", "cpu.temp", "nvme.1.temp"},
+			values: map[string]float64{"nvme.2.temp": 2, "net.up": 3, "cpu.temp": 4, "nvme.1.temp": 5}},
+	}
+	if status := harness.run("sensors"); status != 0 {
+		test.Fatalf("status %d", status)
+	}
+	want := "cpu.temp\t4.0\t°C\nnvme.1.temp\t5.0\t°C\nnvme.2.temp\t2.0\t°C\nnet.up\t3.0\tKiB/s\n"
+	if got := harness.stdout.String(); got != want {
+		test.Errorf("stdout %q", got)
+	}
+}

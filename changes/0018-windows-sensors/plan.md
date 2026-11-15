@@ -316,16 +316,16 @@ What the tree on `feature-0018-windows-sensors` holds, and what the plan builds 
 
 ### 9. The commands on Windows
 
-- [ ] In `internal/sensors/metrics_test.go`, test `InTableOrder`: readings of several rows and numbers given out of
+- [x] In `internal/sensors/metrics_test.go`, test `InTableOrder`: readings of several rows and numbers given out of
   order come back in the order of the table and of *n*, `commander.<n>.temp` last, equal rows keep their order, and the
   input is not changed; add `InTableOrder` to `metrics.go` (R28)
-- [ ] Add `internal/cli/monitor_test.go` for the lines of the monitor: the line of R29 with the URL without its user
+- [x] Add `internal/cli/monitor_test.go` for the lines of the monitor: the line of R29 with the URL without its user
   and password; the line of a document with no metric; `monitorOutage` writing the line of R29 once over three
   failures, the line of return after them, and nothing for a success with no failure before (R29, R30)
-- [ ] Add `internal/cli/monitor.go` as the choices above say (R29, R30)
-- [ ] In `internal/cli/sources.go`, add `monitor` to `sourceSet` and add `withWindowsSensors`; make
+- [x] Add `internal/cli/monitor.go` as the choices above say (R29, R30)
+- [x] In `internal/cli/sources.go`, add `monitor` to `sourceSet` and add `withWindowsSensors`; make
   `sources_windows.go` give the set of the choices above, and change its comment (R1, R33)
-- [ ] Give the harness of `internal/cli/commands_test.go` a field `set *sourceSet` that `newSources` gives when it is
+- [x] Give the harness of `internal/cli/commands_test.go` a field `set *sourceSet` that `newSources` gives when it is
   set, and add `internal/cli/windowssensors_linux_test.go`, which builds `withWindowsSensors` over `fakewinsensors`
   with the controller of the harness, a fake `nvidia-smi` on a `PATH` it sets, and an `httptest` server, covering R41:
   `sensors` with every source readable, whose output is checked line by line, native, GPU, monitor and Commander
@@ -338,18 +338,18 @@ What the tree on `feature-0018-windows-sensors` holds, and what the plan builds 
   fails, the line of return when it answers again, and the tiles of the failed rounds not sent; `run` with a config
   mapping only `ram.used`, with no request to the server; a stop of `run` while the server holds a request, ending
   within the 3 seconds of R23 of unit 0004 (R27 to R31, R41)
-- [ ] In `internal/cli/sensors_test.go`, add that `sensors` on a set without a monitor never calls `userConfigDir`,
+- [x] In `internal/cli/sensors_test.go`, add that `sensors` on a set without a monitor never calls `userConfigDir`,
   and that readings given out of order are written in the order of the table (R27, R28)
-- [ ] In `sensors` of `internal/cli/commands.go`, read the URL when the set has a monitor, add the monitor to the
+- [x] In `sensors` of `internal/cli/commands.go`, read the URL when the set has a monitor, add the monitor to the
   sources with a report that keeps the outcome, write `InTableOrder` of the readings, and write the line of the monitor
   after a reading that was not interrupted, before the problem lines; move the wording `config file %s: %w` into a
   helper that `loadConfigFile` uses too (R27, R28, R29, R31)
-- [ ] In `run` of `internal/cli/run.go`, add the monitor of the URL of the config to the `others` of the feeder, with
+- [x] In `run` of `internal/cli/run.go`, add the monitor of the URL of the config to the `others` of the feeder, with
   `monitorOutage` on the locked standard error, when the set has one (R30, R31)
-- [ ] In the comment at the top of `e2e/commands_test.go`, add that the sources of Windows are not chosen by the
+- [x] In the comment at the top of `e2e/commands_test.go`, add that the sources of Windows are not chosen by the
   executable built for Linux, and are covered by the tests of `internal/windowssensors`, `internal/librehardwaremonitor`
   and `internal/nvidiasmi`, and by the tests of the commands in `internal/cli` that build them over a fake seam (R42)
-- [ ] Run the suite and commit: `feature-0018 Read the sensors of the machine on Windows`
+- [x] Run the suite and commit: `feature-0018 Read the sensors of the machine on Windows`
 
 ### 10. The documents
 

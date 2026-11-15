@@ -51,9 +51,14 @@ func (current *session) loadConfig(path string, content []byte) (runConfig, erro
 func (current *session) loadConfigFile(path string, content []byte) (runConfig, error) {
 	loaded, err := current.loadConfig(path, content)
 	if err != nil {
-		return runConfig{}, fmt.Errorf("config file %s: %w", path, err)
+		return runConfig{}, configFileError(path, err)
 	}
 	return loaded, nil
+}
+
+// configFileError names the config file in front of a problem with it.
+func configFileError(path string, problem error) error {
+	return fmt.Errorf("config file %s: %w", path, problem)
 }
 
 // compileConfigTheme compiles the theme a config file names. A folder path that is not absolute is relative to the

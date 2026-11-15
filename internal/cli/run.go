@@ -4,7 +4,9 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"net/url"
 	"path/filepath"
+	"slices"
 	"sync"
 	"time"
 
@@ -56,7 +58,7 @@ func (current *session) runCommand() *cobra.Command {
 			current.say(fmt.Sprintf("running: %d metrics every %s", len(settings.Mappings), settings.Interval))
 			feeding := &feeder{
 				transport:  opened,
-				others:     sources.others,
+				others:     current.withMonitor(sources, settings.LibreHardwareMonitorURL),
 				controller: &periodicSource{source: sources.controller, period: settings.CommanderPeriod()},
 				config:     settings,
 				holder:     newThemeHolder(started.theme, state, current.env.sleep, current.env.now, current.say, current.env.stderr),
@@ -96,6 +98,16 @@ func (current *session) runCommand() *cobra.Command {
 	}
 	command.Flags().StringVar(&configPath, "config", "", "read the config from this file instead of the default place")
 	return command
+}
+
+// withMonitor gives the other sources of the set with the monitor of the URL after them, when the set has a monitor.
+// The monitor writes a line for each outage to standard error.
+func (current *session) withMonitor(sources sourceSet, address *url.URL) []sensors.Source {
+	if sources.monitor == nil {
+		return sources.others
+	}
+	outage := &monitorOutage{stderr: current.env.stderr, address: address}
+	return append(slices.Clip(sources.others), sources.monitor(address, outage.observe))
 }
 
 // newKeeper makes the keeper of the session that lights the LEDs in the colour of the config.

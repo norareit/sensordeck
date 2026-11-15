@@ -3,11 +3,14 @@ package cli
 import (
 	"context"
 	"errors"
+	"net/url"
 	"slices"
 
 	"github.com/norareit/sensordeck/internal/commandercore"
 	"github.com/norareit/sensordeck/internal/config"
+	"github.com/norareit/sensordeck/internal/librehardwaremonitor"
 	"github.com/norareit/sensordeck/internal/sensors"
+	"github.com/norareit/sensordeck/internal/windowssensors"
 )
 
 // sourceSet is the sources of the readings, with the controller apart, because run reads it less often than the
@@ -15,6 +18,9 @@ import (
 type sourceSet struct {
 	others     []sensors.Source
 	controller sensors.Source
+	// monitor makes the source of the monitor metrics for the URL, which tells report the outcome of each reading. It
+	// is nil where the monitor is not read, which is every system but Windows.
+	monitor func(address *url.URL, report func(found []sensors.Reading, err error)) sensors.Source
 	// startSession makes a setup of a session that lights the LEDs of the controller in the colour and gives the
 	// session, or errNoController when there is no controller. On an error the setup has ended.
 	startSession func(stop context.Context, colour config.Colour) (heldSession, error)
@@ -57,6 +63,17 @@ func commanderSources(finder commandercore.Finder) sourceSet {
 		startSession:      startSession,
 		controllerProblem: finder.Problem,
 	}
+}
+
+// withWindowsSensors gives the set the sources of Windows: the native metrics and the GPU over the seam, and the monitor.
+func withWindowsSensors(set sourceSet, seam windowssensors.Seam) sourceSet {
+	set.others = windowssensors.Sources(seam)
+	set.monitor = func(address *url.URL, report func(found []sensors.Reading, err error)) sensors.Source {
+		return librehardwaremonitor.Source{
+			Reader: librehardwaremonitor.NewReader(address, librehardwaremonitor.TimeLimit), Report: report,
+		}
+	}
+	return set
 }
 
 // commanderSession is the session of the driver as the keeper holds it.

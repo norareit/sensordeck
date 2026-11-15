@@ -1,6 +1,10 @@
 package sensors
 
-import "testing"
+import (
+	"reflect"
+	"strings"
+	"testing"
+)
 
 func TestIsName(test *testing.T) {
 	accepted := []string{
@@ -78,5 +82,34 @@ func TestIsCommanderTemperature(test *testing.T) {
 		if got := IsCommanderTemperature(name); got != want {
 			test.Errorf("%s: %v", name, got)
 		}
+	}
+}
+
+func TestInTableOrderSortsByRowAndNumber(test *testing.T) {
+	given := []Reading{
+		{Name: "commander.1.temp", Value: 1}, {Name: "net.down", Value: 2}, {Name: "nvme.10.temp", Value: 3},
+		{Name: "nvme.2.temp", Value: 4}, {Name: "cpu.clock", Value: 5}, {Name: "ram.used", Value: 6},
+		{Name: "cpu.ccd10.temp", Value: 7}, {Name: "cpu.ccd2.temp", Value: 8}, {Name: "cpu.temp", Value: 9},
+		{Name: "ram.1.temp", Value: 10}, {Name: "net.up", Value: 11}, {Name: "commander.2.temp", Value: 12},
+	}
+	before := append([]Reading(nil), given...)
+	var names []string
+	for _, reading := range InTableOrder(given) {
+		names = append(names, reading.Name)
+	}
+	want := "cpu.temp cpu.ccd2.temp cpu.ccd10.temp cpu.clock ram.used ram.1.temp nvme.2.temp nvme.10.temp net.up net.down commander.1.temp commander.2.temp"
+	if got := strings.Join(names, " "); got != want {
+		test.Errorf("got %s", got)
+	}
+	if !reflect.DeepEqual(given, before) {
+		test.Error("the input was changed")
+	}
+}
+
+func TestInTableOrderKeepsTheOrderOfEqualReadings(test *testing.T) {
+	given := []Reading{{Name: "cpu.temp", Value: 1}, {Name: "cpu.temp", Value: 2}, {Name: "net.up", Value: 3}, {Name: "cpu.temp", Value: 4}}
+	got := InTableOrder(given)
+	if got[0].Value != 1 || got[1].Value != 2 || got[2].Value != 4 || got[3].Name != "net.up" {
+		test.Errorf("got %v", got)
 	}
 }

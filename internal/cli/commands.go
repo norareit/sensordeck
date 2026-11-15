@@ -4,13 +4,17 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"io/fs"
+	"net/url"
 	"os"
+	"slices"
 	"strconv"
 	"time"
 
 	"github.com/spf13/cobra"
 
+	"github.com/norareit/sensordeck/internal/config"
 	"github.com/norareit/sensordeck/internal/screenlist"
 	"github.com/norareit/sensordeck/internal/sensors"
 	"github.com/norareit/sensordeck/internal/smartmonitor"
@@ -260,6 +264,54 @@ func (current *session) receive(opened smartmonitor.Transport, seconds int) erro
 	return nil
 }
 
+// monitorOutcome keeps what the monitor told about the one reading that sensors makes.
+type monitorOutcome struct {
+	address *url.URL
+	read    bool
+	found   []sensors.Reading
+	err     error
+}
+
+func (outcome *monitorOutcome) keep(found []sensors.Reading, err error) {
+	outcome.read, outcome.found, outcome.err = true, found, err
+}
+
+// say writes the line of a monitor that could not be read, or that gave nothing that sensordeck knows. It writes
+// nothing when the monitor was not read, and so none after an interrupted reading.
+func (outcome *monitorOutcome) say(stderr io.Writer) {
+	switch {
+	case !outcome.read:
+	case outcome.err != nil:
+		_, _ = fmt.Fprintln(stderr, monitorFailureLine(outcome.address, outcome.err))
+	case len(outcome.found) == 0:
+		_, _ = fmt.Fprintln(stderr, monitorEmptyLine(outcome.address))
+	}
+}
+
+// monitorURL gives the URL that sensors reads the monitor at: the key of the config file at the place where run reads
+// it by default, or the default URL. A config file that cannot be read or is not valid does not stop sensors, which is
+// the command that is run while the config is written, so the problem is written as a line and the default is taken.
+func (current *session) monitorURL() *url.URL {
+	path, err := current.configPath("")
+	if err != nil {
+		return config.DefaultMonitorURL()
+	}
+	content, err := readNamedFile("config file", path)
+	if errors.Is(err, fs.ErrNotExist) {
+		return config.DefaultMonitorURL()
+	}
+	if err != nil {
+		_, _ = fmt.Fprintln(current.env.stderr, err)
+		return config.DefaultMonitorURL()
+	}
+	settings, err := config.Parse(content)
+	if err != nil {
+		_, _ = fmt.Fprintln(current.env.stderr, configFileError(path, err))
+		return config.DefaultMonitorURL()
+	}
+	return settings.LibreHardwareMonitorURL
+}
+
 func (current *session) sensorsCommand() *cobra.Command {
 	return &cobra.Command{
 		Use:   "sensors",
@@ -270,13 +322,20 @@ func (current *session) sensorsCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
+			var monitored monitorOutcome
+			if sources.monitor != nil {
+				address := current.monitorURL()
+				sources.others = append(slices.Clip(sources.others), sources.monitor(address, monitored.keep))
+				monitored.address = address
+			}
 			stop, cancel := current.env.notifyStop(context.Background())
-			readings := sensors.ReadAll(stop, sources.all(), func(string) bool { return true })
+			readings := sensors.InTableOrder(sensors.ReadAll(stop, sources.all(), func(string) bool { return true }))
 			interrupted := stop.Err() != nil
 			cancel()
 			if interrupted {
 				return errors.New("interrupted")
 			}
+			monitored.say(current.env.stderr)
 			if len(readings) == 0 {
 				if problem := sources.problem(); problem != nil {
 					_, _ = fmt.Fprintln(current.env.stderr, problem)

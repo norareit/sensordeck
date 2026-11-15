@@ -16,6 +16,9 @@
 //     internal/cli and of the GPU source in internal/nvidiasmi
 //   - `cpu.util`, which needs two samples that differ, is covered by the tests of the sources in
 //     internal/linuxsensors, and the time limit of nvidia-smi by the tests of internal/nvidiasmi
+//   - the sources of Windows are not chosen by the executable built for Linux, so they are covered by the tests of
+//     internal/windowssensors, internal/librehardwaremonitor and internal/nvidiasmi, and by the tests of the commands
+//     in internal/cli that build them over a fake seam
 //   - the exact value of a network rate other than 0, which depends on the time between two rounds, counters that go
 //     back, and interfaces that appear or vanish, are covered by the tests of the network source in
 //     internal/linuxsensors

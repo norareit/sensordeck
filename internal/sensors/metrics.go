@@ -3,6 +3,7 @@
 package sensors
 
 import (
+	"slices"
 	"strconv"
 	"strings"
 )
@@ -120,4 +121,34 @@ func CommanderTemperature(number int) string {
 // IsCommanderTemperature tells whether name is the temperature of a probe of the controller.
 func IsCommanderTemperature(name string) bool {
 	return metricKind{prefix: commanderPrefix, suffix: commanderSuffix, numbered: true}.matches(name)
+}
+
+// InTableOrder gives a copy of the readings in the order of the table of metrics and, within a numbered row, by number.
+// Readings that are equal in that order keep theirs, and a name that is in no row comes last.
+func InTableOrder(readings []Reading) []Reading {
+	ordered := slices.Clone(readings)
+	slices.SortStableFunc(ordered, func(first, second Reading) int {
+		firstRow, firstNumber := position(first.Name)
+		secondRow, secondNumber := position(second.Name)
+		if firstRow != secondRow {
+			return firstRow - secondRow
+		}
+		return firstNumber - secondNumber
+	})
+	return ordered
+}
+
+// position gives the row of the table that a name belongs to, and its number when the row is numbered.
+func position(name string) (int, int) {
+	for row, kind := range metricKinds {
+		if !kind.matches(name) {
+			continue
+		}
+		number := 0
+		if kind.numbered {
+			number, _ = strconv.Atoi(strings.TrimSuffix(strings.TrimPrefix(name, kind.prefix), kind.suffix))
+		}
+		return row, number
+	}
+	return len(metricKinds), 0
 }
