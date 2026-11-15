@@ -28,3 +28,10 @@ timestamp: 2026-11-15T13:32:18Z
   and tests the package of the Windows transport and the Commander package by name, with a test limited to Windows that
   runs the real listing; the Linux-only tests stay out by their build constraints, and the release gate covers the job
   through its call of the CI workflow. The status is `draft`
+- 2026-11-15T22:29:31Z [Claude Code, anthropic/claude-opus-5-5] read the spec under the delegation in `AGENTS.md`: the protocol
+  package of the screen and the command line's transport stay as they are, the split of `internal/commandercore` is
+  needed for the Commander to run on Windows and is committed apart, and the pure parts are tested on Linux. D2 and
+  R24 with D10 are accepted. Items 1 and 4 of "Beyond the request" were taken, because a worded near miss is what a
+  failed check on Windows needs and a CI job on Windows is the only automatic check of that code, and the spec was
+  amended for them; items 2 and 3 are declined. Everything on Windows is the human's to check and the unit does not
+  depend on it. The approval that follows is made under that delegation
