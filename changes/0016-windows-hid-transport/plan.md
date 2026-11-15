@@ -314,19 +314,19 @@ What the tree on `feature-0016-windows-hid-transport` holds, and what the plan b
 
 ### 7. The CI job on Windows
 
-- [ ] In `release_test.go`, change `TestTheCIWorkflowRunsTheSuite` to require exactly two jobs: the job of the suite on
+- [x] In `release_test.go`, change `TestTheCIWorkflowRunsTheSuite` to require exactly two jobs: the job of the suite on
   `ubuntu-24.04` with the five commands as today, and a job on `windows-2025` whose steps check out and set up Go from
   `go.mod` with the same `uses` as the job of the suite, and run `go build ./...`, `go vet ./...` and `go test
   ./internal/winhid ./internal/commandercore` as three steps of their own. Both jobs pass `checkExactActions` (R36,
   R38)
-- [ ] Add the job `windows` to `.github/workflows/ci.yml`: `runs-on: windows-2025`, `actions/checkout@v5.0.0`,
+- [x] Add the job `windows` to `.github/workflows/ci.yml`: `runs-on: windows-2025`, `actions/checkout@v5.0.0`,
   `actions/setup-go@v6.0.0` with `go-version-file: go.mod`, then the three steps named `Build`, `Vet` and `Test`, with
   a comment that the job tests only the packages written for Windows, as D15 says. The release workflow does not
   change (R36, R37, R38)
-- [ ] Check by `GOOS=windows GOARCH=amd64 go vet ./internal/winhid ./internal/commandercore` and `GOOS=windows
+- [x] Check by `GOOS=windows GOARCH=amd64 go vet ./internal/winhid ./internal/commandercore` and `GOOS=windows
   GOARCH=amd64 go list -test -deps ./internal/winhid ./internal/commandercore` that the tests of the two packages build
   on Windows without `internal/fakecommander`, `internal/hidraw` or `internal/fakepty` (R37)
-- [ ] Run the suite and commit: `feature-0016 Build and test the Windows code on a Windows runner`
+- [x] Run the suite and commit: `feature-0016 Build and test the Windows code on a Windows runner`
 
 ### 8. The documents
 

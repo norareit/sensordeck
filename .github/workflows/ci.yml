@@ -35,3 +35,18 @@ jobs:
         run: GOOS=windows GOARCH=amd64 go build ./...
       - name: Vet for Windows
         run: GOOS=windows GOARCH=amd64 go vet ./...
+  # The job on Windows tests only the packages written for Windows. The tests of the other packages have never run on
+  # Windows, and a red job would block every release, so the list is widened once the job is seen to run.
+  windows:
+    runs-on: windows-2025
+    steps:
+      - uses: actions/checkout@v5.0.0
+      - uses: actions/setup-go@v6.0.0
+        with:
+          go-version-file: go.mod
+      - name: Build
+        run: go build ./...
+      - name: Vet
+        run: go vet ./...
+      - name: Test
+        run: go test ./internal/winhid ./internal/commandercore

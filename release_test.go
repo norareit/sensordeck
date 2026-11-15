@@ -259,24 +259,62 @@ func TestTheCIWorkflowRunsTheSuite(test *testing.T) {
 	if !reflect.DeepEqual(ci.Permissions, map[string]string{"contents": "read"}) {
 		test.Errorf("permissions %v", ci.Permissions)
 	}
-	if len(ci.Jobs) != 1 {
+	if len(ci.Jobs) != 2 {
 		test.Fatalf("%d jobs", len(ci.Jobs))
 	}
-	for _, job := range ci.Jobs {
-		if job.RunsOn != "ubuntu-24.04" {
-			test.Errorf("runs on %q", job.RunsOn)
-		}
+	var suite, windows workflowJob
+	for name, job := range ci.Jobs {
 		checkExactActions(test, ciPath, job)
-		goVersionFile := slices.ContainsFunc(job.Steps, func(step workflowStep) bool {
-			return strings.HasPrefix(step.Uses, "actions/setup-go@") && step.With["go-version-file"] == "go.mod"
-		})
-		if !goVersionFile {
-			test.Error("no step sets up Go from go.mod")
+		switch job.RunsOn {
+		case "ubuntu-24.04":
+			suite = job
+		case "windows-2025":
+			windows = job
+		default:
+			test.Errorf("job %s runs on %q", name, job.RunsOn)
 		}
-		for _, command := range suiteCommands {
-			if !slices.ContainsFunc(job.Steps, func(step workflowStep) bool { return strings.Contains(step.Run, command) }) {
-				test.Errorf("no step runs %q", command)
-			}
+	}
+	checkSuiteJob(test, suite)
+	checkWindowsJob(test, suite, windows)
+}
+
+func hasStep(job workflowJob, matches func(step workflowStep) bool) bool {
+	return slices.ContainsFunc(job.Steps, matches)
+}
+
+func setsUpGoFromTheModule(step workflowStep) bool {
+	return strings.HasPrefix(step.Uses, "actions/setup-go@") && step.With["go-version-file"] == "go.mod"
+}
+
+func checkSuiteJob(test *testing.T, suite workflowJob) {
+	test.Helper()
+	if !hasStep(suite, setsUpGoFromTheModule) {
+		test.Error("no step of the suite job sets up Go from go.mod")
+	}
+	for _, command := range suiteCommands {
+		if !hasStep(suite, func(step workflowStep) bool { return strings.Contains(step.Run, command) }) {
+			test.Errorf("no step runs %q", command)
+		}
+	}
+}
+
+// checkWindowsJob checks the job on Windows: it checks out and sets up Go as the suite job does, and builds, vets and
+// tests the two packages written for Windows, each as a step of its own.
+func checkWindowsJob(test *testing.T, suite, windows workflowJob) {
+	test.Helper()
+	for _, action := range []func(step workflowStep) bool{
+		func(step workflowStep) bool { return strings.HasPrefix(step.Uses, "actions/checkout@") },
+		setsUpGoFromTheModule,
+	} {
+		inSuite := slices.IndexFunc(suite.Steps, action)
+		inWindows := slices.IndexFunc(windows.Steps, action)
+		if inSuite < 0 || inWindows < 0 || suite.Steps[inSuite].Uses != windows.Steps[inWindows].Uses {
+			test.Error("the job on Windows does not use the actions of the suite job at the same version")
+		}
+	}
+	for _, command := range []string{"go build ./...", "go vet ./...", "go test ./internal/winhid ./internal/commandercore"} {
+		if !hasStep(windows, func(step workflowStep) bool { return strings.TrimSpace(step.Run) == command }) {
+			test.Errorf("no step of the job on Windows runs exactly %q", command)
 		}
 	}
 }
