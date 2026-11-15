@@ -15,3 +15,9 @@ timestamp: 2026-11-15T08:52:10Z
   zero ranges of each type) were read from the dumps that `sensordeck theme dump` had made of the three vendor samples
   in the scratchpad of the human's machine, and are carried in the spec in the project's own words. No byte of a vendor
   file is committed and no code of another project was read. The status is `draft`
+- 2026-11-15T08:54:40Z [Claude Code, anthropic/claude-opus-5-5] read the spec under the delegation in `AGENTS.md`: it
+  writes the layout that unit 0010 reads, reuses its reader and renderer, takes the unknown bytes from the values the
+  vendor samples agree on, and every requirement can be tested in the sandbox with the Go fonts. The device check is the
+  human's and the unit does not depend on it. Items 1 to 6 of "Beyond the request" are declined: none is needed for a
+  correct compiler, and the built-in theme of the next unit compiles a real theme end to end. The approval that follows
+  is made under that delegation
