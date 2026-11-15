@@ -160,7 +160,7 @@ with --config: <cause>` as it is.
 
 ### The background
 
-- [ ] Write `internal/builtinthemes/background/background_test.go`, which checks `MinimalDark()` is 480 x 320 and
+- [x] Write `internal/builtinthemes/background/background_test.go`, which checks `MinimalDark()` is 480 x 320 and
   checks these pixels: (0, 0), a corner of the background, is `#0b0f14`; (80, 70), inside the first panel, is
   `#141b24`; (80, 8), the top edge of the first panel, and (8, 70), its left edge, are `#1f2a36`; (11, 11), on the
   rounded outline of the top left corner of the first panel, is `#1f2a36`; (8, 8) and (9, 9), just outside that rounded
@@ -168,14 +168,14 @@ with --config: <cause>` as it is.
   `#0b0f14`; and every pixel has alpha 255. Each of these colours was worked out from the formula of R4 when the plan
   was written: at (11, 11) the distance to the centre (18, 18) squared is 98, within 110 for radius 10 and beyond 90
   for radius 9, and at (9, 9) it is 162 (R4, R22)
-- [ ] Write `internal/builtinthemes/background/background.go` as the approach says, until the test passes (R4, D7)
-- [ ] Write `internal/builtinthemes/background/generate/main.go` (R5)
+- [x] Write `internal/builtinthemes/background/background.go` as the approach says, until the test passes (R4, D7)
+- [x] Write `internal/builtinthemes/background/generate/main.go` (R5)
 
 ### The theme and its package
 
-- [ ] Write `internal/builtinthemes/themes/minimal-dark/theme.yaml` as the text of R2, byte for byte, with a line feed
+- [x] Write `internal/builtinthemes/themes/minimal-dark/theme.yaml` as the text of R2, byte for byte, with a line feed
   after its last line (R2)
-- [ ] Write `internal/builtinthemes/builtinthemes_test.go` with these tests (R22):
+- [x] Write `internal/builtinthemes/builtinthemes_test.go` with these tests (R22):
     - `Names()` is exactly `["minimal-dark"]`, and the folder of `minimal-dark` read with `fs.ReadDir` holds exactly
       `background.png` and `theme.yaml`, both regular files (R1, R3)
     - the `theme.yaml` of the folder equals, byte for byte, a constant of the test that holds the text of R2 (R2)
@@ -186,9 +186,9 @@ with --config: <cause>` as it is.
     - `themecompile.Compile(Folder("minimal-dark"))` gives no error, `themefile.Parse` of its file gives no error and no
       warning, its `Tags` are the eleven mappings of R6 in order, and `themecompile.TagsFile` of them is the comment
       line followed by the block of R6 (R6, R7)
-- [ ] Write `internal/builtinthemes/builtinthemes.go` with the embed, `Names` (the directories of `themes/`, sorted),
+- [x] Write `internal/builtinthemes/builtinthemes.go` with the embed, `Names` (the directories of `themes/`, sorted),
   `Folder` and the `go:generate` directive (R1, D5)
-- [ ] Run `go generate ./internal/builtinthemes/` to write `background.png`, run it a second time and check with
+- [x] Run `go generate ./internal/builtinthemes/` to write `background.png`, run it a second time and check with
   `git status` that the file did not change, and run the tests of the package until they pass (R5)
 
 ### The lookup
@@ -290,7 +290,7 @@ with --config: <cause>` as it is.
 ## Commit Points
 
 - [x] `feature-0012 Extract the config directory of sensordeck`, the refactoring alone
-- [ ] `feature-0012 Add the built-in theme minimal-dark`, the background, its generator, the theme folder and
+- [x] `feature-0012 Add the built-in theme minimal-dark`, the background, its generator, the theme folder and
   `internal/builtinthemes` with their tests
 - [ ] `feature-0012 Find a theme by name in theme compile and theme preview`, the lookup with its tests and the help
 - [ ] `feature-0012 Add theme list`, with its tests
