@@ -59,4 +59,10 @@ timestamp: 2026-11-15T23:04:03Z
   holds a `go:build` line. `npm run check-changes` passed. Not checked: everything on Windows, that is, the calls of the
   seam run on a real system, the job of R43 on GitHub, and LibreHardwareMonitor itself; the "Unverified until the human
   runs it" section of the spec lists them, and none of them has been run. The status stays `in-progress`
-
+- 2026-11-15T23:28:27Z [OpenCode, openai/gpt-6.1-sol] as the reviewer, completed a full review of
+  `changes/0018-windows-sensors` at `3d2a828bb51113b9cfaa9836350de76e195f6e4f`, against merge base
+  `d1e1f252f1ad97b5b4872d00599fdf8f78c1a668` with `origin/master`. Returned C1; the findings are saved in
+  `.reviews/0018-windows-sensors/review-round-1.md`. Independently ran all five commands of the project suite, a fresh
+  `go test -count=1 ./...` including end-to-end tests, the Darwin cross-build, compilation of the Windows seam tests,
+  and `npm run check-changes`, all successfully. Could not verify real Windows execution, the GitHub Windows job,
+  physical hardware or a real LibreHardwareMonitor server. The status stays `in-progress`
