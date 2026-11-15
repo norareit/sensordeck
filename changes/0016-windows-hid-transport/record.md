@@ -36,3 +36,14 @@ timestamp: 2026-11-15T13:32:18Z
   amended for them; items 2 and 3 are declined. Everything on Windows is the human's to check and the unit does not
   depend on it. The approval that follows is made under that delegation
 - 2026-11-15T22:29:31Z [human] approved the spec. The status is `approved`
+- 2026-11-15T22:36:27Z [Claude Code, anthropic/claude-opus-5-5] as the planner, wrote the plan against the tree of the
+  unit's branch, in eight commits after its own: two of refactoring that change no behaviour, the texts of the screen
+  discovery shared in `internal/screenlist` and the Commander package split into its protocol, a `node` and a
+  `Finder` with its Linux bytes and texts kept; then the Windows layer `internal/winhid` on a seam with its fake
+  `internal/fakehid`, the seam on Windows, the Commander on Windows, the command line on Windows, the CI job, and the
+  documents. Found in the tree: `windows.Errno` is an alias of `syscall.Errno`, so the constraint-free code names the
+  three Windows codes as `syscall.Errno` constants that a test limited to Windows compares with those of
+  `golang.org/x/sys/windows`; `LazyProc.Call` panics on a missing procedure, so each call follows its `Find` (R2);
+  `layout_test.go` treats the Commander package as Linux-only as a whole and forbids the command line's Windows files
+  to import it, which the split changes; and the keeper already writes a setup error that is not `errNoController`
+  once, so R34 needs no change of it. The status stays `approved`
