@@ -360,37 +360,37 @@ Nothing is written before the whole compilation and, for `preview`, the PNG enco
 
 ### The glyphs, the pixels, the format and the tags
 
-- [ ] Add `golang.org/x/image` v0.48.0 with `go get golang.org/x/image@v0.48.0` once the first file below imports it,
+- [x] Add `golang.org/x/image` v0.48.0 with `go get golang.org/x/image@v0.48.0` once the first file below imports it,
   and `go mod tidy`, so that `go.mod` and `go.sum` hold it and `golang.org/x/text` (R17, D1)
-- [ ] Add `internal/themecompile/helpers_test.go`: a `goFace(test, gofontTTF, size)` that parses a Go font as
+- [x] Add `internal/themecompile/helpers_test.go`: a `goFace(test, gofontTTF, size)` that parses a Go font as
   `loadFont` does, a `narrowOne` type that embeds a `font.Face` and gives half the advance of `1` from `GlyphAdvance`,
   and PNG builders that encode an `image.NRGBA` or an `image.NRGBA64` made in code (R29)
-- [ ] Add `internal/themecompile/glyphs_test.go` (R17, R29), with the Go regular font at 36: `height` is 43, the ascent
+- [x] Add `internal/themecompile/glyphs_test.go` (R17, R29), with the Go regular font at 36: `height` is 43, the ascent
   rounded up plus the descent rounded up; each of the twelve number glyphs and the twenty-one datetime glyphs has
   `height` rows; the ten digit masks are `digitWidth` wide; with `narrowOne` the mask of `1` is the mask of `1` drawn
   by a `font.Drawer` at `(digitWidth - ceil(advance)) / 2`, and its leftmost non-zero column is to the right of that
   of the unmoved glyph; a separator is as wide as its advance rounded up; a CJK glyph is all zero and `digitWidth`
   wide; `textMask("AV")` has `textWidth("AV")` columns, which is `font.MeasureString` rounded up, and is not all zero;
   `missing` gives `年` for `"12年"` and false for `"0123456789.-"`
-- [ ] Add `internal/themecompile/glyphs.go` as "The glyphs" says, until the test passes (R17)
-- [ ] Add `internal/themecompile/pixels_test.go` (R15, R29): `rgb565` of 0, 0, 0 is `0000` and of 255, 255, 255 is
+- [x] Add `internal/themecompile/glyphs.go` as "The glyphs" says, until the test passes (R17)
+- [x] Add `internal/themecompile/pixels_test.go` (R15, R29): `rgb565` of 0, 0, 0 is `0000` and of 255, 255, 255 is
   `ffff`; red 5 gives a red field of 1 and red 4 of 0, green 3 gives 1 and green 2 gives 0; `backgroundPlane` of a PNG
   pixel of red 255 at alpha 128 is red 128 before `rgb565`, and of an opaque pixel is its colour; `imagePlanes` of a
   pixel of red 200 at alpha 0x40 gives alpha `0x40` and the RGB565 of red 200, not premultiplied; a 16-bit PNG pixel
   of `0xff00` per channel gives 255 and one of `0x00ff` gives 0; pixels are little-endian
-- [ ] Add `internal/themecompile/pixels.go` as "The pixels" says, until the test passes (R15)
-- [ ] Add `internal/themecompile/format_test.go` (R6, R29): `YYYY-MM-DD` gives `1-2-3`, `HH:mm:ss` gives `4:5:6`,
+- [x] Add `internal/themecompile/pixels.go` as "The pixels" says, until the test passes (R15)
+- [x] Add `internal/themecompile/format_test.go` (R6, R29): `YYYY-MM-DD` gives `1-2-3`, `HH:mm:ss` gives `4:5:6`,
   `YYYY-MM-DD HH:mm:ss` gives `1-2-3 4:5:6`, `DD/MM/YYYY` gives `3/2/1`, `YYYY.MM` gives `1.2`; `YYY` fails at
   position 1 with `Y`, `HH:mmx` at position 6 with `x`, `HH h` at position 4 with `h`, `hh` at position 1; the empty
   format fails; `YYYY YYYY YYYY YYYY YYYY YYYY` compiles to 11 bytes and passes; nine `ss` each followed by `:`
   compile to 18 bytes and pass, and the same with one more `:` (19 bytes) fails
-- [ ] Add `internal/themecompile/format.go` until the test passes (R6)
-- [ ] Add `internal/themecompile/tags_test.go` (R18, R20, R29): `gpu.temp`, `cpu.temp`, `cpu.temp` give `cpu.temp` 1
+- [x] Add `internal/themecompile/format.go` until the test passes (R6)
+- [x] Add `internal/themecompile/tags_test.go` (R18, R20, R29): `gpu.temp`, `cpu.temp`, `cpu.temp` give `cpu.temp` 1
   and `gpu.temp` 2; 22 distinct metric names (`nvme.1.temp` to `nvme.22.temp`) give the tags 1 to 20, 22 and 23 in
   byte order of the names, none 0 or 21; `TagsFile` of two mappings is exactly the text of "The tags", and
   `config.Parse` of it gives the same mappings; `TagsFile` of none ends with `tags: {}\n`
-- [ ] Add `internal/themecompile/tags.go` until the test passes (R18, R20)
-- [ ] Run the five commands of the suite and commit: `feature-0011 Draw the glyphs and convert the pixels of a theme`
+- [x] Add `internal/themecompile/tags.go` until the test passes (R18, R20)
+- [x] Run the five commands of the suite and commit: `feature-0011 Draw the glyphs and convert the pixels of a theme`
 
 ### The document and the compiler
 
