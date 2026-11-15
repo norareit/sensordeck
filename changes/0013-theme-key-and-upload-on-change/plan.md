@@ -337,8 +337,10 @@ count. Calls queue, one upload each.
 - `internal/cli/runconfig.go`, `internal/cli/runconfig_test.go`: new, `configTheme`, `runConfig`, `loadConfig`,
   `restartKeys`, `fileStamp` and `configWatcher`
 - `internal/cli/themeholder.go`, `internal/cli/themeholder_test.go`: new, `themeHolder`
-- `internal/cli/run.go`, `internal/cli/run_test.go`: the start, the round and the reload of `run`
-- `internal/cli/keeper.go`, `internal/cli/keeper_test.go`: `probesMapped` as a function
+- `internal/cli/run.go`: the start, the round and the reload of `run`
+- `internal/cli/runtheme_test.go`, `internal/cli/runreload_test.go`: new, the tests of `run` with a theme and with a
+  changed config file, kept apart from `internal/cli/run_test.go`, which they leave as it is
+- `internal/cli/keeper.go`: `probesMapped` as a function
 - `internal/cli/theme.go`: `theme use` added to the theme command
 - `internal/cli/themeuse.go`, `internal/cli/themeuse_test.go`: new, `theme use`
 - `internal/cli/fake_test.go`: `serial` and a hook after each write in `fakeTransport`
@@ -352,80 +354,80 @@ count. Calls queue, one upload each.
 
 ### The state file
 
-- [ ] Write `internal/uploadstate/uploadstate_test.go`: `Hash` of a known content against its SHA-256 written by hand;
+- [x] Write `internal/uploadstate/uploadstate_test.go`: `Hash` of a known content against its SHA-256 written by hand;
   `Path` under a cache directory; `Decode` of an object of strings, of `{}`, and its error for content that is not
   JSON, for `null`, for `[]`, and for an object with a value that is not a string; `Encode` sorting the keys, ending
   in a line feed, and decoding back to the same map, with the empty serial as a key; `Read` of a file that does not
   exist giving an empty map and no error, and of a file that is not JSON giving an empty map and the error; `Write`
   creating the missing directory, leaving the state file as the only file of the directory, and replacing the file by
   a rename, which a hard link made to the old file before the write proves by keeping the old content (R5, R13 to R15)
-- [ ] Write `internal/uploadstate/uploadstate.go` as the approach says, and make the tests pass (R5, R13 to R15)
-- [ ] Commit
+- [x] Write `internal/uploadstate/uploadstate.go` as the approach says, and make the tests pass (R5, R13 to R15)
+- [x] Commit
 
 ### The key `theme`
 
-- [ ] Add to `internal/config/config_test.go`: `theme` alone giving `Theme` and no mapping; `theme` with `tags`, also
+- [x] Add to `internal/config/config_test.go`: `theme` alone giving `Theme` and no mapping; `theme` with `tags`, also
   with `tags:` with no value, giving the error of both; neither key giving its error, which replaces the expectation
   of the case "no tags"; `theme: 2024`, `theme: [a]` and `theme: {a: 1}` giving the error of a value that is not a
   string; `theme: ""` and `theme:` giving the error of an empty value; the texts of an unknown key and of a root that
   is not a mapping naming `theme`, which replaces the expectation of the existing case (R1, R2)
-- [ ] Change `internal/config/config.go` as the approach says, and make the tests pass (R1, R2)
-- [ ] Write `internal/config/edit_test.go` for `SetTheme`: an empty content; a file of comments only; a file whose key
+- [x] Change `internal/config/config.go` as the approach says, and make the tests pass (R1, R2)
+- [x] Write `internal/config/edit_test.go` for `SetTheme`: an empty content; a file of comments only; a file whose key
   `theme` is replaced, with a comment on another line and an indented key kept byte for byte; a line of `theme` that
   ends in `\r\n`; a file with another key and comments, with and without a final line feed, where the line is added;
   a root in flow style, a root that is a list, a value in a block scalar, a value on the line after the key, and a
   plain value continued on the next line, each `ErrNotEditable`; content that is not YAML giving the error of the
   parser; and values that need quotes, `C:\Users\ada\my theme`, `a #b`, `it's`, `2024`, `true`, `- x`, and one with a
   tab, each read back by `config.Parse` as exactly the value (R25, R26)
-- [ ] Write `internal/config/edit.go` as the approach says, and make the tests pass (R25, R26)
-- [ ] Commit
+- [x] Write `internal/config/edit.go` as the approach says, and make the tests pass (R25, R26)
+- [x] Commit
 
 ### The serial
 
-- [ ] Add to `internal/hidraw/transport_test.go`: `Serial` of a discovered screen with a serial, of one with an empty
+- [x] Add to `internal/hidraw/transport_test.go`: `Serial` of a discovered screen with a serial, of one with an empty
   serial, of `OpenPath` of the node of a discovered screen, of `OpenPath` of the pseudo terminal behind that node, of
   `OpenPath` of a node with no entry under the sysfs root, and the serial after a `Reopen` by discovery that opened a
   screen moved to another number with another serial; and change the existing calls of `OpenPath` to pass the roots
   (R6)
-- [ ] Change `internal/hidraw/transport.go` as the approach says, pass the roots in `internal/cli/device_linux.go`, and
+- [x] Change `internal/hidraw/transport.go` as the approach says, pass the roots in `internal/cli/device_linux.go`, and
   make the tests pass (R6)
-- [ ] Add `Serial() string` to `transport` in `internal/cli/main.go`, pass it through in `tracingTransport` with a case
+- [x] Add `Serial() string` to `transport` in `internal/cli/main.go`, pass it through in `tracingTransport` with a case
   in `internal/cli/trace_test.go` that the trace gives the serial of the inner transport and writes no line, and give
   `fakeTransport` the field `serial` (R6)
-- [ ] Commit
+- [x] Commit
 
 ### The state file kept by `upload`
 
-- [ ] Add `userCacheDir` to `environment` and to `Main`. Give the harness of `internal/cli/commands_test.go` the fields
+- [x] Add `userCacheDir` to `environment` and to `Main`. Give the harness of `internal/cli/commands_test.go` the fields
   `cacheDir` and `cacheDirErr`, with `cacheDirErr` set by `newHarness` to an error of its own, so that no test writes
   a state file outside a temporary directory; and give `fakeTransport` a hook called after each write with the count
   of writes, which the tests use to look at the state file at a given report and to stop the run (R35, R11)
-- [ ] Write `internal/cli/statefile_test.go` for `stateFile`: `holds` for the hash stored for the serial, for another
+- [x] Write `internal/cli/statefile_test.go` for `stateFile`: `holds` for the hash stored for the serial, for another
   hash, for another serial, for the empty serial, for no state file, and for a file that is not JSON, with its one
   line; `upload` with the entry already removed and written when the first report is written, the hash recorded under
   the serial after an upload that completed and not after one that failed, no report when the removal cannot be
   written (the cache directory made a file), and the line and no error when the record cannot be written (the hook
   turns the directory of the state file into a place where the rename fails, by replacing the state file with a
   directory after the removal) (R8, R13, R15, R35, R37)
-- [ ] Add to `internal/cli/commands_test.go`: `upload` recording the hash of the file it uploaded, a vendor file being
+- [x] Add to `internal/cli/commands_test.go`: `upload` recording the hash of the file it uploaded, a vendor file being
   any bytes; the entry removed before its first report; no report and exit status 1 with the error when the cache
   directory cannot be found and when the removal cannot be written; exit status 0 with the line of the record and the
   line `upload complete: ...` when the record cannot be written; and the existing tests of `upload` given a cache
   directory, their output otherwise unchanged (R35 to R37)
-- [ ] Write `internal/cli/statefile.go` and change `upload` in `internal/cli/commands.go`, and make the tests pass (R35
+- [x] Write `internal/cli/statefile.go` and change `upload` in `internal/cli/commands.go`, and make the tests pass (R35
   to R37)
-- [ ] Commit
+- [x] Commit
 
 ### `run` and its theme
 
-- [ ] Split `compileNamed` out of `compileTheme` in `internal/cli/themes.go`, with the tests of `themes_test.go`
+- [x] Split `compileNamed` out of `compileTheme` in `internal/cli/themes.go`, with the tests of `themes_test.go`
   passing unchanged, and commit it alone as a refactoring
-- [ ] Write the tests of `loadConfig` in `internal/cli/runconfig_test.go`: `tags` alone giving its mappings and no
+- [x] Write the tests of `loadConfig` in `internal/cli/runconfig_test.go`: `tags` alone giving its mappings and no
   theme; a built-in theme by name giving the tags `theme compile` writes for it and the hash of its file; a relative
   folder path resolved against the directory of the config file and not the working directory; `.` resolved to the
   directory of the config file; an absolute folder path; a theme with no number widget giving no mapping; and a theme
   that fails to compile giving `theme: <error>` (R1, R3, R5, R16)
-- [ ] Write `internal/cli/themeholder_test.go` for `themeHolder` with a fake transport and the fake clock: an upload at
+- [x] Write `internal/cli/themeholder_test.go` for `themeHolder` with a fake transport and the fake clock: an upload at
   the first check with no state file, with the line before and the line after; no upload and the line of a theme on
   the screen when the hash is stored for the serial; an upload when the hash stored differs and when it is stored for
   another serial; an upload for the empty serial and none after it; no line of a theme on the screen at a later check;
@@ -433,7 +435,7 @@ count. Calls queue, one upload each.
   seconds after it, then 20, 40 and so on up to 5 minutes, and back to 10 seconds after an upload that completed; a
   check made due by `screenBack` and by `setTheme` with another hash and not with the same hash; no theme clearing
   what is due; and no upload started once stop is done (R7 to R10, R12, R13)
-- [ ] Add to `internal/cli/run_test.go`: with `theme`, the upload before the first clock, then the clock and the values
+- [x] Add to `internal/cli/runtheme_test.go`, a new file beside `run_test.go`: with `theme`, the upload before the first clock, then the clock and the values
   of the tags of the theme, in that order; no value and no clock while the theme is not on the screen after a failed
   upload, with the screen lost and reopened in the rounds that follow; the check after the screen came back, which
   uploads when the serial of the transport changed and not when it did not, before the clock; a stop that arrives
@@ -443,19 +445,19 @@ count. Calls queue, one upload each.
   directory that cannot be found with `theme`, each ending with status 1 and its error before the transport is
   opened; and with `tags`, no state file read or written when the cache directory cannot be found (R3, R4, R7 to R13,
   R15)
-- [ ] Write `internal/cli/runconfig.go` with `configTheme`, `runConfig` and `loadConfig`, `internal/cli/themeholder.go`,
+- [x] Write `internal/cli/runconfig.go` with `configTheme`, `runConfig` and `loadConfig`, `internal/cli/themeholder.go`,
   and change the start and the round of `run` in `internal/cli/run.go` as the approach says, and make the tests pass
   (R3, R4, R7 to R13, R15, R16)
-- [ ] Commit
+- [x] Commit
 
 ### A change of the config file while `run` runs
 
-- [ ] Add to `internal/cli/runconfig_test.go`: `restartKeys` for no change, for each of the three keys alone, for all
+- [x] Add to `internal/cli/runconfig_test.go`: `restartKeys` for no change, for each of the three keys alone, for all
   three, and for `commander_color` given and removed; the stamps of two failed `Stat`s being the same, and of a time
   or a size that differs not; and `poll` with a time changed by `os.Chtimes` and the same content, with a size changed
   and the same time, with no change, with a file that becomes invalid, reported once and not again at the next poll
   with the same stamp, and read again after the next change, and with a file deleted (R17, R19, R21)
-- [ ] Add to `internal/cli/run_test.go`, with the config file changed in the hook of a wait: new mappings sent from the
+- [x] Add to `internal/cli/runreload_test.go`, a new file, with the config file changed in the hook of a wait: new mappings sent from the
   round after the change; an invalid config keeping the running mappings with one line; a deleted file the same; a
   change of each of `interval`, `commander_interval` and `commander_color` writing its line and keeping the running
   value, the rounds staying on the interval of the start; `tags` to `theme` uploading the theme and then sending its
@@ -463,15 +465,16 @@ count. Calls queue, one upload each.
   again and uploading nothing, and a theme folder edited before the rewrite uploading it; a reload to `theme` with no
   cache directory refused with its line; and under `commander_color`, a reload that maps a probe getting the probe's
   value from the keeper (R17 to R21)
-- [ ] Add to `internal/cli/keeper_test.go` that the keeper asks the session for probes when the function of
-  `probesMapped` turns true, and not while it is false, and change its existing constructions to pass a function (R18)
-- [ ] Write `fileStamp`, `configWatcher` and `restartKeys` in `internal/cli/runconfig.go`, make `probesMapped` a
+- [x] Cover in `internal/cli/runreload_test.go`, and not in `internal/cli/keeper_test.go`, that the keeper asks the
+  session for probes when the function of `probesMapped` turns true, through a reload that maps a probe. The tests of
+  the keeper reach it only through `run`, so no construction of it needed to change (R18)
+- [x] Write `fileStamp`, `configWatcher` and `restartKeys` in `internal/cli/runconfig.go`, make `probesMapped` a
   function in `internal/cli/keeper.go`, wire the watcher into the round of `run`, and make the tests pass (R17 to R21)
-- [ ] Commit
+- [x] Commit
 
 ### `sensordeck theme use`
 
-- [ ] Write `internal/cli/themeuse_test.go`: a missing file and its missing directories created with the one line and
+- [x] Write `internal/cli/themeuse_test.go`: a missing file and its missing directories created with the one line and
   the line of R28; the default path in the config directory, and the error of a config directory that cannot be found;
   a file with `theme` replaced and every other byte kept; one with another key and comments where the line is added;
   one with no final line feed; one of comments only; a root in flow style refused and unchanged; a file with `tags`
@@ -480,19 +483,19 @@ count. Calls queue, one upload each.
   whose path needs quotes, read back by `loadConfig` as the same folder; a symbolic link to the config file, which
   stays a link with the target changed; the permissions `0o600` of a file kept; and no device opened and no source
   made (R22 to R28)
-- [ ] Write `internal/cli/themeuse.go`, add it to `themeCommand` in `internal/cli/theme.go`, and make the tests pass;
+- [x] Write `internal/cli/themeuse.go`, add it to `themeCommand` in `internal/cli/theme.go`, and make the tests pass;
   add `use` to the names the help test of `internal/cli/commands_test.go` looks for under `theme --help` (R22 to R28)
-- [ ] Commit
+- [x] Commit
 
 ### The end-to-end tests
 
-- [ ] Add a case to `internal/fakescreen/fakescreen_test.go` that `AcceptUpload` answers an upload made through
+- [x] Add a case to `internal/fakescreen/fakescreen_test.go` that `AcceptUpload` answers an upload made through
   `hidraw.OpenDiscovered` after a few other reports, and write `AcceptUpload` in `internal/fakescreen/fakescreen.go`
   (R33)
-- [ ] Make `environmentOf` in `e2e/main_test.go` take the test and set `XDG_CACHE_HOME` to a temporary directory of it
+- [x] Make `environmentOf` in `e2e/main_test.go` take the test and set `XDG_CACHE_HOME` to a temporary directory of it
   before the variables the test gives, so that no run of the suite writes into the cache of the user, and a test that
   runs several processes on one cache passes its own (R33)
-- [ ] Write `e2e/theme_upload_test.go`, with `XDG_CONFIG_HOME` and `XDG_CACHE_HOME` set to temporary directories, a
+- [x] Write `e2e/theme_upload_test.go`, with `XDG_CONFIG_HOME` and `XDG_CACHE_HOME` set to temporary directories, a
   screen with the serial `2022100600`, and the compiled file of a theme taken from `theme compile` of the executable:
   `theme use minimal-dark` creating the config file with `theme: minimal-dark`; `run` making the reports of
   `smartmonitor.Upload` for the compiled `minimal-dark`, then the clock and a value report with the tag of `cpu.temp`,
@@ -503,14 +506,14 @@ count. Calls queue, one upload each.
   use` with the config file unchanged and by `run` before any report; `upload` of another file recording its hash,
   after which `run` uploads `minimal-dark`; and `upload` of the compiled `minimal-dark` recording its hash, after which
   `run` uploads nothing (R12, R16, R33, R35, R38)
-- [ ] Commit
+- [x] Commit
 
 ### The documents
 
-- [ ] Change the quick start of `README.md` to the steps of R29, keeping its text on the tiles, on the GPU and disk
+- [x] Change the quick start of `README.md` to the steps of R29, keeping its text on the tiles, on the GPU and disk
   tiles, on a metric the host cannot read and on `theme preview`; name `theme use` in the status line; keep "Planned
   usage" (R29, R30)
-- [ ] Describe in "Showing sensor values on the screen" of `README.md` the key `theme` and that it excludes `tags`, that
+- [x] Describe in "Showing sensor values on the screen" of `README.md` the key `theme` and that it excludes `tags`, that
   `tags` stays for a vendor theme uploaded with `upload`, which keys a reload applies within a round and which need a
   restart, and that an upload is not interrupted by a stop; and in "Writing a theme" the upload only when the hash of
   the compiled file differs from the one stored for the serial of the screen, the path of the state file on Linux and
@@ -518,35 +521,35 @@ count. Calls queue, one upload each.
   the screen by other software is not known to `run`, that `theme use` sets the key, and that running it again after
   editing a theme folder puts the edit on the screen; replace the paragraph that tells to paste the tags block and
   upload by hand (R30)
-- [ ] Say in "The tags" of `docs/theme-folder.md` that the tags file is for a config with `tags`, and that with the key
+- [x] Say in "The tags" of `docs/theme-folder.md` that the tags file is for a config with `tags`, and that with the key
   `theme` the config needs no tags block (R31)
-- [ ] Commit
+- [x] Commit
 
 ### Handing over
 
-- [ ] Check each case that R32 lists against the unit tests written above, and add a test for any case missing (R32)
-- [ ] Run the five commands of the suite in `AGENTS.md` and `npm run check-changes`, all succeeding (R34)
-- [ ] Log the implementation in `record.md`, tick the tasks, and commit
+- [x] Check each case that R32 lists against the unit tests written above, and add a test for any case missing (R32)
+- [x] Run the five commands of the suite in `AGENTS.md` and `npm run check-changes`, all succeeding (R34)
+- [x] Log the implementation in `record.md`, tick the tasks, and commit
 
 ## Verification
 
-- [ ] `go test ./...` passes
-- [ ] `go vet ./...` reports nothing
-- [ ] `gofmt -l .` prints no file name
-- [ ] `GOOS=windows GOARCH=amd64 go build ./...` succeeds and reports nothing
-- [ ] `GOOS=windows GOARCH=amd64 go vet ./...` succeeds and reports nothing
-- [ ] `npm run check-changes` succeeds
+- [x] `go test ./...` passes
+- [x] `go vet ./...` reports nothing
+- [x] `gofmt -l .` prints no file name
+- [x] `GOOS=windows GOARCH=amd64 go build ./...` succeeds and reports nothing
+- [x] `GOOS=windows GOARCH=amd64 go vet ./...` succeeds and reports nothing
+- [x] `npm run check-changes` succeeds
 
 ## Commit Points
 
-- [ ] `feature-0013 Add the state file of the uploads`, with `feature-0013 Take the key theme in the config file` after
+- [x] `feature-0013 Add the state file of the uploads`, with `feature-0013 Take the key theme in the config file` after
   it, the first holding `internal/uploadstate`, the second `internal/config`
-- [ ] `feature-0013 Give the serial of the opened screen`
-- [ ] `feature-0013 Keep the state file true in upload`
-- [ ] `feature-0013 Split the lookup of a theme by name out of compileTheme`
-- [ ] `feature-0013 Upload the theme of the config in run when it is not on the screen`
-- [ ] `feature-0013 Apply a changed config file while run runs`
-- [ ] `feature-0013 Add theme use`
-- [ ] `feature-0013 Test the theme of the config and its upload end to end`
-- [ ] `feature-0013 Document the theme of the config and its upload`
-- [ ] `feature-0013 Record the implementation and tick the plan`
+- [x] `feature-0013 Give the serial of the opened screen`
+- [x] `feature-0013 Keep the state file true in upload`
+- [x] `feature-0013 Split the lookup of a theme by name out of compileTheme`
+- [x] `feature-0013 Upload the theme of the config in run when it is not on the screen`
+- [x] `feature-0013 Apply a changed config file while run runs`
+- [x] `feature-0013 Add theme use`
+- [x] `feature-0013 Test the theme of the config and its upload end to end`
+- [x] `feature-0013 Document the theme of the config and its upload`
+- [x] `feature-0013 Record the implementation and tick the plan`

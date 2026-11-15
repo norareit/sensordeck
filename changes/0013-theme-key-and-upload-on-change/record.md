@@ -37,3 +37,17 @@ timestamp: 2026-11-15T12:11:23Z
   mappings, because otherwise a reload that maps a probe under `commander_color` would get no value for it and R18
   would be false. The status stays `approved`
 - 2026-11-15T12:30:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, began the work on the branch `feature-0013-theme-key-and-upload-on-change`. The status is `in-progress`
+- 2026-11-15T13:40:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, built the unit from the plan on
+  the branch. Deviations from the plan, none of which changes the spec: the tests of `run` with a theme and with a
+  changed config file are in the new files `internal/cli/runtheme_test.go` and `internal/cli/runreload_test.go` and not
+  in `run_test.go`; the keeper has no test of its own for a probe mapped by a reload, which `run`'s test
+  `TestAReloadThatMapsAProbeGetsItsValueFromTheKeeper` covers, because no test of the keeper builds it except through
+  `run`; `Decode` of the state file refuses a `null` value too, by reading the values as pointers, so that `{"a": null}`
+  is not an object of strings; the fake screen's `AcceptUpload` is in its own commit. The plan was changed for the
+  first two. Not built: the `Beyond the request` items 2 to 4, as the spec says
+- 2026-11-15T13:41:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, ran the suite on the final tree of
+  the implementation: `go test ./...` passed, including the end-to-end tests in `e2e/` and `go test -race ./internal/cli`;
+  `go vet ./...` and `gofmt -l .` reported nothing; `GOOS=windows GOARCH=amd64 go build ./...` and
+  `GOOS=windows GOARCH=amd64 go vet ./...` succeeded and reported nothing. Not checked: a real device, as D18 says, and
+  anything on Windows, as D19 says. The unit stays `in-progress` until the review has been decided
+
