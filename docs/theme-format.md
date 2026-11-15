@@ -5,7 +5,8 @@ A theme file, `img.dat`, is what the screen plays. The computer uploads it once 
 holds, with the numbers the computer sends for the tags of the number records.
 
 This document describes the format in the project's own words. `sensordeck theme dump` reads a file as this document
-says, and the package `internal/themefile` is the reader.
+says, and the package `internal/themefile` is the reader. sensordeck's own themes are written as a folder and compiled
+into this format, as [the theme folder document](theme-folder.md) describes.
 
 ## How the facts were established
 

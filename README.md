@@ -4,8 +4,9 @@ Turn a cheap USB "sensor panel" screen into a hardware-monitoring dashboard on *
 
 > **Status: early development.** The screen can be driven on Linux: with the low-level commands (`devices`, `clock`,
 > `values`, `upload`, `listen` and `raw`), with `sensordeck sensors` and with `sensordeck run`, which also reads the temperature probes of a Corsair iCUE
-> Commander Core XT. `sensordeck theme dump` reads a theme file with no screen. Making themes, Windows and the
-> service are still to come. This README describes what sensordeck is meant to become.
+> Commander Core XT. `sensordeck theme dump` reads a theme file, `sensordeck theme compile` compiles a theme folder
+> into one and `sensordeck theme preview` draws a theme folder as a PNG, all with no screen. The built-in themes,
+> Windows and the service are still to come. This README describes what sensordeck is meant to become.
 
 ## What it will do
 
@@ -40,7 +41,7 @@ sensordeck devices                # list connected screens
 sensordeck run                    # send live sensor values to the screen
 sensordeck theme list             # show built-in and installed themes
 sensordeck theme use minimal-dark # switch themes
-sensordeck theme preview my-theme # render a theme to PNG with sample values
+sensordeck theme preview <theme-dir> <out.png> # render a theme to PNG with sample values
 sensordeck service install        # run in the background at startup
 ```
 
@@ -194,6 +195,46 @@ to its hidraw node:
 SUBSYSTEM=="hidraw", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="0c2a", MODE="0660", TAG+="uaccess"
 ```
 
+## Writing a theme
+
+A theme is a folder: a `theme.yaml` that lays out the screen, and the PNG pictures and TTF fonts it names. A theme can
+also use the twelve Go fonts that are built into sensordeck. A complete example:
+
+```yaml
+name: Night
+author: Ada
+license: MIT
+background: background.png        # a 480 x 320 PNG, or a colour such as "#101820"
+fonts:
+  label: {file: fonts/label.ttf, size: 22, color: "#8899aa"}
+  value: {builtin: go-bold, size: 48, color: "#00c8ff"}
+widgets:                          # drawn in this order
+  - {type: image, file: icons/cpu.png, x: 20, y: 20}
+  - {type: text, font: label, text: CPU, x: 70, y: 28}
+  - {type: number, font: value, metric: cpu.temp, digits: 3, x: 70, y: 60}
+  - {type: datetime, font: label, format: "YYYY-MM-DD HH:mm:ss", x: 20, y: 280}
+```
+
+Two commands work on a folder and need no screen:
+
+```bash
+sensordeck theme preview my-theme preview.png   # draw the theme as the compiled file would show it
+sensordeck theme compile my-theme img.dat       # write img.dat and img.tags.yaml
+```
+
+The compiler gives each metric of the number widgets a tag and writes the mapping beside the theme file, in
+`img.tags.yaml`:
+
+```yaml
+# Paste this block into the config file of sensordeck run.
+tags:
+  cpu.temp: 1
+```
+
+Paste the `tags:` block into the config file of `sensordeck run`, as described under "Showing sensor values on the
+screen", put the theme on the screen with `sensordeck upload img.dat`, and then start `sensordeck run`. The folder
+format, the tags and the limits are described in [docs/theme-folder.md](docs/theme-folder.md).
+
 ## Reading a theme file
 
 `sensordeck theme dump <file.dat> <out-dir>` reads a theme file, the `img.dat` that `upload` sends to the screen, and
@@ -214,6 +255,9 @@ record of a type it does not know, to standard error. The format is described in
 
 Thanks to the [turing-smart-screen-python-HIDdev2](https://github.com/Agentry433/turing-smart-screen-python-HIDdev2)
 project for discovering the protocol these screens use.
+
+The theme compiler draws glyphs with [golang.org/x/image](https://pkg.go.dev/golang.org/x/image), and the Go fonts that
+a theme can name are built into sensordeck. Both are by the Go authors, under a BSD licence.
 
 ## License
 

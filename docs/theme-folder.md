@@ -1,0 +1,160 @@
+# The theme folder
+
+A theme of sensordeck's own is a folder. `sensordeck theme compile` turns it into a theme file, the `img.dat` that the
+screen plays and that [the format document](theme-format.md) describes, and `sensordeck theme preview` draws what the
+screen would show. This document describes the folder and what the compiler does with it.
+
+## The folder
+
+The folder holds `theme.yaml` and the files it names: PNG pictures and, if the theme wants a font of its own, TTF or
+OTF files. Every path in `theme.yaml` is relative to the folder and uses `/` between its parts on every platform. A path
+cannot leave the folder: `..` that climbs out of it, an absolute path and a symbolic link that points outside it are
+errors. `a/../b.png` stays inside and names `b.png`.
+
+## theme.yaml
+
+`theme.yaml` is a YAML mapping. A key that is not listed here, at any level, is an error that names the key and where it
+is, and so is a key given twice in a mapping.
+
+| Key | Type | Required | Meaning |
+|---|---|---|---|
+| `name` | string | yes | The name of the theme: not empty, no control character |
+| `author` | string | no | No control character |
+| `license` | string | no | No control character |
+| `background` | colour or path | yes | A colour, or the path of a PNG of exactly 480 x 320 pixels. A value that starts with `#` is a colour |
+| `fonts` | mapping | no | From a font name, a non-empty string, to a font |
+| `widgets` | list | no | The widgets, in the order they are drawn. Without the key, or with an empty list, the theme is its background alone |
+
+`name`, `author` and `license` are checked and not written to the theme file, which has no place for them.
+
+### Colours
+
+A colour is `#rrggbb`, six hexadecimal digits in either case, written in quotes in YAML because `#` starts a comment:
+`"#1e1e2e"`. A colour that is left out by the comment gets an error that says so.
+
+### Fonts
+
+A font is a mapping with:
+
+| Key | Type | Required | Meaning |
+|---|---|---|---|
+| `file` | path | one of `file` and `builtin` | A TTF or OTF file in the folder, holding one font and not a font collection |
+| `builtin` | string | one of `file` and `builtin` | One of the twelve Go fonts, built into the executable |
+| `size` | whole number, 1 to 320 | yes | The size of the font's em in pixels |
+| `color` | colour | yes | The colour of everything drawn with this font |
+
+The Go fonts are `go-regular`, `go-bold`, `go-italic`, `go-bold-italic`, `go-medium`, `go-medium-italic`, `go-mono`,
+`go-mono-bold`, `go-mono-italic`, `go-mono-bold-italic`, `go-smallcaps` and `go-smallcaps-italic`. They are the Go fonts
+of the `golang.org/x/image` module, by the Go authors, under a BSD licence. A theme that names one compiles on any
+machine. A second font with the same file and another colour is how a widget gets another colour.
+
+### Widgets
+
+A widget is a mapping with `type`, `x` and `y`, where `x` and `y` are whole numbers from 0 and give the top left corner
+of its box, and the keys of its type. The widgets are numbered from 1 in the order of the list, which is how an error
+names them, and a theme has at most 62 of them, because the background takes one of the 63 records of a theme file.
+
+| Type | Keys | Meaning |
+|---|---|---|
+| `text` | `font`, `text` | A fixed text. `font` names a font of `fonts`. `text` is a non-empty single line with no control character |
+| `number` | `font`, `metric`, `digits` | A value that the device fills in. `metric` is the name of a metric. `digits`, a whole number from 1 to 5 and 3 without the key, is how many digits the box of the value holds |
+| `datetime` | `font`, `format` | The date and the time, which the device fills in from the clock |
+| `image` | `file` | A PNG in the folder, drawn at its own size |
+
+The names of the metrics are those of the table in the
+[README](../README.md#showing-sensor-values-on-the-screen). The compiler checks that a name is well formed, as the
+config file of `sensordeck run` does, and not that the machine it runs on can read the metric, so that a theme compiled
+on one machine can be shared.
+
+### Formats of a datetime
+
+A format is a non-empty string made of tokens and separators, read from left to right:
+
+| Token | Meaning | Compiles to |
+|---|---|---|
+| `YYYY` | the year, four digits | `1` |
+| `MM` | the month, two digits | `2` |
+| `DD` | the day, two digits | `3` |
+| `HH` | the hour from 00 to 23, two digits | `4` |
+| `mm` | the minute, two digits | `5` |
+| `ss` | the second, two digits | `6` |
+
+The separators are `.`, `-`, `/`, `:` and space, and each compiles to itself. Any other character is an error that names
+it and its position. The compiled format is at most 18 bytes, which leaves one of the 19 bytes of the field as the
+terminator. So `YYYY-MM-DD` compiles to `1-2-3` and `HH:mm:ss` to `4:5:6`. There is no 12-hour form, no name of a day or
+month and no unit character.
+
+## The tags
+
+The device takes a value for a tag, a number, and not for a metric. The compiler gives the number widgets their tags:
+the distinct metric names of the theme, sorted by their bytes, get 1, 2, 3 and up, with 21 skipped, because 21 is the tag
+of the clock. Two widgets with the same metric have the same tag, and no number gets 0. The tags do not depend on the
+order of the widgets.
+
+`sensordeck theme compile <theme-dir> <out.dat>` writes the tags beside the theme file, in a file named like it with its
+extension replaced by `.tags.yaml`, or with `.tags.yaml` added when there is none, so `img.dat` gives `img.tags.yaml`.
+It is a block in the shape of the `tags:` section of the config file of `sensordeck run`, to be pasted into it. For a
+theme with no number it is `tags: {}`, and such a theme needs no values from `run`.
+
+## How glyphs and colours are made
+
+The device draws numbers, text and dates from pre-rendered glyphs, so the compiler draws them from the fonts, with
+`golang.org/x/image/font/opentype`, at the size of the font in pixels (72 dots per inch), with no hinting and with
+anti-aliasing. The alpha of the rasteriser is the alpha of the mask.
+
+* The height of every glyph of a font is its ascent rounded up plus its descent rounded up, and the baseline is the
+  ascent rounded up below the top. What a glyph draws above or below that is cut off
+* The digit width is the largest advance of the ten digits, each rounded up. Each digit is drawn in a cell of that
+  width, moved right by half of the cell width minus its own rounded-up advance, rounded down, so that all digits have
+  the same width and a value does not move sideways as it changes
+* `.`, `-`, `/`, `:` and space are masks of their own advance rounded up, drawn from the left edge
+* A datetime has six more glyphs, for characters the formats of the compiler never use. They are fully transparent
+  masks of the digit width, whatever the font holds
+* A text is drawn from the left edge of its mask with the kerning that the font gives
+
+A colour of 8 bits per channel is made RGB565 by rounding each channel to the nearest of its 5 or 6 bits, as
+`(value x 31 + 127) / 255` for red and blue and `(value x 63 + 127) / 255` for green, in whole-number division. A PNG
+of 16 bits per channel is first reduced to 8. An image is one frame: its alpha, then its colour without the alpha, so
+that a half-transparent pixel keeps its colour. A PNG background is composited over opaque black where it is not opaque,
+because the background record has no alpha. A solid background is a full picture of its colour.
+
+## The box of a widget
+
+The box of each widget is exactly what it draws, from its x and y: an image has the size of its PNG, a text the width of
+its text as the font measures it, rounded up, a number `digits` digit widths, and a datetime the width of its format as
+drawn, each `YYYY` four digit widths and each other token two. All have the glyph height, except an image. The preview
+draws from the top left of the box, so the box and the preview agree.
+
+## The limits
+
+* a box must be within the screen of 480 x 320 pixels
+* a background PNG must be exactly 480 x 320
+* at most 62 widgets
+* the compiled file must fit in the 4 MiB (4194304 bytes) of the flash of the device
+* the size of a PNG is read from its header before its pixels, so a PNG too large for the screen is refused before it is
+  decoded
+* every character of a text must have a glyph in its font, a number needs the glyphs of `0` to `9`, `.` and `-`, and a
+  datetime those of `0` to `9`, `.`, `-`, `/`, `:` and space
+
+Every error names `theme.yaml` and the place of the fault, such as `theme.yaml: widget 2 (text): x: want a whole number
+from 0`, and a folder with several faults gives one of them, the same each time. The same folder gives byte-identical
+files, run after run of the same executable. Byte identity across processor architectures is not promised, because the
+rasteriser computes in floating point.
+
+## The bytes the compiler writes where the meaning is unknown
+
+Many bytes of a theme file have no known meaning, as [the format document](theme-format.md) says. The compiler writes
+the values that the three vendor samples agree on. **They come from the samples and are not confirmed on the device.**
+
+* The header is byte 0 `0x96` and 63 zeros. Slot 1 is the background and slot 2 and up are the widgets in the order of
+  the list. The index byte is 0 for the background and the slot number minus 1 for a widget
+* Background: byte 11 is 0, the colour guess is the colour of a solid background and `0000` for a PNG one, byte 18 is 1
+  and the rest of 18 to 63 is zero. Its offset is never 0
+* Image: one frame, byte 16 is 1, bytes 17 to 18 are 0, bytes 19 to 63 are zero
+* Text: the tag is 0, byte 17 is `0xff`, bytes 18 to 63 are zero
+* Number: byte 11 is 1, byte 14 is 0, byte 15 is `0xff`, bytes 46 to 63 are zero
+* Datetime: the tag is 21, byte 11 is 1, byte 14 is `0xff`, and the compiled format fills bytes 45 on, followed by zero
+  bytes
+
+Whether the device draws a compiled theme as the preview shows it, with these bytes, the tags above 20, the order of
+drawing and the alignment of a number in its box, has not been checked on the device.

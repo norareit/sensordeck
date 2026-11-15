@@ -478,7 +478,7 @@ Nothing is written before the whole compilation and, for `preview`, the PNG enco
 
 ### The documents
 
-- [ ] Add `docs/theme-folder.md`, in the project's own words (R27): every key of R1 to R6 with its type, whether it is
+- [x] Add `docs/theme-folder.md`, in the project's own words (R27): every key of R1 to R6 with its type, whether it is
   required and its default (`digits` 3, `widgets` none); the twelve Go font names; the tokens and separators of a
   format, what each compiles to and the limit of 18 bytes; the metric names by a link to the metrics table of the
   README; how tags are assigned (sorted names, from 1, 21 skipped) and where the tags file is written; how glyphs are
@@ -487,9 +487,9 @@ Nothing is written before the whole compilation and, for `preview`, the PNG enco
   non-premultiplied image colour); the limits of R9 (the screen, 62 widgets, exact background size, the flash limit
   of 4 MiB); the values written for the bytes of unknown meaning of R13 and R14, stating that they come from the
   vendor samples and are not confirmed on the device; that paths are relative with `/` and cannot leave the folder
-- [ ] In `docs/theme-format.md`, add a link to `docs/theme-folder.md` near the top, saying that sensordeck's own
+- [x] In `docs/theme-format.md`, add a link to `docs/theme-folder.md` near the top, saying that sensordeck's own
   themes are written as a folder and compiled into this format (R27)
-- [ ] In `README.md` (R28):
+- [x] In `README.md` (R28):
     - name `theme compile` and `theme preview` in the status line among the commands that work, and name the
       built-in themes, Windows and the service as still to come, in place of making themes, Windows and the service
     - change the line of `theme preview` under "Planned usage" to `sensordeck theme preview <theme-dir> <out.png>`
@@ -498,9 +498,9 @@ Nothing is written before the whole compilation and, for `preview`, the PNG enco
       the tags file and how its block goes into the config file; how the compiled file is put on the screen today with
       `sensordeck upload img.dat` and then `sensordeck run`; a link to `docs/theme-folder.md`
     - under "Credits", name `golang.org/x/image` and the Go fonts, by the Go authors, under the BSD licence
-- [ ] Compile the example `theme.yaml` of the README once in a scratch directory outside the repository, with a font
+- [x] Compile the example `theme.yaml` of the README once in a scratch directory outside the repository, with a font
   and a PNG made for it, and correct the example until it compiles. Nothing of the check is committed (R28)
-- [ ] Commit: `feature-0011 Document the theme folder and theme compile`
+- [x] Commit: `feature-0011 Document the theme folder and theme compile`
 
 ### Before handing over
 
