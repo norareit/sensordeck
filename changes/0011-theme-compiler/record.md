@@ -1,6 +1,6 @@
 ---
 kind: feature
-status: in-progress
+status: implemented
 timestamp: 2026-11-15T08:52:10Z
 ---
 
@@ -28,9 +28,9 @@ timestamp: 2026-11-15T08:52:10Z
   extracts the decoding of a colour from `internal/config` for R2, and `golang.org/x/image` v0.48.0, whose font calls
   and the confinement of `os.Root` were checked in the sandbox. Every task names the requirements it delivers and every
   requirement R1 to R31 has a task. The status stays `approved`
-- 2026-11-15T09:10:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, began the work on the branch
+- 2026-11-15T09:02:41Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, began the work on the branch
   `feature-0011-theme-compiler`. The status is `in-progress`
-- 2026-11-15T09:30:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, built every task of `plan.md` in
+- 2026-11-15T09:09:16Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, built every task of `plan.md` in
   its seven commits, tests first for each group. Three points where the build is more specific than the plan, none of
   them a change of the spec: a key given twice in a widget is named at `widget <n>` without the type, because the
   type is read in the same pass that finds the repeat; `glyphOf` was added to `glyphs.go` so that the number and the
@@ -38,7 +38,7 @@ timestamp: 2026-11-15T08:52:10Z
   `*fs.PathError` instead of importing the one of `internal/cli`. The example `theme.yaml` of the README was compiled and
   previewed once in a scratch directory outside the repository with a font and PNGs made for it, and compiled without
   a correction. Nothing was checked on the device or on Windows beyond the cross-build and vet
-- 2026-11-15T09:31:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, ran on `0fe9332`, the tree of the
+- 2026-11-15T09:09:16Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, ran on `0fe9332`, the tree of the
   last commit of the work, `go test ./...`, `go vet ./...`, `gofmt -l .`, `GOOS=windows GOARCH=amd64 go build ./...` and
   `GOOS=windows GOARCH=amd64 go vet ./...`, which reported nothing besides the passing packages, and
   `npm run check-changes`, which passed. No review has run yet, so the unit stays `in-progress`
@@ -48,17 +48,17 @@ timestamp: 2026-11-15T08:52:10Z
   `.reviews/0011-theme-compiler/review-round-1.md`. The five suite commands, the change check, an uncached run of
   the end-to-end, compiler and CLI tests, and `git diff --check` passed. Physical-device behavior and Windows
   runtime behavior were not verified. The status stays `in-progress`
-- 2026-11-15T09:40:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, accepted S1 of
+- 2026-11-15T09:14:39Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, accepted S1 of
   `.reviews/0011-theme-compiler/review-round-1.md` under the definition of the orchestrator for round 2, not as a
   decision of the human. `checkBox` now compares each size with the space left after its coordinate, so no coordinate
   of up to the largest 64-bit number overflows. A new test with the largest coordinate on each axis, for a text, a
   number and an image, and for an image whose header claims 10000 x 10000, failed before the fix (no error) and passes
   after it
-- 2026-11-15T09:41:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, accepted S2 and P1 the same way.
+- 2026-11-15T09:14:39Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, accepted S2 and P1 the same way.
   Added tests for a folder with no `theme.yaml`, for malformed YAML at the compiler and at the command (the path of
   `theme.yaml` in the message and no file written), for a text with an accented letter that compiles, and for an image
   widget whose PNG is a symbolic link out of the folder. No ticked task was removed
-- 2026-11-15T09:42:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, ran the five suite commands on
+- 2026-11-15T09:14:39Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, ran the five suite commands on
   the tree of commit `1b0aaf8`, which reported nothing besides the passing packages. The status stays
   `in-progress`
 - 2026-11-15T09:15:32Z [OpenCode, openai/gpt-6.1-sol] as the reviewer, completed a delta review of
@@ -68,3 +68,9 @@ timestamp: 2026-11-15T08:52:10Z
   change check, an uncached run of the end-to-end, compiler and CLI tests, and `git diff --check` passed.
   Physical-device behavior, Windows runtime behavior and the claimed original red regression run were not
   independently verified. The status stays `in-progress`
+- 2026-11-15T09:17:11Z [Claude Code, anthropic/claude-opus-5-5] under the delegation in `AGENTS.md`, decided the findings: S1 and S2
+  of round 1, the blocking ones, and P1 were corrected, and round 2 returned none, so no blocking finding is open. The
+  timestamps of six entries of the implementer, which did not match their commits, were corrected to the times of the
+  commits that added them. Every task of `plan.md` is ticked, and the five commands of the suite passed on the branch.
+  On the host, a trial theme with the Go fonts compiled to a file of 348936 bytes with its tags file, and its preview
+  drew as laid out. The check on the device is the human's and follows the merge. The status is `implemented`
