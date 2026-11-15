@@ -116,28 +116,28 @@ test does not depend on the order in which the three pairs are sent.
 
 ## Tasks
 
-- [ ] In `internal/sensors/metrics_test.go`, add `ram.util`, `net.up` and `net.down` to the accepted names of
+- [x] In `internal/sensors/metrics_test.go`, add `ram.util`, `net.up` and `net.down` to the accepted names of
   `TestIsName`, and `ram.util.x`, `net.upload` and `NET.UP` to the refused ones; add `"ram.util": "%"`,
   `"net.up": "KiB/s"` and `"net.down": "KiB/s"` to `TestUnitOfEachRow`, whose count of rows then fails until the rows
   exist; and add a test that the readings order of the table puts `ram.util` right after `ram.total` and `net.up`,
   `net.down` after `nvme.<n>.temp` and before `commander.<n>.temp`, by checking the positions of their rows in
   `metricKinds` (R1, R16)
-- [ ] In `internal/sensors/metrics.go`, add the three constants and the three rows of "Approach", and change the
+- [x] In `internal/sensors/metrics.go`, add the three constants and the three rows of "Approach", and change the
   comment above the constants as it says, until the tests of the first task pass (R1)
-- [ ] In `internal/linuxsensors/meminfo_test.go`, extend `TestMemoryGivesUsedAndTotal` with the reading
+- [x] In `internal/linuxsensors/meminfo_test.go`, extend `TestMemoryGivesUsedAndTotal` with the reading
   `{Name: "ram.util", Value: 100 * float64(96187828-73300372) / 96187828}` after `ram.total`. The existing
   `TestMemoryWithoutAvailableGivesTotalOnly` and `TestMemoryMalformedOrMissingGivesNothing` read with `everything`,
   so they cover `MemAvailable` missing and a malformed `MemTotal` for `ram.util` once it exists, and keep their
   expectations. Add a test that `MemTotal:       0 kB` with `MemAvailable:   0 kB` gives `ram.used` and `ram.total` of 0 and no
   `ram.util`; a test that for `hostMeminfo` the value of `ram.util` equals `100 * ram.used / ram.total` within 1e-9;
   and a test that wanting only `ram.util` gives only `ram.util` (R2, R3, R14)
-- [ ] In `internal/linuxsensors/meminfo.go`, make `memory.Read` return nil only when none of the three is wanted, and
+- [x] In `internal/linuxsensors/meminfo.go`, make `memory.Read` return nil only when none of the three is wanted, and
   after `ram.total` append `ram.util` as `100 * (float64(total) - float64(available)) / float64(total)` when it is
   wanted, `MemAvailable` was read and `total` is not 0, all from the one `content` read at the start, until the tests
   of the task before pass (R2, R3)
-- [ ] Add `NetDev` and `NetInterface` to `internal/fakesensors/fakesensors.go`, as "The test helpers" says, with
+- [x] Add `NetDev` and `NetInterface` to `internal/fakesensors/fakesensors.go`, as "The test helpers" says, with
   their doc comments, and extend the package comment to name the network
-- [ ] Write `internal/linuxsensors/netdev_test.go`, `//go:build linux`, with `netDevLine`, the kernel's two header
+- [x] Write `internal/linuxsensors/netdev_test.go`, `//go:build linux`, with `netDevLine`, the kernel's two header
   lines and a helper that makes the source of a tree with a wait that records its duration and writes the next
   content of `net/dev`, as `newUtilisation` of `procstat_test.go` does, and a clock that gives a list of moments the
   test sets, one for each sample, and fails the test when asked for more. The interfaces that count are made with
@@ -169,31 +169,31 @@ test does not depend on the order in which the three pairs are sent.
       still nil, which shows that no file was read, since `take` calls the clock after every read
   Add a test of `parseNetDev` on the two header lines and the lines of `lo` and `enp6s0`, which gives the two
   interfaces with their first and ninth fields, and a test that a counter above 2⁶⁴ − 1 passes the line over (R6)
-- [ ] Write `internal/linuxsensors/netdev.go` as "The network source" says, until the tests of the task before pass
+- [x] Write `internal/linuxsensors/netdev.go` as "The network source" says, until the tests of the task before pass
   (R4 to R9)
-- [ ] Add `&network{sysfsRoot: sysfsRoot, procRoot: procRoot, wait: time.Sleep, now: time.Now}` as the last source of
+- [x] Add `&network{sysfsRoot: sysfsRoot, procRoot: procRoot, wait: time.Sleep, now: time.Now}` as the last source of
   `Sources` in `internal/linuxsensors/sources.go`. In `sources_test.go`, add to the tree a `net/dev` with `enp6s0`
   and its `NetInterface`, and expect `ram.util` after `ram.total` and `net.up`, `net.down` after `nvme.1.temp` (R1,
   R10, R11)
-- [ ] Run the five commands of the suite, of which the two for Windows show that the build for Windows does not change
+- [x] Run the five commands of the suite, of which the two for Windows show that the build for Windows does not change
   and that no file outside the Linux files names the new source (R11)
-- [ ] In `e2e/sensors_test.go`, extend `fullTree` with `tree.NetDev` of the two header lines and the lines of `lo`,
+- [x] In `e2e/sensors_test.go`, extend `fullTree` with `tree.NetDev` of the two header lines and the lines of `lo`,
   `enp6s0` and `docker0` with bytes other than 0, and `NetInterface` for the three, of which only `enp6s0` gets a
   device, `pci0000:00/0000:00:02.2/0000:06:00.0`. Add `ram.util\t23.8\t%` after `ram.total` and `net.up\t0.0\tKiB/s`,
   `net.down\t0.0\tKiB/s` after `nvme.2.temp` to the output of `TestSensorsListsTheReadingsOfTheHost`, and the same
   three lines in the same places to the output of `TestSensorsListsTheProbesOfTheController` in
   `e2e/commander_test.go`. `TestSensorsWithAnEmptyTreeSaysSo` keeps its output (R12, R17)
-- [ ] In `e2e/run_test.go`, add `TestRunSendsTheShareOfRAMAndTheNetworkRates`: a fake screen as in `runningSetup`, a
+- [x] In `e2e/run_test.go`, add `TestRunSendsTheShareOfRAMAndTheNetworkRates`: a fake screen as in `runningSetup`, a
   tree with the `meminfo` of `fullTree` and the network of the task before, made by a helper that both share, and the
   config `interval: 100ms` with `ram.util: 12`, `net.up: 18` and `net.down: 19`. A helper `valuePairs(report)
   map[uint8]uint16` decodes a value report as "The end-to-end values" says, and gives nil for a report whose byte 0 is
   not `0x02`. The test polls the reports for up to `reportLimit` until one holds (12, 24), (18, 0) and (19, 0); then
   calls `NetDev` with the received bytes of `enp6s0` 1048576 higher; then polls for up to 3 seconds for a later report
   that holds tag 19 with a value of 1 or more; then sends SIGTERM and expects status 0 (R12, R18)
-- [ ] In the comment at the top of `e2e/commands_test.go`, add an item that the exact value of a rate other than 0,
+- [x] In the comment at the top of `e2e/commands_test.go`, add an item that the exact value of a rate other than 0,
   which depends on the time between two rounds, counters that go back, and interfaces that appear or vanish are
   covered by the tests of the network source in `internal/linuxsensors` (R19)
-- [ ] In `README.md`, in the table of "Showing sensor values on the screen", add the row `ram.util` with `%` and the
+- [x] In `README.md`, in the table of "Showing sensor values on the screen", add the row `ram.util` with `%` and the
   source "`/proc/meminfo`, the share of the total that `ram.used` is" after `ram.total`, and the rows `net.up` and
   `net.down` with `KiB/s` and the sources "`/proc/net/dev`, the bytes sent" and "`/proc/net/dev`, the bytes received"
   after `nvme.<n>.temp`. Below the table, after the paragraph of the GPU and numbered metrics, add a paragraph that

@@ -92,13 +92,20 @@ The metrics are:
 | `gpu.mem.total` | MiB | `nvidia-smi` |
 | `ram.used` | GiB | `/proc/meminfo`, the total minus what is available |
 | `ram.total` | GiB | `/proc/meminfo` |
+| `ram.util` | % | `/proc/meminfo`, the share of the total that `ram.used` is |
 | `ram.<n>.temp` | °C | `spd5118`, one for each memory module |
 | `nvme.<n>.temp` | °C | `nvme`, the sensor `Composite`, one for each drive |
+| `net.up` | KiB/s | `/proc/net/dev`, the bytes sent |
+| `net.down` | KiB/s | `/proc/net/dev`, the bytes received |
 | `commander.<n>.temp` | °C | the temperature probes of a Corsair iCUE Commander Core XT |
 
 The GPU metrics need `nvidia-smi` and come from the first NVIDIA GPU only. Numbered metrics count from 1, in the order
 of the places of the hardware in the system, which does not change when the drivers load in another order. For
 `commander.<n>.temp`, *n* counts the probes of the controller from 1.
+
+`net.up` and `net.down` are the sum over the network interfaces that belong to a device, so that loopback and virtual
+interfaces such as those of Docker, bridges and VPNs are left out. A KiB is 1024 bytes. The rates are measured between
+two readings, the first of which waits a moment for the second.
 
 `sensordeck run` sends the metrics named in a config file to the screen. The tags are those of the theme on the
 screen, so for a vendor theme only you know which tag shows what. The config file is `sensordeck/config.yaml` in your
