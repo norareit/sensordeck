@@ -49,7 +49,32 @@ type harness struct {
 	answer          func(arguments []string) (stdout, stderr string, err error)
 	configDirCalls  int // how often userConfigDir was called
 	executableCalls int // how often executable was called
+	cacheDirCalls   int // how often userCacheDir was called
+	userCalls       int // how often currentUser was called
+	user            string
+	userErr         error
+	stopEvent       *fakeStopEvent // what holdStopEvent gives, made by newHarness
+	stopEventErr    error          // what holdStopEvent gives instead of the event
+	holds           int            // how often holdStopEvent was called
+	// backgroundRun answers the checks of findBackgroundRun in turn, with the count of the check from 1, and a nil one
+	// finds nothing.
+	backgroundRun func(check int) (bool, error)
+	checks        int
+	signals       int
+	signalErr     error
+	detaches      int
+	detachErr     error
+	steps         []string // the signal, the end of the event and each call, in order
 }
+
+// fakeStopEvent is the stop event that a background run holds in a test. A test closes its channel to signal it.
+type fakeStopEvent struct {
+	channel chan struct{}
+	closed  int
+}
+
+func (event *fakeStopEvent) signalled() <-chan struct{} { return event.channel }
+func (event *fakeStopEvent) close()                     { event.closed++ }
 
 func newHarness() *harness {
 	stopped, cancelStop := context.WithCancel(context.Background())
@@ -59,6 +84,7 @@ func newHarness() *harness {
 		// No test writes a state file outside a temporary directory of its own: it sets cacheDir and clears this.
 		cacheDirErr: errors.New("no cache directory in this test"),
 		system:      "linux",
+		stopEvent:   &fakeStopEvent{channel: make(chan struct{})},
 	}
 }
 
@@ -86,7 +112,10 @@ func (harness *harness) run(args ...string) int {
 			harness.configDirCalls++
 			return harness.configDir, harness.configDirErr
 		},
-		userCacheDir: func() (string, error) { return harness.cacheDir, harness.cacheDirErr },
+		userCacheDir: func() (string, error) {
+			harness.cacheDirCalls++
+			return harness.cacheDir, harness.cacheDirErr
+		},
 		newSources: func(sysfsRoot, devRoot, procRoot string) (sourceSet, error) {
 			if sysfsRoot != "/sysroot" || devRoot != "/devroot" || procRoot != "/procroot" {
 				return sourceSet{}, errors.New("the roots were not passed on")
@@ -123,6 +152,43 @@ func (harness *harness) run(args ...string) int {
 				return "", "", nil
 			}
 			return harness.answer(arguments)
+		},
+		schtasks: func(arguments ...string) (string, string, error) {
+			harness.calls = append(harness.calls, arguments)
+			harness.steps = append(harness.steps, "schtasks "+strings.Join(arguments, " "))
+			if harness.answer == nil {
+				return "", "", nil
+			}
+			return harness.answer(arguments)
+		},
+		currentUser: func() (string, error) {
+			harness.userCalls++
+			return harness.user, harness.userErr
+		},
+		holdStopEvent: func() (heldStopEvent, error) {
+			harness.holds++
+			harness.steps = append(harness.steps, "hold")
+			if harness.stopEventErr != nil {
+				return nil, harness.stopEventErr
+			}
+			return harness.stopEvent, nil
+		},
+		findBackgroundRun: func() (bool, error) {
+			harness.checks++
+			if harness.backgroundRun == nil {
+				return false, nil
+			}
+			return harness.backgroundRun(harness.checks)
+		},
+		signalBackgroundRun: func() error {
+			harness.signals++
+			harness.steps = append(harness.steps, "signal")
+			return harness.signalErr
+		},
+		detachConsole: func() error {
+			harness.detaches++
+			harness.steps = append(harness.steps, "detach")
+			return harness.detachErr
 		},
 	})
 }

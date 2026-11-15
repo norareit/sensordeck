@@ -19,11 +19,15 @@ import (
 
 func (current *session) runCommand() *cobra.Command {
 	var configPath string
+	var background bool
 	command := &cobra.Command{
 		Use:   "run",
 		Short: "Send the sensor values named in the config file to the screen until stopped",
 		Args:  cobra.NoArgs,
 		RunE: func(command *cobra.Command, args []string) error {
+			if background {
+				return current.runInBackground(configPath)
+			}
 			// The keeper and the feeder write their lines from two goroutines, and so may the trace.
 			current.env.stderr = &lockedWriter{writer: current.env.stderr}
 			prepared, err := current.prepareRun(configPath)
@@ -40,6 +44,8 @@ func (current *session) runCommand() *cobra.Command {
 		},
 	}
 	command.Flags().StringVar(&configPath, "config", "", "read the config from this file instead of the default place")
+	command.Flags().BoolVar(&background, "background", false, "write to the log and start again after a failed start, as the startup task does")
+	_ = command.Flags().MarkHidden("background")
 	return command
 }
 

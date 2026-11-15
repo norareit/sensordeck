@@ -3,6 +3,7 @@ package cli
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -56,9 +57,34 @@ type environment struct {
 	// nil when the call succeeded, an *exec.ExitError when it ended with another status, and the error of the start when
 	// it could not start.
 	systemctl func(arguments ...string) (stdout, stderr string, err error)
+	// schtasks runs schtasks.exe with the arguments, as systemctl runs systemctl --user.
+	schtasks func(arguments ...string) (stdout, stderr string, err error)
+	// currentUser gives the security identifier of the user on Windows, the Uid of os/user.Current.
+	currentUser func() (string, error)
+	// holdStopEvent creates the stop event and holds it until its close, or gives errStopEventExists.
+	holdStopEvent func() (heldStopEvent, error)
+	// findBackgroundRun tells whether the stop event can be opened, and closes it at once.
+	findBackgroundRun func() (bool, error)
+	// signalBackgroundRun signals the stop event. An event that does not exist is no error.
+	signalBackgroundRun func() error
+	// detachConsole detaches the process from its console.
+	detachConsole func() error
 	// version is what --version prints.
 	version string
 }
+
+// heldStopEvent is the stop event that a background run holds.
+type heldStopEvent interface {
+	signalled() <-chan struct{}
+	close()
+}
+
+var (
+	// errStopEventExists is the error of holdStopEvent when another background run holds the event.
+	errStopEventExists = errors.New("the stop event exists already")
+	// errLogged is the error of a background run that wrote its error to the log, so that run writes nothing for it.
+	errLogged = errors.New("the error is in the log")
+)
 
 const (
 	sysfsRootVariable = "SENSORDECK_SYSFS_ROOT"
@@ -89,12 +115,18 @@ func Main(linked string) int {
 		notifyStop: func(parent context.Context) (context.Context, context.CancelFunc) {
 			return signal.NotifyContext(parent, os.Interrupt, syscall.SIGTERM)
 		},
-		after:      time.After,
-		wait:       waitFor,
-		system:     runtime.GOOS,
-		executable: os.Executable,
-		systemctl:  runSystemctl,
-		version:    resolveVersion(linked, info, ok),
+		after:               time.After,
+		wait:                waitFor,
+		system:              runtime.GOOS,
+		executable:          os.Executable,
+		systemctl:           runSystemctl,
+		schtasks:            runSchtasks,
+		currentUser:         currentUserIdentifier,
+		holdStopEvent:       holdStopEvent,
+		findBackgroundRun:   findBackgroundRun,
+		signalBackgroundRun: signalBackgroundRun,
+		detachConsole:       detachConsole,
+		version:             resolveVersion(linked, info, ok),
 	})
 }
 
@@ -124,6 +156,9 @@ func run(args []string, env environment) int {
 	root.SetOut(env.stdout)
 	root.SetErr(env.stderr)
 	if err := root.Execute(); err != nil {
+		if errors.Is(err, errLogged) {
+			return 1
+		}
 		_, _ = fmt.Fprintf(env.stderr, "sensordeck: %v\n", err)
 		return 1
 	}

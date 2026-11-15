@@ -350,12 +350,12 @@ func taskStatusLines(taskFile, enabled, active, log string) []string
 
 ### 4. The background run
 
-- [ ] Add the six fields of the seam to `environment` in `internal/cli/main.go`, `heldStopEvent`,
+- [x] Add the six fields of the seam to `environment` in `internal/cli/main.go`, `heldStopEvent`,
   `errStopEventExists` and `errLogged`, fill them in `Main`, and make `run` of `main.go` write nothing for `errLogged`;
   write `internal/cli/schtasks.go`, `internal/cli/background_windows.go` and `internal/cli/background_other.go` (R18,
   R23, R24, R25)
-- [ ] Extend the harness of `internal/cli/commands_test.go` with the fields of the approach (R34)
-- [ ] Write `internal/cli/background_test.go`, with the cache directory a temporary one: `run --help` does not name
+- [x] Extend the harness of `internal/cli/commands_test.go` with the fields of the approach (R34)
+- [x] Write `internal/cli/background_test.go`, with the cache directory a temporary one: `run --help` does not name
   `--background` (R18); on `linux` and on `windows` the lines of a run that starts, feeds and is stopped by
   `cancelStop` are in the log with their time, and stdout and stderr are empty (R19); a cache directory that cannot be
   found and a log that cannot be opened end with exit status 1 and the error on stderr (R19, R20); on `windows` the
@@ -367,15 +367,15 @@ func taskStatusLines(taskFile, enabled, active, log string) []string
   10 seconds, and starts again with the config file read anew, which the test changes during the wait, then feeds
   (R26); a stop during the wait ends at once with `stopped` and exit status 0 (R26); a signal of the fake event during
   the wait does the same (R26); a config that does not load at the first start is retried as well (R26)
-- [ ] Write `internal/cli/background.go` and the flag `--background`, hidden, in `internal/cli/run.go`, whose `RunE`
+- [x] Write `internal/cli/background.go` and the flag `--background`, hidden, in `internal/cli/run.go`, whose `RunE`
   calls `runInBackground` when the flag is given and does what it does today otherwise (R17, R18, R19, R23, R25, R26)
-- [ ] Write `e2e/background_test.go`, `//go:build linux`, with `XDG_CACHE_HOME` a temporary directory the test names:
+- [x] Write `e2e/background_test.go`, `//go:build linux`, with `XDG_CACHE_HOME` a temporary directory the test names:
   `run --background --config <file>` against the fake screen writes `running: 3 metrics every 100ms` with its time to
   `<XDG_CACHE_HOME>/sensordeck/run.log` and nothing to stdout or stderr, and ends on SIGTERM with `stopped` in the log
   and exit status 0; with no screen it writes `sensordeck: ` and the error and `starting again in 10s` to the log,
   still runs after them, and ends on SIGTERM with `stopped` in the log and exit status 0 (R35)
-- [ ] Run the five commands of the suite (R36)
-- [ ] Commit: `feature-0019 Add the background run of run with its log and its retry`
+- [x] Run the five commands of the suite (R36)
+- [x] Commit: `feature-0019 Add the background run of run with its log and its retry`
 
 ### 5. The task file
 
