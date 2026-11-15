@@ -5,6 +5,7 @@ import (
 	"go/parser"
 	"go/token"
 	"io/fs"
+	"os"
 	"path/filepath"
 	"slices"
 	"strconv"
@@ -61,8 +62,13 @@ func importsOf(test *testing.T, path string) []string {
 // excludedFromWindows reads both the build line and the suffix of the file name, as the go tool does.
 func excludedFromWindows(test *testing.T, path string) bool {
 	test.Helper()
+	return excludedFrom(test, path, "windows")
+}
+
+func excludedFrom(test *testing.T, path, system string) bool {
+	test.Helper()
 	context := build.Default
-	context.GOOS = "windows"
+	context.GOOS = system
 	matches, err := context.MatchFile(filepath.Dir(path), filepath.Base(path))
 	if err != nil {
 		test.Fatal(err)
@@ -117,6 +123,46 @@ func TestEveryFileThatImportsTheLinuxCodeIsLimitedToLinux(test *testing.T) {
 		for _, imported := range importsOf(test, path) {
 			if imported == hidrawImport || imported == linuxsensorsImport {
 				test.Errorf("%s imports %s and is part of a Windows build", path, imported)
+			}
+		}
+	}
+}
+
+func TestOnlyTheSeamOnWindowsImportsTheWindowsPackage(test *testing.T) {
+	const windowsImport = "golang.org/x/sys/windows"
+	allowed := []string{"internal/winhid/seam_windows.go", "internal/winhid/seam_windows_test.go"}
+	for _, path := range goFiles(test) {
+		for _, imported := range importsOf(test, path) {
+			if imported != windowsImport {
+				continue
+			}
+			if !slices.Contains(allowed, filepath.ToSlash(path)) {
+				test.Errorf("%s imports %s", path, imported)
+			} else if !excludedFrom(test, path, "linux") {
+				test.Errorf("%s imports %s and is part of a Linux build", path, imported)
+			}
+		}
+	}
+}
+
+func TestTheOnlyLibraryLoadedByNameIsHidDLLFromTheSystemDirectory(test *testing.T) {
+	for _, path := range goFiles(test) {
+		if strings.HasSuffix(path, "layout_test.go") {
+			continue
+		}
+		content, err := os.ReadFile(path)
+		if err != nil {
+			test.Fatal(err)
+		}
+		text := string(content)
+		for _, forbidden := range []string{"NewLazyDLL", "LoadLibrary", "LoadDLL", "MustLoadDLL"} {
+			if strings.Contains(text, forbidden) {
+				test.Errorf("%s uses %s, which does not load from the system directory only", path, forbidden)
+			}
+		}
+		for _, call := range strings.Split(text, "NewLazySystemDLL(")[1:] {
+			if !strings.HasPrefix(call, `"hid.dll")`) {
+				test.Errorf("%s loads a library other than hid.dll", path)
 			}
 		}
 	}

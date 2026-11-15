@@ -239,12 +239,12 @@ What the tree on `feature-0016-windows-hid-transport` holds, and what the plan b
 
 ### 4. The seam on Windows
 
-- [ ] Add `internal/winhid/seam_windows_test.go`, limited to Windows: every procedure of `hid.dll` that the seam uses
+- [x] Add `internal/winhid/seam_windows_test.go`, limited to Windows: every procedure of `hid.dll` that the seam uses
   resolves with `Find`, and `List(Windows())` gives no error and a non-empty path for every collection; the three code
   constants equal those of `golang.org/x/sys/windows`; and `errors.Is` holds with `fs.ErrPermission` for the opening
   error of `ERROR_ACCESS_DENIED` and with `fs.ErrNotExist` for those of `ERROR_FILE_NOT_FOUND` and
   `ERROR_PATH_NOT_FOUND` (R2, R14, R35)
-- [ ] Add `internal/winhid/seam_windows.go`: `hid.dll` by `windows.NewLazySystemDLL`, with `HidD_GetHidGuid`,
+- [x] Add `internal/winhid/seam_windows.go`: `hid.dll` by `windows.NewLazySystemDLL`, with `HidD_GetHidGuid`,
   `HidD_GetAttributes`, `HidD_GetProductString`, `HidD_GetSerialNumberString`, `HidD_GetPreparsedData`,
   `HidD_FreePreparsedData` and `HidP_GetCaps`, each called only after its `Find` succeeded, whose error is given as it
   is. `Paths` calls `HidD_GetHidGuid` and `windows.CM_Get_Device_Interface_List("", &guid,
@@ -260,13 +260,13 @@ What the tree on `feature-0016-windows-hid-transport` holds, and what the plan b
   `WaitForSingleObject`, `Cancel` is `CancelIoEx`, and `Reap` is `GetOverlappedResult` with its wait set, then closes
   the event, gives the code, and keeps the buffer and the `Overlapped` alive until then with `runtime.KeepAlive`. No
   other DLL is loaded by name (R1, R2, R3, R6, R11, R18, R19, R20)
-- [ ] In `layout_test.go`, add that only `internal/winhid/seam_windows.go` and its test import
+- [x] In `layout_test.go`, add that only `internal/winhid/seam_windows.go` and its test import
   `golang.org/x/sys/windows`, and that both are excluded from a Linux build; and that no Go file of the module calls
   `NewLazyDLL`, `LoadLibrary` or `syscall.NewLazyDLL`, and that `NewLazySystemDLL` is called only with `"hid.dll"`
   (R2, R3)
-- [ ] Check `CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build ./...`, `GOOS=windows GOARCH=amd64 go vet ./...` and
+- [x] Check `CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build ./...`, `GOOS=windows GOARCH=amd64 go vet ./...` and
   `GOOS=windows GOARCH=amd64 go test -c -o /dev/null ./internal/winhid` (R1, R35)
-- [ ] Run the suite and commit: `feature-0016 Call the HID API of Windows behind the seam`
+- [x] Run the suite and commit: `feature-0016 Call the HID API of Windows behind the seam`
 
 ### 5. The Commander on Windows
 
