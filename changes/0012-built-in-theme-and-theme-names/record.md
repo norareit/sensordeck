@@ -53,3 +53,10 @@ timestamp: 2026-11-15T09:21:42Z
   On the final tree, `go test -count=1 ./...`, `go vet ./...`, `gofmt -l .` (no file), and the Windows build and vet
   succeed, and `go generate ./internal/builtinthemes/` leaves `background.png` unchanged. Not checked: the physical
   screen and Windows runtime. The status stays `in-progress`
+- 2026-11-15T12:06:01Z [OpenCode, openai/gpt-6.1-sol] as the reviewer, completed a delta review of unit
+  `0012-built-in-theme-and-theme-names` at `0ce1709`, compared against `60c92cb` from round 1. Verified the
+  corrections of P1, C1 and C2 and returned no new findings on any of the three axes. The review is saved in
+  `.reviews/0012-built-in-theme-and-theme-names/round-2-20261115T120601Z.md`. An uncached `go test -count=1 ./...`
+  including end-to-end tests, vet, formatting, Windows cross-build and vet, the change check and the diff whitespace
+  check pass. Not verified: rerunning `go generate` against the committed artifact, the physical screen or Windows
+  runtime behavior. The status stays `in-progress`
