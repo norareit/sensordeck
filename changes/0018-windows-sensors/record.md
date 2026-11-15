@@ -1,6 +1,6 @@
 ---
 kind: feature
-status: draft
+status: approved
 timestamp: 2026-11-15T23:04:03Z
 ---
 
@@ -29,3 +29,4 @@ timestamp: 2026-11-15T23:04:03Z
   no code of it is used. `CPU Package` for Intel stays in R21. Items 1 to 5 of "Beyond the request" are declined.
   Everything on Windows is the human's to check and the unit does not depend on it. The approval that follows is made
   under that delegation
+- 2026-11-15T23:08:12Z [human] approved the spec. The status is `approved`
