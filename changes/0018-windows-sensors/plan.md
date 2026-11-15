@@ -208,11 +208,11 @@ What the tree on `feature-0018-windows-sensors` holds, and what the plan builds 
 
 ### 3. The CR before the LF of nvidia-smi
 
-- [ ] In `internal/nvidiasmi/source_test.go`, add to `TestParseGPULine` the line `44, 17, 3256, 32607\r\n`, giving the
+- [x] In `internal/nvidiasmi/source_test.go`, add to `TestParseGPULine` the line `44, 17, 3256, 32607\r\n`, giving the
   four fields, and keep the line ending in LF; add a test of `Read` whose script writes the line with `printf` ending in
   `\r\n`, giving the four metrics (R11, R38)
-- [ ] In `parseGPULine`, drop one CR right before the first LF, and nothing when the output has no LF (R11)
-- [ ] Run the suite and commit: `feature-0018 Read the line of nvidia-smi that ends in CR LF`
+- [x] In `parseGPULine`, drop one CR right before the first LF, and nothing when the output has no LF (R11)
+- [x] Run the suite and commit: `feature-0018 Read the line of nvidia-smi that ends in CR LF`
 
 ### 4. The key librehardwaremonitor_url
 

@@ -72,9 +72,14 @@ func wantsAny(wanted func(name string) bool) bool {
 	return false
 }
 
-// parseGPULine splits the first line of the output at commas. Any other count than four fields gives false.
+// parseGPULine splits the first line of the output at commas. The line ends at the first LF, and a CR right before it
+// is not part of the line, because nvidia-smi on Windows may end its lines with CR LF. Any other count than four fields
+// gives false.
 func parseGPULine(output string) (fields [4]string, ok bool) {
-	line, _, _ := strings.Cut(output, "\n")
+	line, _, hasLineFeed := strings.Cut(output, "\n")
+	if hasLineFeed {
+		line = strings.TrimSuffix(line, "\r")
+	}
 	parts := strings.Split(line, ",")
 	if len(parts) != len(fields) {
 		return fields, false

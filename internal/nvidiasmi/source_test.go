@@ -52,6 +52,12 @@ echo '` + fullLine + "'\n"
 	}
 }
 
+func TestLineEndingInCRLFGivesTheFourMetrics(test *testing.T) {
+	if got := readGPU(test, "printf '"+fullLine+"\\r\\n'\n", everything); !reflect.DeepEqual(got, allFour()) {
+		test.Errorf("got %v", got)
+	}
+}
+
 func TestOnlyTheFirstLineCounts(test *testing.T) {
 	if got := readGPU(test, "echo '"+fullLine+"'\necho '1, 2, 3, 4'\n", everything); !reflect.DeepEqual(got, allFour()) {
 		test.Errorf("got %v", got)
@@ -167,6 +173,15 @@ func TestFakeProgramLookupFindsOnlyTheFake(test *testing.T) {
 func TestParseGPULine(test *testing.T) {
 	if fields, ok := parseGPULine(fullLine + "\n"); !ok || fields != [4]string{"44", "17", "3256", "32607"} {
 		test.Errorf("%v %v", fields, ok)
+	}
+	if fields, ok := parseGPULine(fullLine + "\r\n"); !ok || fields != [4]string{"44", "17", "3256", "32607"} {
+		test.Errorf("CR LF: %v %v", fields, ok)
+	}
+	if fields, ok := parseGPULine(fullLine + "\r\n1, 2, 3, 4\r\n"); !ok || fields[3] != "32607" {
+		test.Errorf("two lines with CR LF: %v %v", fields, ok)
+	}
+	if fields, _ := parseGPULine("44, 17, 3256, 32607\r"); fields[3] != "32607\r" {
+		test.Errorf("a CR with no LF after it was dropped: %q", fields[3])
 	}
 	if fields, ok := parseGPULine(fullLine + "\n1, 2, 3, 4\n"); !ok || fields[0] != "44" {
 		test.Errorf("two lines: %v %v", fields, ok)
