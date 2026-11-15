@@ -69,3 +69,14 @@ func TestTableOrdersTheNewRows(test *testing.T) {
 		test.Error("the network rows are not between nvme.<n>.temp and commander.<n>.temp")
 	}
 }
+
+func TestIsCommanderTemperature(test *testing.T) {
+	for name, want := range map[string]bool{
+		"commander.1.temp": true, "commander.12.temp": true, "commander.0.temp": false, "commander.temp": false,
+		"cpu.temp": false, "ram.1.temp": false,
+	} {
+		if got := IsCommanderTemperature(name); got != want {
+			test.Errorf("%s: %v", name, got)
+		}
+	}
+}

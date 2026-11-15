@@ -371,7 +371,7 @@ puts into the `sourceSet`.
 
 ### The config
 
-- [ ] In `internal/config/config_test.go`, change the four cases of `TestParseErrors` that hold the texts of R3 of unit
+- [x] In `internal/config/config_test.go`, change the four cases of `TestParseErrors` that hold the texts of R3 of unit
   0008 to the texts of R3, and add (R1, R2, R3, R23):
     - a test that `commander_color: "#00c8ff"` gives a `CommanderColour` of 0, 200, 255 and that `"#00C8FF"` gives the
       same, both with `cpu.temp: 1` as the only tag, which also shows the key valid with no metric of the controller
@@ -383,14 +383,14 @@ puts into the `sourceSet`.
       with `commander_interval: 1m`, with the third text
 
   `TestParseTheExample` and the other tests stay as they are. The new tests fail to compile until the next task
-- [ ] In `internal/config/config.go`, add `Colour`, the field `CommanderColour`, the case `commander_color` of the loop
+- [x] In `internal/config/config.go`, add `Colour`, the field `CommanderColour`, the case `commander_color` of the loop
   of `Parse`, `parseCommanderColour` called after `parseCommanderInterval`, the check of both keys after it, and the
   texts of R3, as "The config" says, until `go test ./internal/config` passes (R1, R2, R3)
-- [ ] Run the five commands of the suite and commit: `feature-0009 Add commander_color to the config file`
+- [x] Run the five commands of the suite and commit: `feature-0009 Add commander_color to the config file`
 
 ### The fake controller
 
-- [ ] In `internal/fakecommander/fakecommander_test.go`, add tests (R22):
+- [x] In `internal/fakecommander/fakecommander_test.go`, add tests (R22):
     - in software mode, the open, read and close of `0x20`, `0x1A`, `0x17` and `0x21` on channel 1 give the answers of
       "The fake controller", the default ports being those of the host, and `SetPorts` with three ports of mode 2 and
       8 LEDs changes the answer of `0x20`
@@ -411,12 +411,12 @@ puts into the `sourceSet`.
       only, and `OnCommand` on `08 0D 00 22` runs its action after the write and before the answer
 
   Every existing test of the fake stays as it is. The new tests fail to compile until the next task
-- [ ] In `internal/fakecommander/fakecommander.go`, add the channels, the new answers, `Port`, `Lighting` and the
+- [x] In `internal/fakecommander/fakecommander.go`, add the channels, the new answers, `Port`, `Lighting` and the
   methods of "The fake controller", keep `Fail` and `OnStep` for the steps of unit 0005 on channel 0, and update the
   doc comments of the package, of `Controller` and of `reply`, until `go test ./internal/fakecommander
   ./internal/commandercore ./e2e` passes, which shows that the tests of units 0005, 0006 and 0008 keep what they expect
   (R22, R27)
-- [ ] Run the five commands of the suite and commit: `feature-0009 Teach the fake controller channels, LEDs and modes`
+- [x] Run the five commands of the suite and commit: `feature-0009 Teach the fake controller channels, LEDs and modes`
 
 ### The session of the controller
 
@@ -424,14 +424,14 @@ puts into the `sourceSet`.
   of the controller" says, and make `runSteps` and `runSequence` treat an error as they treated false. Behaviour does
   not change, and every test of the package passes as it is. Run the five commands and commit: `feature-0009 Give the
   exchanges of the controller an error that says what failed`
-- [ ] In `internal/commandercore/protocol_test.go`, add tests of `openCommand`, `readCommand` and `closeCommand` for
+- [x] In `internal/commandercore/protocol_test.go`, add tests of `openCommand`, `readCommand` and `closeCommand` for
   `0x20` on channel 1 and `0x22` on channel 0; of `colourCommand` for 16 LEDs and `#ff0000`, whose bytes start with
   `08 06 00 32 00 00 00 12 00` and hold 16 times `FF 00 00` and zeros after them, and for 24 LEDs, with the length
   `4A 00`; and of `ledCount` for the answer of the host, 16, for entries of mode 3 with LEDs, which do not count, and
   for each text of its three refusals, including counts of 0 and 30 and a count of 23 entries (R7, R8)
-- [ ] In `internal/commandercore/protocol.go`, add the constants, the commands, `ledCount` and `colourCommand`, and
+- [x] In `internal/commandercore/protocol.go`, add the constants, the commands, `ledCount` and `colourCommand`, and
   write steps 1 and 8 of `steps` with `enterSoftware` and `returnHardware`, until the tests pass (R6, R7, R8)
-- [ ] Add `internal/commandercore/session_test.go`, with the fake controller and a time limit of 50 milliseconds, and
+- [x] Add `internal/commandercore/session_test.go`, with the fake controller and a time limit of 50 milliseconds, and
   these tests (R24, and R5 to R10, R12, R13):
     - `Start`, `Read` and `End` for the host and `#ff0000` give exactly the writes of R6, R9 and R12 in order, 7, 12 and
       2, compared byte by byte with `encode` of the commands, the colour write included, and leave the fake in hardware
@@ -456,23 +456,23 @@ puts into the `sourceSet`.
       0005
 
   The tests fail to compile until the next task
-- [ ] Add `internal/commandercore/session.go`, with `//go:build linux`, holding `ErrNoController`, `errStopped`,
+- [x] Add `internal/commandercore/session.go`, with `//go:build linux`, holding `ErrNoController`, `errStopped`,
   `Lighting`, `Start`, `Session`, `Read`, `End`, `stepName` and `teardown`, as "The session of the controller" says,
   until the tests of the package pass (R5 to R10, R12, R13)
-- [ ] Run the five commands of the suite and commit: `feature-0009 Hold a session of the controller with its LEDs lit`
+- [x] Run the five commands of the suite and commit: `feature-0009 Hold a session of the controller with its LEDs lit`
 
 ### The keeper in run
 
-- [ ] In `internal/sensors/metrics_test.go`, add a test that `IsCommanderTemperature` is true for `commander.1.temp`
+- [x] In `internal/sensors/metrics_test.go`, add a test that `IsCommanderTemperature` is true for `commander.1.temp`
   and `commander.12.temp` and false for `commander.0.temp`, `commander.temp`, `cpu.temp` and `ram.1.temp`. Add the
   function and the two constants to `internal/sensors/metrics.go`, used by the table and by `CommanderTemperature`,
   until the tests of the package pass (R16)
-- [ ] In `internal/cli/fake_test.go`, give `fakeClock` the mutex, `after`, `armed`, `released` and `keeping` of "The
+- [x] In `internal/cli/fake_test.go`, give `fakeClock` the mutex, `after`, `armed`, `released` and `keeping` of "The
   fake clock of the unit tests". In `internal/cli/commands_test.go`, give the environment `after: harness.clock.after`,
   set `released` in `newHarness`, add the field `startSession` and put it into the `sourceSet`. Add `after` to
   `environment` in `internal/cli/main.go`, set to `time.After` in `Main`, and `startSession` to `sourceSet` in
   `internal/cli/sources.go`, so that the package compiles. Every existing test of `internal/cli` passes as it is (R27)
-- [ ] Add `internal/cli/keeper_test.go` with `fakeLighting`, a config `colourTags` of `commander_color: "#ff0000"` and
+- [x] Add `internal/cli/keeper_test.go` with `fakeLighting`, a config `colourTags` of `commander_color: "#ff0000"` and
   `tags` of `cpu.temp: 1`, `commander.1.temp: 4` and `commander.2.temp: 5`, with `interval` before it where a test needs
   it, and a helper that gives a harness with `twoMetrics`, the stand-in, `keeping` set and a stop after a given number of
   waits. Add these tests (R25):
@@ -500,13 +500,13 @@ puts into the `sourceSet`.
       says (R4)
 
   The tests fail until the next task
-- [ ] Add `internal/cli/keeper.go` with `errNoController`, `heldSession`, the constants and `sessionKeeper`, as "The
+- [x] Add `internal/cli/keeper.go` with `errNoController`, `heldSession`, the constants and `sessionKeeper`, as "The
   keeper in run" says. In `internal/cli/run.go`, add `controllerReader` and `lockedWriter`, make the feeder's
   `controller` a `controllerReader`, and make `runCommand` start and end the keeper as "The wiring" says. Update the doc
   comment of `feeder` to say that the controller is read through the keeper when the config gives a colour. In
   `internal/cli/sources_linux.go`, set `startSession` with `commanderSession`. Every test of `internal/cli` passes, and
   `internal/cli/commands.go`, where `sensors` is, does not change (R4, R5, R11 to R17)
-- [ ] Run the five commands of the suite, which include the test of the layout that keeps `internal/commandercore`
+- [x] Run the five commands of the suite, which include the test of the layout that keeps `internal/commandercore`
   out of a build for Windows and every file of `internal/cli` that names it in a Linux file, and commit:
   `feature-0009 Hold the session of the controller in run` (R18)
 

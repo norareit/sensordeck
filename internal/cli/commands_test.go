@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/norareit/sensordeck/internal/config"
 	"github.com/norareit/sensordeck/internal/sensors"
 	"github.com/norareit/sensordeck/internal/smartmonitor"
 )
@@ -24,6 +25,7 @@ type harness struct {
 	openErr        error
 	sources        []sensors.Source // the sources other than the controller
 	controller     sensors.Source
+	startSession   func(stop context.Context, colour config.Colour) (heldSession, error)
 	sourcesErr     error
 	configDir      string // what userConfigDir gives
 	configDirErr   error
@@ -34,8 +36,8 @@ type harness struct {
 }
 
 func newHarness() *harness {
-	clock := &fakeClock{current: time.Date(2026, 11, 14, 15, 4, 5, 0, time.UTC)}
 	stopped, cancelStop := context.WithCancel(context.Background())
+	clock := &fakeClock{current: time.Date(2026, 11, 14, 15, 4, 5, 0, time.UTC), armed: make(chan struct{}, 1), release: stopped.Done()}
 	return &harness{clock: clock, transport: &fakeTransport{clock: clock}, controller: &fakeSource{}, stopped: stopped, cancelStop: cancelStop}
 }
 
@@ -48,6 +50,7 @@ func (harness *harness) run(args ...string) int {
 		procRoot:  "/procroot",
 		now:       harness.clock.now,
 		sleep:     harness.clock.sleep,
+		after:     harness.clock.after,
 		listScreens: func(sysfsRoot, devRoot string) ([]string, error) {
 			return harness.screens, nil
 		},
@@ -63,7 +66,7 @@ func (harness *harness) run(args ...string) int {
 			if sysfsRoot != "/sysroot" || devRoot != "/devroot" || procRoot != "/procroot" {
 				return sourceSet{}, errors.New("the roots were not passed on")
 			}
-			return sourceSet{others: harness.sources, controller: harness.controller}, harness.sourcesErr
+			return sourceSet{others: harness.sources, controller: harness.controller, startSession: harness.startSession}, harness.sourcesErr
 		},
 		notifyStop: func(parent context.Context) (context.Context, context.CancelFunc) {
 			return harness.stopped, func() {}

@@ -47,8 +47,14 @@ var metricKinds = []metricKind{
 	{prefix: "nvme.", suffix: ".temp", numbered: true, unit: "°C"},
 	{prefix: NetworkUp, unit: "KiB/s"},
 	{prefix: NetworkDown, unit: "KiB/s"},
-	{prefix: "commander.", suffix: ".temp", numbered: true, unit: "°C"},
+	{prefix: commanderPrefix, suffix: commanderSuffix, numbered: true, unit: "°C"},
 }
+
+// The prefix and the suffix of the name of the temperature of a probe of the controller.
+const (
+	commanderPrefix = "commander."
+	commanderSuffix = ".temp"
+)
 
 // IsName tells whether name is a metric name: a fixed one, or a numbered one with a decimal number of 1 or more
 // written without leading zeros. It does not tell whether a machine has a sensor for it.
@@ -107,4 +113,11 @@ func RAMTemperature(number int) string { return "ram." + strconv.Itoa(number) + 
 func NVMeTemperature(number int) string { return "nvme." + strconv.Itoa(number) + ".temp" }
 
 // CommanderTemperature is the name of the temperature of the probe of the controller with the number, counted from 1.
-func CommanderTemperature(number int) string { return "commander." + strconv.Itoa(number) + ".temp" }
+func CommanderTemperature(number int) string {
+	return commanderPrefix + strconv.Itoa(number) + commanderSuffix
+}
+
+// IsCommanderTemperature tells whether name is the temperature of a probe of the controller.
+func IsCommanderTemperature(name string) bool {
+	return metricKind{prefix: commanderPrefix, suffix: commanderSuffix, numbered: true}.matches(name)
+}

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"path/filepath"
+	"sync"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -43,6 +44,8 @@ func (current *session) runCommand() *cobra.Command {
 			}
 			stop, cancel := current.env.notifyStop(context.Background())
 			defer cancel()
+			// The keeper and the feeder write their lines from two goroutines, and so may the trace.
+			current.env.stderr = &lockedWriter{writer: current.env.stderr}
 			opened, closeTransport, err := current.open()
 			if err != nil {
 				return err
@@ -57,7 +60,20 @@ func (current *session) runCommand() *cobra.Command {
 				wait:       current.env.wait,
 				stderr:     current.env.stderr,
 			}
+			endKeeping := func() {}
+			if settings.CommanderColour != nil {
+				keeper := current.newKeeper(sources, settings)
+				keeping, cancelKeeping := context.WithCancel(stop)
+				go keeper.keep(keeping)
+				feeding.controller = keeper
+				// The teardown of the controller comes before the end of run, on a stop and on a feeding error.
+				endKeeping = func() {
+					cancelKeeping()
+					<-keeper.done
+				}
+			}
 			feedErr := feeding.feed(stop)
+			endKeeping()
 			closeTransport()
 			if feedErr != nil {
 				return feedErr
@@ -68,6 +84,18 @@ func (current *session) runCommand() *cobra.Command {
 	}
 	command.Flags().StringVar(&configPath, "config", "", "read the config from this file instead of the default place")
 	return command
+}
+
+// newKeeper makes the keeper of the session that lights the LEDs in the colour of the config.
+func (current *session) newKeeper(sources sourceSet, settings config.Config) *sessionKeeper {
+	probesMapped := false
+	for _, mapping := range settings.Mappings {
+		probesMapped = probesMapped || sensors.IsCommanderTemperature(mapping.Name)
+	}
+	start := func(stop context.Context) (heldSession, error) {
+		return sources.startSession(stop, *settings.CommanderColour)
+	}
+	return newSessionKeeper(start, probesMapped, current.env.now, current.env.after, current.env.stderr)
 }
 
 // configPath is the file named with --config, or the config file of the user.
@@ -82,13 +110,31 @@ func (current *session) configPath(named string) (string, error) {
 	return filepath.Join(directory, "sensordeck", "config.yaml"), nil
 }
 
+// controllerReader gives the readings of the controller for a round that started at roundStart.
+type controllerReader interface {
+	readings(stop context.Context, roundStart time.Time, wanted func(name string) bool) []sensors.Reading
+}
+
+// lockedWriter lets two goroutines write to one writer.
+type lockedWriter struct {
+	mutex  sync.Mutex
+	writer io.Writer
+}
+
+func (locked *lockedWriter) Write(data []byte) (int, error) {
+	locked.mutex.Lock()
+	defer locked.mutex.Unlock()
+	return locked.writer.Write(data)
+}
+
 // feeder sends the clock and the values of the mapped metrics to the screen in rounds, and reopens the transport
-// when the screen is lost. It reads the controller at most once per period and sends the kept readings of its last
-// reading in the other rounds.
+// when the screen is lost. Without commander_color it reads the controller at most once per period and sends the kept
+// readings of its last reading in the other rounds. With it the controller is read through the keeper, which holds a
+// session of the controller, and a round with a probe mapped asks it for a reading of its own.
 type feeder struct {
 	transport  transport
 	others     []sensors.Source
-	controller *periodicSource
+	controller controllerReader
 	config     config.Config
 	now        func() time.Time
 	wait       func(stop context.Context, duration time.Duration) bool

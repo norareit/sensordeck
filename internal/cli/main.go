@@ -37,6 +37,8 @@ type environment struct {
 	// notifyStop gives a context that ends at SIGINT or SIGTERM. Only run and the reading of sensors call it, so that
 	// the other commands keep the default handling of Ctrl+C.
 	notifyStop func(parent context.Context) (context.Context, context.CancelFunc)
+	// after gives a channel that receives the time once the duration has passed.
+	after func(duration time.Duration) <-chan time.Time
 	// wait waits for the duration and gives false when stop ended the wait.
 	wait func(stop context.Context, duration time.Duration) bool
 }
@@ -68,7 +70,8 @@ func Main() int {
 		notifyStop: func(parent context.Context) (context.Context, context.CancelFunc) {
 			return signal.NotifyContext(parent, os.Interrupt, syscall.SIGTERM)
 		},
-		wait: waitFor,
+		after: time.After,
+		wait:  waitFor,
 	})
 }
 
