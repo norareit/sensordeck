@@ -1,6 +1,6 @@
 ---
 kind: feature
-status: in-progress
+status: implemented
 timestamp: 2026-11-15T00:48:51Z
 ---
 
@@ -28,13 +28,13 @@ timestamp: 2026-11-15T00:48:51Z
   reads the rounds in which `run` calls `Reopen` of R16 as the plan of unit 0008 read the same words of its R8: the
   rounds whose reopening fails, which R22 of unit 0004 makes instead of the round, while the round of a reopening that
   succeeds goes on with the round. The status stays `approved`
-- 2026-11-15T01:05:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, began the work. The status is
+- 2026-11-15T01:00:31Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, began the work. The status is
   `in-progress`
-- 2026-11-15T01:30:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, made the refactoring commit of
+- 2026-11-15T01:04:27Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, made the refactoring commit of
   `exchange`, in which `valid` is replaced by `invalidity`, which names what is wrong with an answer, so that the
   session can name the failed check, and the test of `valid` now calls it. Behaviour of the reading is unchanged, checked by
   the five commands of the suite
-- 2026-11-15T02:30:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, built every task of `plan.md` in
+- 2026-11-15T07:04:37Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, built every task of `plan.md` in
   order and ticked them. Deviations: the fake controller answers status `03` to every command but a mode command outside
   software mode, as the plan's order says, and `FailCommand` and `OnCommand` hooks stack; `valid` became `invalidity`,
   as logged above; `fakeLighting` has no `onRead` hook, because no test uses one; the lines of the keeper share one
@@ -42,7 +42,7 @@ timestamp: 2026-11-15T00:48:51Z
   `go test ./...`, `go vet ./...`, `gofmt -l .`, and the build and vet with `GOOS=windows GOARCH=amd64` all report nothing
   and succeed, and `go test -race ./internal/cli` passed before the last commits. `npm run check-changes` reported nothing.
   Not checked: the device itself, which is the human's check, and Windows
-- 2026-11-15T02:31:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, noted that no review has been run
+- 2026-11-15T07:04:37Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, noted that no review has been run
   yet, so no finding is open. The status stays `in-progress`
 - 2026-11-15T07:06:36Z [OpenCode, openai/gpt-6.1-sol] as the reviewer, made a full review of
   `0009-commander-led-colour` at `958afc1ec231fd38765cc3fb37397ab237803a65`, against merge base
@@ -51,13 +51,13 @@ timestamp: 2026-11-15T00:48:51Z
   suite, `npm run check-changes`, a fresh `go test -count=1 ./...`, and race checks of `internal/cli`,
   `internal/commandercore` and `internal/fakecommander`; all passed. The physical device and Windows runtime could not
   be checked. The status stays `in-progress`
-- 2026-11-15T07:30:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, accepted S1 of
+- 2026-11-15T07:08:23Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, accepted S1 of
   `review-round-1.md` by the definition of the orchestrator, and not as a decision of the human. The payload check of a
   read is part of its exchange by R6, R7 and R9, so `readEndpoint` now runs it before the last close. The setup that fails
   at the LED count writes four exchanges and then the teardown, and the same holds for a wrong data type and for a
   reading whose temperatures are malformed. The zero and thirty test is corrected to four writes, and two tests assert the
   exact writes of the wrong data type of `0x20` and of the malformed temperatures
-- 2026-11-15T07:31:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, accepted C1 by the definition of the
+- 2026-11-15T07:08:23Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, accepted C1 by the definition of the
   orchestrator, and not as a decision of the human. `say` of the keeper takes a finished line, and its two callers format
   the text. Verified on `18269d8`: the five commands of the suite report nothing and succeed, and `go test -race` of
   `internal/cli` and `internal/commandercore` passes. The status stays `in-progress`
@@ -68,3 +68,8 @@ timestamp: 2026-11-15T00:48:51Z
   `go test -count=1 ./...`, `go vet ./...`, `gofmt -l .`, the Windows amd64 build and vet, `npm run check-changes`,
   and race checks of `internal/cli` and `internal/commandercore`; all passed. The physical controller and Windows
   runtime could not be checked. The status stays `in-progress`
+- 2026-11-15T07:10:27Z [Claude Code, anthropic/claude-opus-5-5] under the delegation in `AGENTS.md`, decided the findings: S1 and
+  C1 of round 1 were the blocking findings and are corrected, and round 2 returned none, so no blocking finding is
+  open. The timestamps of six entries of the implementer, which did not match their commits, were corrected to the
+  times of the commits that added them. Every task of `plan.md` is ticked. The check on the real controller is the
+  human's and follows the merge. The status is `implemented`
