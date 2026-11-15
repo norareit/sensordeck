@@ -1,39 +1,101 @@
 # sensordeck
 
-Turn a cheap USB "sensor panel" screen into a hardware-monitoring dashboard on **Linux and Windows**.
+Turn a cheap USB "sensor panel" screen into a hardware-monitoring dashboard on **Linux**.
 
-> **Status: early development.** The screen can be driven on Linux: with the low-level commands (`devices`, `clock`,
-> `values`, `upload`, `listen` and `raw`), with `sensordeck sensors` and with `sensordeck run`, which also reads the temperature probes of a Corsair iCUE
-> Commander Core XT, and which uploads the theme that the config file names when it is not on the screen.
-> `sensordeck theme use` sets that theme. `sensordeck theme dump` reads a theme file, `sensordeck theme compile`
-> compiles a theme, by name or folder, into one, `sensordeck theme preview` draws a theme as a PNG and
-> `sensordeck theme list` lists the themes, all with no screen. The built-in theme `minimal-dark` is there. On Linux `sensordeck service install`, `status` and `uninstall` run `run` as a systemd user service. Windows is still to come. This README describes what sensordeck is meant to become.
+On Linux, sensordeck drives the screen with the low-level commands (`devices`, `clock`, `values`, `upload`, `listen`
+and `raw`), shows live hardware readings with `sensordeck run`, lists them with `sensordeck sensors`, and runs `run` as
+a systemd user service with `sensordeck service`. It also reads the temperature probes of a Corsair iCUE Commander Core
+XT. `sensordeck theme` works with themes and needs no screen: `use` sets the theme of the config file, which `run`
+uploads when it is not on the screen, `compile` turns a theme, by name or folder, into a theme file, `preview` draws a
+theme as a PNG, `dump` reads a theme file and `list` lists the themes. The built-in theme `minimal-dark` is there.
 
-## What it will do
+Windows is not supported yet. The Windows executable builds, and the theme commands that need no screen work there
+(`theme list`, `theme preview`, `theme compile` and `theme dump`). The screen, the sensors and the service are still
+to come on Windows: the commands that open a device, and `run`, fail with `windows is not supported yet`.
 
-Many small PC screens are sold as "Windows only" and depend on the vendor's own software. sensordeck aims to be an
-open-source replacement that also works on Linux:
+![The preview of the built-in theme minimal-dark: tiles for the CPU, the GPU, the memory, the disk, the network and the
+clock, each with the number 42 as a sample value](docs/minimal-dark.png)
 
-- Show live hardware readings: CPU and GPU temperature and load, VRAM and RAM usage, NVMe temperatures, motherboard
-  sensors and a clock.
+This image is the preview that `sensordeck theme preview` draws from the theme `minimal-dark` with sample values, and
+not a photo of the screen.
+
+Many small PC screens are sold as "Windows only" and depend on the vendor's own software. sensordeck is an open-source
+replacement that works on Linux:
+
+- Show live hardware readings: CPU and GPU temperature and load, VRAM and RAM usage, NVMe temperatures, the
+  temperature probes of a Corsair iCUE Commander Core XT, network rates and a clock, as the table of metrics lists.
 - Use themes that are plain folders (a `theme.yaml` layout, images and any TTF font). sensordeck compiles a theme into
   the device's format and uploads it. It uploads again only when the theme changes.
 - Let you preview a theme as a PNG on your PC, so you can design without flashing the device each time.
-- Run in the background as a service (systemd on Linux, a startup task on Windows).
+- Run in the background as a service (systemd on Linux, with a startup task on Windows still to come).
 - Ship as a single executable with nothing else to install. Built-in themes are included.
 
 ## Supported devices
 
-Version 1 targets a single device:
+sensordeck drives this one screen:
 
 | | |
 |---|---|
 | Sold as | "3.5 inch PC CPU Data Monitor", "Windows only", under various Amazon/AliExpress brands |
 | Vendor name | SmartMonitor (llhmi.com / llTechCo.,Ltd) |
 | USB ID | `0483:0065` |
-| Screen | 3.5", 480×320 |
+| Screen | 3.5", 480×320 (480x320) |
+
+The one temperature controller whose probes sensordeck reads is the Corsair iCUE Commander Core XT, USB ID `1b1c:0c2a`.
 
 The architecture is generic, so other screens can be added later.
+
+## Installing
+
+There are three ways, in this order. All of them give the executable `sensordeck`, which needs nothing else to run.
+On Linux, install the udev rule of [Linux: access to the screen](#linux-access-to-the-screen) as well.
+
+### A release archive
+
+Take the archive for your platform from the
+[releases page](https://github.com/norareit/sensordeck/releases) of `github.com/norareit/sensordeck`, where
+`<version>` is the tag without its `v`:
+
+* `sensordeck_<version>_linux_amd64.tar.gz` for Linux on 64-bit x86
+* `sensordeck_<version>_linux_arm64.tar.gz` for Linux on 64-bit ARM
+* `sensordeck_<version>_windows_amd64.zip` for Windows, which runs the theme commands that need no screen only
+
+Take `sensordeck_<version>_checksums.txt` from the same release, and check the archive you took against it:
+
+```bash
+sha256sum --check --ignore-missing sensordeck_<version>_checksums.txt
+```
+
+Extract the archive and put the executable on your `PATH`, for instance:
+
+```bash
+tar -xzf sensordeck_<version>_linux_amd64.tar.gz
+install -m 0755 sensordeck ~/.local/bin/
+```
+
+The archive also holds `README.md`, `LICENSE`, `THIRD_PARTY_LICENSES` and the udev rule `udev/70-sensordeck.rules`, which
+[Linux: access to the screen](#linux-access-to-the-screen) tells how to install.
+
+### go install
+
+With Go 1.27 or later, the version that `go.mod` names:
+
+```bash
+go install github.com/norareit/sensordeck@latest
+```
+
+The executable lands in `$(go env GOPATH)/bin`. The udev rule is not part of it, and comes from the repository, from
+the file `udev/70-sensordeck.rules`.
+
+### From source
+
+Clone the repository and build with CGO disabled, as the releases are:
+
+```bash
+git clone https://github.com/norareit/sensordeck.git
+cd sensordeck
+CGO_ENABLED=0 go build -trimpath -o sensordeck .
+```
 
 ## Quick start
 
@@ -58,15 +120,27 @@ on the device.
 
 `sensordeck theme preview minimal-dark preview.png` draws the theme as a PNG, with no screen.
 
-## Planned usage
+## Commands
 
 ```bash
 sensordeck devices                # list connected screens
+sensordeck clock                  # set the clock of the screen to the current local time
+sensordeck values                 # send the values of numeric tags to the screen
+sensordeck upload                 # upload a theme file to the screen as it is
+sensordeck listen                 # show the input reports that the screen sends
+sensordeck raw                    # send one report of the bytes given and show the answer
+sensordeck sensors                # list the sensor readings that can be read now
 sensordeck run                    # send live sensor values to the screen
 sensordeck theme list             # show built-in and installed themes
 sensordeck theme use minimal-dark # switch themes
 sensordeck theme preview <name-or-folder> <out.png> # render a theme to PNG with sample values
-sensordeck service install        # run in the background at startup
+sensordeck theme compile <name-or-folder> <out.dat> # compile a theme into a theme file and its tags file
+sensordeck theme dump <file.dat> <out-dir>          # describe a theme file as JSON and PNG files
+sensordeck service install        # run `run` as a systemd user service that starts at login
+sensordeck service status         # show whether the service is installed, enabled and active
+sensordeck service uninstall      # stop, disable and remove the service
+sensordeck --version              # print the version
+sensordeck --help                 # list the commands and flags
 ```
 
 ## Linux: access to the screen
@@ -374,6 +448,23 @@ device and works with no screen connected, on Linux and on Windows. It prints ea
 record of a type it does not know, to standard error. The format is described in
 [docs/theme-format.md](docs/theme-format.md).
 
+## Making a release
+
+This section is for the maintainer. CI runs the suite of five commands on every push and every pull request. Pushing a
+tag of the form `v<major>.<minor>.<patch>` makes the release workflow run the suite and, only when it succeeds, build
+the archives and the checksum file with GoReleaser into a draft release. The draft is checked and published by hand on
+GitHub.
+
+To try the configuration locally, run `goreleaser release --snapshot --clean`. It writes into `release/`, which git
+ignores.
+
+The file `THIRD_PARTY_LICENSES` holds the licence texts of the code in the executable, and a test fails when it differs
+from what the generator gives. After a dependency changed, write it again at the module root with:
+
+```bash
+go run ./internal/notices/generate THIRD_PARTY_LICENSES
+```
+
 ## Credits
 
 Thanks to the [turing-smart-screen-python-HIDdev2](https://github.com/Agentry433/turing-smart-screen-python-HIDdev2)
@@ -382,6 +473,18 @@ project for discovering the protocol these screens use.
 The theme compiler draws glyphs with [golang.org/x/image](https://pkg.go.dev/golang.org/x/image), and the Go fonts that
 a theme can name are built into sensordeck. Both are by the Go authors, under a BSD licence.
 
+sensordeck is built with these modules, each under the licence of its own licence file:
+
+* [github.com/spf13/cobra](https://github.com/spf13/cobra), Apache 2.0
+* [github.com/spf13/pflag](https://github.com/spf13/pflag), BSD 3-clause
+* [github.com/inconshreveable/mousetrap](https://github.com/inconshreveable/mousetrap), Apache 2.0
+* [go.yaml.in/yaml/v3](https://github.com/yaml/go-yaml), MIT and Apache 2.0
+* [golang.org/x/sys](https://pkg.go.dev/golang.org/x/sys), BSD 3-clause
+* [golang.org/x/image](https://pkg.go.dev/golang.org/x/image), BSD 3-clause, with the Go fonts
+* [golang.org/x/text](https://pkg.go.dev/golang.org/x/text), BSD 3-clause
+
+`THIRD_PARTY_LICENSES` holds their licence texts, and those of the Go standard library.
+
 ## License
 
-MIT
+sensordeck is under the MIT licence, in [LICENSE](LICENSE).
