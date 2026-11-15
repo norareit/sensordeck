@@ -59,5 +59,8 @@ timestamp: 2026-11-15T08:25:25Z
   (R1 to R10 `themefile` and the layout test, R11 and R12 `themeimage`, R13 to R15 and R19 `themedump`, R16 to R18
   `internal/cli/theme_test.go` and `e2e/theme_test.go`, R20 and R21 by reading the documents against the spec, R22 to
   R24 by the suite). The documents were not checked by a program. The status stays `in-progress`
+- 2026-11-15T09:44:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, ran the five commands of the suite
+  and `npm run check-changes` on the committed tree after the corrections: all succeeded with no output other than
+  the passing packages. Not checked: Windows execution, and dumps of vendor files
 
 ## Amendments
