@@ -466,15 +466,19 @@ func TestStatusFailureOfTheCallFailsAsInstallDoes(test *testing.T) {
 }
 
 func TestEveryServiceCommandFailsOnAnotherSystemAndTouchesNothing(test *testing.T) {
-	const want = "the service is not supported on windows yet; on Windows a startup task is planned"
+	const want = "the service is not supported on darwin"
 	for _, args := range [][]string{
 		{"service"}, {"service", "install"}, {"service", "install", "--config", "/missing.yaml"}, {"service", "status"}, {"service", "uninstall"},
 	} {
 		harness := serviceHarness(test)
-		harness.system = "windows"
+		harness.system = "darwin"
 		harness.expectFailure(test, want, args...)
 		if harness.configDirCalls != 0 || harness.executableCalls != 0 || len(harness.calls) != 0 {
 			test.Errorf("%v: userConfigDir %d, executable %d, calls %v", args, harness.configDirCalls, harness.executableCalls, harness.calls)
+		}
+		if harness.cacheDirCalls != 0 || harness.userCalls != 0 || harness.holds != 0 || harness.checks != 0 || harness.signals != 0 || len(harness.steps) != 0 {
+			test.Errorf("%v: userCacheDir %d, currentUser %d, holds %d, checks %d, signals %d, steps %v",
+				args, harness.cacheDirCalls, harness.userCalls, harness.holds, harness.checks, harness.signals, harness.steps)
 		}
 		entries, err := os.ReadDir(harness.configDir)
 		if err != nil || len(entries) != 1 || entries[0].Name() != "sensordeck" {

@@ -391,7 +391,7 @@ func taskStatusLines(taskFile, enabled, active, log string) []string
 
 ### 6. The commands on Windows
 
-- [ ] Write `internal/cli/startuptask_test.go`, with the system `windows`, the config and executable of
+- [x] Write `internal/cli/startuptask_test.go`, with the system `windows`, the config and executable of
   `serviceHarness`, a temporary cache directory and the user `S-1-5-21-1004336348-1177238915-682003330-1001`:
     - `install` writes the task file of `taskFileContent` with and without `--config`, with a relative `--config` made
       absolute, and with paths that hold a space, `&`, `<` and `>`; the two lines and the two calls in order (R2, R5,
@@ -418,13 +418,13 @@ func taskStatusLines(taskFile, enabled, active, log string) []string
       be signalled (R16)
     - the help of `service` and its subcommands on `windows` names the startup task, on `linux` the systemd user
       service, and `service` alone on `windows` shows the help (R27)
-- [ ] Change `TestEveryServiceCommandFailsOnAnotherSystemAndTouchesNothing` in `internal/cli/service_test.go` to the
+- [x] Change `TestEveryServiceCommandFailsOnAnotherSystemAndTouchesNothing` in `internal/cli/service_test.go` to the
   system `darwin` and the text of R27, and check that neither `userCacheDir` nor `currentUser` is called and that no
   stop event is held, found or signalled (R27)
-- [ ] Write `internal/cli/startuptask.go` and the choice by the system in `internal/cli/service.go`, with `installed`
+- [x] Write `internal/cli/startuptask.go` and the choice by the system in `internal/cli/service.go`, with `installed`
   taking the name of the file in its error, as the approach says (R1, R3 to R16, R27)
-- [ ] Run the five commands of the suite (R36)
-- [ ] Commit: `feature-0019 Manage the startup task on Windows with the service commands`
+- [x] Run the five commands of the suite (R36)
+- [x] Commit: `feature-0019 Manage the startup task on Windows with the service commands`
 
 ### 7. The documents
 
