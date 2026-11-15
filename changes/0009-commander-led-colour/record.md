@@ -16,3 +16,9 @@ timestamp: 2026-11-15T00:48:51Z
   keepalive, the failures and the documents, and from the specs of units 0004 to 0008, the controller document and the
   driver, the config and the loop of `run` in the tree. No code of OpenLinkHub, liquidctl or OpenRGB was read. The
   status is `draft`
+- 2026-11-15T00:50:08Z [Claude Code, anthropic/claude-opus-5-5] read the spec under the delegation in `AGENTS.md`: where it
+  departs from the facts the orchestrating session gave, the keepalive of three endpoints (D3) and the forms of the
+  commands with the trailing endpoint byte (D10), it follows the trace, which is the better source, and the forms the
+  orchestrating session used on the device fit it. The documentation the human asked for is in R20 and R21, and
+  every requirement can be tested in the sandbox with the fake controller. Items 1 and 2 of "Beyond the request" are
+  declined. The approval that follows is made under that delegation
