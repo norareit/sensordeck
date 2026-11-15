@@ -170,7 +170,7 @@ quiet while `run` runs, and a count of writes taken later can only be larger.
 
 ### The config
 
-- [ ] In `internal/config/config_test.go`, change the four cases of `TestParseErrors` named `empty`, `comment`,
+- [x] In `internal/config/config_test.go`, change the four cases of `TestParseErrors` named `empty`, `comment`,
   `list` and `unknown key` to the texts of R3, and add (R3, R13):
     - a test that `commander_interval: 30s` with `interval: 1s` gives a `CommanderInterval` of 30 seconds and a
       `CommanderPeriod` of 30 seconds
@@ -185,10 +185,10 @@ quiet while `run` runs, and a count of writes taken later can only be larger.
       as 1m or 30s`; and `commander_interval: -1m` gives `commander_interval: -1m is shorter than the interval 1s`
 
   `TestParseTheExample` and the other tests stay as they are. The new tests fail to compile until the next task
-- [ ] In `internal/config/config.go`, add `DefaultCommanderInterval`, the field `CommanderInterval`, the method
+- [x] In `internal/config/config.go`, add `DefaultCommanderInterval`, the field `CommanderInterval`, the method
   `CommanderPeriod`, the case `commander_interval` of the loop of `Parse`, `parseCommanderInterval` called after
   `parseInterval`, and the texts of R3, as "The config" says, until `go test ./internal/config` passes (R1, R2, R3)
-- [ ] Commit: `feature-0008 Add commander_interval to the config file`
+- [x] Commit: `feature-0008 Add commander_interval to the config file`
 
 ### The sources apart
 

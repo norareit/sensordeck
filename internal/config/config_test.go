@@ -55,10 +55,10 @@ func TestParseTagSpellings(test *testing.T) {
 
 func TestParseErrors(test *testing.T) {
 	cases := []struct{ name, content, want string }{
-		{"empty", "", "want a mapping with the keys interval and tags"},
-		{"comment", "# nothing\n", "want a mapping with the keys interval and tags"},
-		{"list", "- tags\n", "want a mapping with the keys interval and tags"},
-		{"unknown key", "colour: red\ntags: {cpu.temp: 1}\n", `unknown key "colour", the keys are interval and tags`},
+		{"empty", "", "want a mapping with the keys commander_interval, interval and tags"},
+		{"comment", "# nothing\n", "want a mapping with the keys commander_interval, interval and tags"},
+		{"list", "- tags\n", "want a mapping with the keys commander_interval, interval and tags"},
+		{"unknown key", "colour: red\ntags: {cpu.temp: 1}\n", `unknown key "colour", the keys are commander_interval, interval and tags`},
 		{"no tags", "interval: 1s\n", "tags: want a mapping from metric name to tag, with at least one entry"},
 		{"tags without value", "tags:\n", "tags: want a mapping from metric name to tag, with at least one entry"},
 		{"empty tags", "tags: {}\n", "tags: want a mapping from metric name to tag, with at least one entry"},
@@ -90,6 +90,11 @@ func TestParseErrors(test *testing.T) {
 		{"interval list", "interval: [1s]\ntags: {cpu.temp: 1}\n", `interval: "" is not a duration such as 1s or 500ms`},
 		{"interval short", "interval: 99ms\ntags: {cpu.temp: 1}\n", "interval: 99ms is shorter than 100ms"},
 		{"interval negative", "interval: -1s\ntags: {cpu.temp: 1}\n", "interval: -1s is shorter than 100ms"},
+		{"commander interval below interval", "interval: 2s\ncommander_interval: 1s\ntags: {cpu.temp: 1}\n", "commander_interval: 1s is shorter than the interval 2s"},
+		{"commander interval below default interval", "commander_interval: 500ms\ntags: {cpu.temp: 1}\n", "commander_interval: 500ms is shorter than the interval 1s"},
+		{"commander interval word", "commander_interval: soon\ntags: {cpu.temp: 1}\n", `commander_interval: "soon" is not a duration such as 1m or 30s`},
+		{"commander interval mapping", "commander_interval: {a: 1}\ntags: {cpu.temp: 1}\n", `commander_interval: "" is not a duration such as 1m or 30s`},
+		{"commander interval negative", "commander_interval: -1m\ntags: {cpu.temp: 1}\n", "commander_interval: -1m is shorter than the interval 1s"},
 	}
 	for _, each := range cases {
 		_, err := Parse([]byte(each.content))
@@ -115,5 +120,35 @@ func TestParseSyntaxError(test *testing.T) {
 	_, err := Parse([]byte("tags: {cpu.temp: 1\n  - x: ["))
 	if err == nil || !strings.HasPrefix(err.Error(), "yaml: ") {
 		test.Errorf("error %v", err)
+	}
+}
+
+func TestParseCommanderInterval(test *testing.T) {
+	settings, err := Parse([]byte("interval: 1s\ncommander_interval: 30s\ntags: {cpu.temp: 1}\n"))
+	if err != nil || settings.CommanderInterval != 30*time.Second || settings.CommanderPeriod() != 30*time.Second {
+		test.Errorf("got %+v, %v", settings, err)
+	}
+}
+
+func TestCommanderPeriodDefault(test *testing.T) {
+	cases := []struct {
+		content string
+		want    time.Duration
+	}{
+		{"tags: {cpu.temp: 1}\n", time.Minute},
+		{"interval: 2m\ntags: {cpu.temp: 1}\n", 2 * time.Minute},
+	}
+	for _, each := range cases {
+		settings, err := Parse([]byte(each.content))
+		if err != nil || settings.CommanderInterval != 0 || settings.CommanderPeriod() != each.want {
+			test.Errorf("%q: got %+v, %v, want period %v", each.content, settings, err, each.want)
+		}
+	}
+}
+
+func TestParseCommanderIntervalEqualToInterval(test *testing.T) {
+	settings, err := Parse([]byte("interval: 500ms\ncommander_interval: 500ms\ntags: {cpu.temp: 1}\n"))
+	if err != nil || settings.CommanderPeriod() != 500*time.Millisecond {
+		test.Errorf("got %+v, %v", settings, err)
 	}
 }

@@ -1,6 +1,6 @@
 ---
 kind: feature
-status: approved
+status: in-progress
 timestamp: 2026-11-15T00:29:10Z
 ---
 
@@ -26,5 +26,7 @@ timestamp: 2026-11-15T00:29:10Z
   `TestRunReopensALostScreenOncePerRound` keeps what it expects. The new period is a method of the config, so that the
   field holds what the file gives and the existing tests that compare a whole config keep what they expect, as R17
   asks
+- 2026-11-15T00:40:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, began the work. The status is
+  `in-progress`
 
 ## Amendments

@@ -20,6 +20,9 @@ const (
 	// MinimumInterval is the shortest time between two rounds, so that a typo cannot flood the screen.
 	MinimumInterval = 100 * time.Millisecond
 
+	// DefaultCommanderInterval is the shortest time between two readings of the controller when the file does not say.
+	DefaultCommanderInterval = time.Minute
+
 	maxTag = 255
 )
 
@@ -31,8 +34,17 @@ type Mapping struct {
 
 // Config is what the file holds.
 type Config struct {
-	Interval time.Duration
-	Mappings []Mapping // ordered by tag, ascending
+	Interval          time.Duration
+	CommanderInterval time.Duration // zero when the file does not give it
+	Mappings          []Mapping     // ordered by tag, ascending
+}
+
+// CommanderPeriod is the shortest time between two readings of the controller in run.
+func (config Config) CommanderPeriod() time.Duration {
+	if config.CommanderInterval != 0 {
+		return config.CommanderInterval
+	}
+	return max(DefaultCommanderInterval, config.Interval)
 }
 
 // Parse reads the content of a config file and checks it completely. Its errors are the texts that follow the prefix
@@ -46,7 +58,7 @@ func Parse(content []byte) (Config, error) {
 	if err != nil {
 		return Config{}, err
 	}
-	var tagsNode, intervalNode *yaml.Node
+	var tagsNode, intervalNode, commanderIntervalNode *yaml.Node
 	for position := 0; position+1 < len(root.Content); position += 2 {
 		key, value := root.Content[position], root.Content[position+1]
 		switch key.Value {
@@ -54,8 +66,10 @@ func Parse(content []byte) (Config, error) {
 			tagsNode = value
 		case "interval":
 			intervalNode = value
+		case "commander_interval":
+			commanderIntervalNode = value
 		default:
-			return Config{}, fmt.Errorf("unknown key %q, the keys are interval and tags", key.Value)
+			return Config{}, fmt.Errorf("unknown key %q, the keys are commander_interval, interval and tags", key.Value)
 		}
 	}
 	mappings, err := parseTags(tagsNode)
@@ -66,10 +80,14 @@ func Parse(content []byte) (Config, error) {
 	if err != nil {
 		return Config{}, err
 	}
-	return Config{Interval: interval, Mappings: mappings}, nil
+	commanderInterval, err := parseCommanderInterval(commanderIntervalNode, interval)
+	if err != nil {
+		return Config{}, err
+	}
+	return Config{Interval: interval, CommanderInterval: commanderInterval, Mappings: mappings}, nil
 }
 
-var errNotAMapping = errors.New("want a mapping with the keys interval and tags")
+var errNotAMapping = errors.New("want a mapping with the keys commander_interval, interval and tags")
 
 // rootMapping gives the mapping of the file, and refuses a key that is given twice. The parser reports that only when
 // a mapping is decoded into a map.
@@ -166,4 +184,24 @@ func parseInterval(node *yaml.Node) (time.Duration, error) {
 		return 0, fmt.Errorf("interval: %s is shorter than 100ms", text)
 	}
 	return interval, nil
+}
+
+// parseCommanderInterval gives zero when the file does not give the key. It is checked after the interval, which it
+// must not be shorter than.
+func parseCommanderInterval(node *yaml.Node, interval time.Duration) (time.Duration, error) {
+	if node == nil {
+		return 0, nil
+	}
+	text := ""
+	if node.Kind == yaml.ScalarNode {
+		text = node.Value
+	}
+	commanderInterval, err := time.ParseDuration(text)
+	if err != nil {
+		return 0, fmt.Errorf("commander_interval: %q is not a duration such as 1m or 30s", text)
+	}
+	if commanderInterval < interval {
+		return 0, fmt.Errorf("commander_interval: %s is shorter than the interval %s", text, interval)
+	}
+	return commanderInterval, nil
 }
