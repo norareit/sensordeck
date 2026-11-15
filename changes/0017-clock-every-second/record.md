@@ -1,6 +1,6 @@
 ---
 kind: bug
-status: in-progress
+status: implemented
 timestamp: 2026-11-15T22:04:29Z
 supersedes: 0004-linux-sensors-and-run
 ---
@@ -26,14 +26,14 @@ supersedes: 0004-linux-sensors-and-run
   amendment to the record of `0004-linux-sensors-and-run` itself when it merges this unit. The device check is the
   human's and the unit does not depend on it. The approval that follows is made under that delegation
 - 2026-11-15T22:05:54Z [human] approved the spec. The status is `approved`
-- 2026-11-15T22:14:30Z [Claude Code, anthropic/claude-opus-5-5] as the planner, wrote `plan.md` against the tree
+- 2026-11-15T22:09:28Z [Claude Code, anthropic/claude-opus-5-5] as the planner, wrote `plan.md` against the tree
   of the branch: a tick at each whole second beside the rounds of `feed`, one helper for the clock of round and tick,
   and `onScreen` on the theme holder for the tick. A throwaway prototype of the schedule, run against the suite and
   reverted, named the existing tests whose expected reports or counts of waits change, which the plan lists. The
   status stays `approved`
-- 2026-11-15T22:40:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, began the work. The status is
+- 2026-11-15T22:20:48Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, began the work. The status is
   `in-progress`
-- 2026-11-15T22:41:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, built the schedule of rounds and
+- 2026-11-15T22:20:48Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, built the schedule of rounds and
   ticks in `feed`, `onScreen` on the theme holder, the tests of R10 and R11, the scaled counts of waits of the keeper
   tests, the updated expected reports of the existing tests, and the README, protocol and test-comment changes. Added
   a task to `plan.md` for work it did not list: `TestRunSendsTheKeptProbesBetweenReadingsOfTheController` in
@@ -43,15 +43,15 @@ supersedes: 0004-linux-sensors-and-run
   failed upload advanced the fake clock by a second and so the retry came at the round at 15 seconds, and a clock
   report of the tick follows the upload. The tests of R10 were written after the schedule and not before; they fail
   against the tree without the schedule and `onScreen`, which was checked by stashing `run.go` and `themeholder.go`
-- 2026-11-15T22:50:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, ran the five commands of the suite on the final tree: `go test ./...` passed with no failing package, `go vet ./...`, the build and the vet for Windows reported nothing, and `gofmt -l .` printed no file name. The end-to-end suite also passed four times in a row with `-count=4`. The check on the device, that the seconds on the screen change every second, is not done, and is the human's. The status stays `in-progress`
-- 2026-11-15T22:55:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, made one commit, `13c87b6`, for the work that the plan splits over its last two commit points, because the documents and the code were done together, and ran `npm run check-changes` on it, which reported nothing. The status stays `in-progress`
+- 2026-11-15T22:20:48Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, ran the five commands of the suite on the final tree: `go test ./...` passed with no failing package, `go vet ./...`, the build and the vet for Windows reported nothing, and `gofmt -l .` printed no file name. The end-to-end suite also passed four times in a row with `-count=4`. The check on the device, that the seconds on the screen change every second, is not done, and is the human's. The status stays `in-progress`
+- 2026-11-15T22:20:51Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, made one commit, `13c87b6`, for the work that the plan splits over its last two commit points, because the documents and the code were done together, and ran `npm run check-changes` on it, which reported nothing. The status stays `in-progress`
 - 2026-11-15T22:23:29Z [OpenCode, openai/gpt-6.1-sol] as the reviewer, completed a full review of
   `0017-clock-every-second` at `38849817278d54e226ed82b6bf036987f66ed43f` against its merge base with
   `origin/master`. Returned P1; the full findings and verification are in
   `.reviews/0017-clock-every-second/review-round-1.md`. The five suite commands, the change check and a fresh run of
   the CLI and end-to-end tests passed. The physical-screen behavior, historical test order and historical repeated
   test runs could not be independently verified; Windows execution was not performed. The status stays `in-progress`
-- 2026-11-15T23:10:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, read `review-round-1.md`, which has one finding, P1, non-blocking: the tests of R10 were written after the schedule. Proposed decline, not a decision: there is nothing to change, because the order of the work cannot be undone, the record already discloses it, and the tests were checked to fail on the tree without the schedule. The finding stays open until the human decides it. The status stays `in-progress`
+- 2026-11-15T22:23:59Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, read `review-round-1.md`, which has one finding, P1, non-blocking: the tests of R10 were written after the schedule. Proposed decline, not a decision: there is nothing to change, because the order of the work cannot be undone, the record already discloses it, and the tests were checked to fail on the tree without the schedule. The finding stays open until the human decides it. The status stays `in-progress`
 - 2026-11-15T22:24:13Z [Claude Code, anthropic/claude-opus-5-5] under the delegation in `AGENTS.md`, decided the proposed decline of
   P1 of round 1: declined. The tests were written after the code, against the order of the plan, but the order cannot
   be restored after the fact, the record states it, and the tests were shown to fail on the tree without the schedule,
@@ -62,3 +62,8 @@ supersedes: 0004-linux-sensors-and-run
   `.reviews/0017-clock-every-second/review-round-2.md`. The five suite commands, the change check and
   `git diff --check` passed. Physical-screen behavior and Windows execution were not verified. The status stays
   `in-progress`
+- 2026-11-15T22:26:21Z [Claude Code, anthropic/claude-opus-5-5] under the delegation in `AGENTS.md`, decided the findings: P1 of
+  round 1 was declined and round 2 returned none, so no blocking finding is open. The timestamps of six entries, which
+  did not match their commits, were corrected to the times of the commits that added them. Every task of `plan.md` is
+  ticked, and the five commands of the suite passed on the branch. The check that the seconds tick on the screen is
+  the human's and follows the merge. The status is `implemented`
