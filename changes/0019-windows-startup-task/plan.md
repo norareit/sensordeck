@@ -379,15 +379,15 @@ func taskStatusLines(taskFile, enabled, active, log string) []string
 
 ### 5. The task file
 
-- [ ] Write `internal/cli/taskfile_test.go`: `taskFilePath`; the bytes of `taskFileContent` for a user, an executable
+- [x] Write `internal/cli/taskfile_test.go`: `taskFilePath`; the bytes of `taskFileContent` for a user, an executable
   and a config compared with the expected XML of R2 written in the test, with `FF FE` first, every line ending in CR
   LF, the last included, and the decoded text equal; paths with a space, `&`, `<` and `>` escaped; a path with `"`,
   one with `%`, one with a line feed and one with a tab refused with the error of the table; `taskEnabled` for an
   output in UTF-16 with `FF FE` and one in UTF-8, each with a declaration naming UTF-16, with `Enabled` `true`,
   `false`, `1`, `0`, a value of neither, and no `Enabled` element, a root that is not `Task`, and an output that is not
   XML; `taskStatusLines` (R2, R5, R14)
-- [ ] Write `internal/cli/taskfile.go` as the approach says (R2, R5, R14)
-- [ ] Commit: `feature-0019 Add the task file and the reading of the task`
+- [x] Write `internal/cli/taskfile.go` as the approach says (R2, R5, R14)
+- [x] Commit: `feature-0019 Add the task file and the reading of the task`
 
 ### 6. The commands on Windows
 
