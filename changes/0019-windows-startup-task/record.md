@@ -21,3 +21,8 @@ timestamp: 2026-11-15T23:39:29Z
   cleanly, with `schtasks /End` after 30 seconds, and by which `status` tells whether it runs; `conhost.exe --headless`,
   a GUI-subsystem build, the `Run` key and the Startup folder rejected. The checks on Windows are listed as unverified
   and the unit does not depend on them. The status is `draft`
+- 2026-11-15T23:43:05Z [Claude Code, anthropic/claude-opus-5-5] read the spec under the delegation in `AGENTS.md`: the task needs no
+  administrator rights by the documentation it cites, the log and the stop event stand in for the journal and the
+  signal, Linux behaviour is unchanged, and every requirement can be tested on Linux through the service seam. What the
+  documentation does not settle is listed as unverified until the human runs it, and the unit does not depend on it.
+  Items 1 to 6 of "Beyond the request" are declined. The approval that follows is made under that delegation
