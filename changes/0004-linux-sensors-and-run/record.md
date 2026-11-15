@@ -122,3 +122,6 @@ timestamp: 2026-11-14T19:03:59Z
   `implemented`. The check on the real host, which the run left for the human, follows the merge
 
 ## Amendments
+- 2026-11-15T22:26:25Z [Claude Code, anthropic/claude-opus-5-5] recorded that `0017-clock-every-second` supersedes R20 and D13 of
+  this unit and the case of R32 that sets the clock again after 60 seconds: the screen does not keep time by itself,
+  as the human saw on the device, so `run` now sends the clock at each whole second
