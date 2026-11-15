@@ -1,6 +1,6 @@
 ---
 kind: feature
-status: draft
+status: approved
 timestamp: 2026-11-15T23:39:29Z
 ---
 
@@ -26,3 +26,4 @@ timestamp: 2026-11-15T23:39:29Z
   signal, Linux behaviour is unchanged, and every requirement can be tested on Linux through the service seam. What the
   documentation does not settle is listed as unverified until the human runs it, and the unit does not depend on it.
   Items 1 to 6 of "Beyond the request" are declined. The approval that follows is made under that delegation
+- 2026-11-15T23:43:05Z [human] approved the spec. The status is `approved`
