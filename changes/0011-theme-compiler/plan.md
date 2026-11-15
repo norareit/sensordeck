@@ -441,9 +441,9 @@ Nothing is written before the whole compilation and, for `preview`, the PNG enco
 
 ### The commands
 
-- [ ] In `internal/cli/commands_test.go`, add the argument cases `theme compile` and `theme preview` with zero and one
+- [x] In `internal/cli/commands_test.go`, add the argument cases `theme compile` and `theme preview` with zero and one
   argument, each `accepts 2 arg(s), received <n>` (R19, R21)
-- [ ] Add to `internal/cli/theme_test.go`, with the harness of `commands_test.go` and a theme folder written to a
+- [x] Add to `internal/cli/theme_test.go`, with the harness of `commands_test.go` and a theme folder written to a
   temporary directory with a `file:` font from `goregular.TTF` and a PNG made in code (R19 to R25, R29):
     - `compile` writes the theme file equal to `themecompile.Compile` of the folder and the tags file equal to
       `TagsFile`, at `img.tags.yaml` for `img.dat` and at `theme.tags.yaml` for `theme`, prints the line of R22 and
@@ -458,9 +458,9 @@ Nothing is written before the whole compilation and, for `preview`, the PNG enco
     - a symbolic link inside the folder to a PNG outside it, as a background and as an image, gives `cannot read
       <link>: path escapes from parent`, and a link to a PNG inside the folder compiles
     - R25: the folder and a copy of it in another temporary directory give byte-identical theme files and tags files
-- [ ] Add `compile` and `preview` to `internal/cli/theme.go` as "The commands" says, until `go test ./internal/cli`
+- [x] Add `compile` and `preview` to `internal/cli/theme.go` as "The commands" says, until `go test ./internal/cli`
   passes (R19 to R24)
-- [ ] Run the five commands of the suite and commit: `feature-0011 Add the commands theme compile and theme preview`
+- [x] Run the five commands of the suite and commit: `feature-0011 Add the commands theme compile and theme preview`
 
 ### End to end
 
