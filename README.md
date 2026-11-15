@@ -4,7 +4,7 @@ Turn a cheap USB "sensor panel" screen into a hardware-monitoring dashboard on *
 
 > **Status: early development.** The screen can be driven on Linux: with the low-level commands (`devices`, `clock`,
 > `values`, `upload`, `listen` and `raw`), with `sensordeck sensors` and with `sensordeck run`, which also reads the temperature probes of a Corsair iCUE
-> Commander Core XT. Themes, Windows and the
+> Commander Core XT. `sensordeck theme dump` reads a theme file with no screen. Making themes, Windows and the
 > service are still to come. This README describes what sensordeck is meant to become.
 
 ## What it will do
@@ -193,6 +193,22 @@ to its hidraw node:
 ```
 SUBSYSTEM=="hidraw", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="0c2a", MODE="0660", TAG+="uaccess"
 ```
+
+## Reading a theme file
+
+`sensordeck theme dump <file.dat> <out-dir>` reads a theme file, the `img.dat` that `upload` sends to the screen, and
+writes what is in it into the directory, which it creates when it does not exist:
+
+* `theme.json`, a description of the file: the header and every record with its fields. A field whose meaning is a
+  guess has a name that ends in `_guess`, and a byte whose meaning is unknown is named `byte_<n>_unknown`
+* a PNG of each resource, named after the slot of its record, such as `slot03-image-frame1.png`
+* `preview.png`, the 480 x 320 screen composed from the records alone
+
+The preview shows every number as 42 and the date and time as 2026-11-15 09:41:07, draws numbers left-aligned and bars
+as magenta outlines, because the device's own alignment and the fields of a bar are not known yet. The command touches no
+device and works with no screen connected, on Linux and on Windows. It prints each warning of the reader, such as a
+record of a type it does not know, to standard error. The format is described in
+[docs/theme-format.md](docs/theme-format.md).
 
 ## Credits
 
