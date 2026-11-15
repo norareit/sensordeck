@@ -6,6 +6,7 @@ import (
 	"go/token"
 	"io/fs"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"strings"
 	"testing"
@@ -143,6 +144,22 @@ func TestThePackagesOfThemesDoNoIO(test *testing.T) {
 				if forbidden[imported] || !(standard || own) {
 					test.Errorf("%s imports %s", path, imported)
 				}
+			}
+		}
+	}
+}
+
+func TestTheThemeCompilerDoesNoIO(test *testing.T) {
+	const prefix = "github.com/norareit/sensordeck/internal/"
+	forbidden := []string{"os", "os/exec", "os/signal", "net", "syscall", "unsafe",
+		prefix + "hidraw", prefix + "linuxsensors", prefix + "commandercore", prefix + "smartmonitor"}
+	for _, path := range goFiles(test) {
+		if strings.HasSuffix(path, "_test.go") || !inDirectory(path, "internal/themecompile") {
+			continue
+		}
+		for _, imported := range importsOf(test, path) {
+			if slices.Contains(forbidden, imported) {
+				test.Errorf("%s imports %s", path, imported)
 			}
 		}
 	}
