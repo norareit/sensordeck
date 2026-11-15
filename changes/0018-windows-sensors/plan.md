@@ -255,7 +255,7 @@ What the tree on `feature-0018-windows-sensors` holds, and what the plan builds 
 
 ### 6. The reading of LibreHardwareMonitor
 
-- [ ] Add `internal/librehardwaremonitor/reader_test.go`, against `net/http/httptest` servers whose handlers that wait
+- [x] Add `internal/librehardwaremonitor/reader_test.go`, against `net/http/httptest` servers whose handlers that wait
   end when the request ends or the test releases them, covering R40: a document read, with the request a `GET` of the
   path and query of the URL; a status 401 and 404, `status 401 Unauthorized` and `status 404 Not Found`; a body that is
   no JSON; a server that answers after the time limit, with a limit of 50 ms, failing within the limit and 100 ms; a
@@ -267,9 +267,9 @@ What the tree on `feature-0018-windows-sensors` holds, and what the plan builds 
   the first half alone cannot fail; and through `Source`, a `wanted` with no monitor metric that makes no request and
   no call of `Report`, a reading of `cpu.temp`, `nvme.1.temp` and `ram.1.temp` that makes one request and gives only
   those, `Report` given every reading of the document, and `Report` given the error of a failure (R16, R17, R18, R40)
-- [ ] Add `internal/librehardwaremonitor/reader.go` with `TimeLimit`, `NewReader`, `Reader.Read`, `Wants` and
+- [x] Add `internal/librehardwaremonitor/reader.go` with `TimeLimit`, `NewReader`, `Reader.Read`, `Wants` and
   `Source`, as the choices above say (R16, R17, R18)
-- [ ] Run the suite and commit: `feature-0018 Read the web server of LibreHardwareMonitor`
+- [x] Run the suite and commit: `feature-0018 Read the web server of LibreHardwareMonitor`
 
 ### 7. The native sources of Windows over a seam
 
