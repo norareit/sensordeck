@@ -52,10 +52,13 @@ func TestSensorsListsTheProbesOfTheController(test *testing.T) {
 		"gpu.mem.total\t32607.0\tMiB\n" +
 		"ram.used\t21.8\tGiB\n" +
 		"ram.total\t91.7\tGiB\n" +
+		"ram.util\t23.8\t%\n" +
 		"ram.1.temp\t40.0\t°C\n" +
 		"ram.2.temp\t37.9\t°C\n" +
 		"nvme.1.temp\t33.9\t°C\n" +
 		"nvme.2.temp\t38.8\t°C\n" +
+		"net.up\t0.0\tKiB/s\n" +
+		"net.down\t0.0\tKiB/s\n" +
 		"commander.1.temp\t37.3\t°C\n" +
 		"commander.2.temp\t22.7\t°C\n"
 	runWith(test, fake, environment, "sensors").expect(test, 0, want, "")

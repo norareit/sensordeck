@@ -13,6 +13,7 @@ import (
 
 	"github.com/norareit/sensordeck/internal/fakescreen"
 	"github.com/norareit/sensordeck/internal/fakesensors"
+	"github.com/norareit/sensordeck/internal/smartmonitor"
 )
 
 const (
@@ -58,6 +59,67 @@ func TestRunSendsTheClockAndThenTheValues(test *testing.T) {
 		test.Errorf("second report % X", reports[1])
 	}
 	running.stop(syscall.SIGTERM)
+}
+
+// valuePairs decodes a value report into its tags and values, and gives nil for a report of another kind.
+func valuePairs(report smartmonitor.Report) map[uint8]uint16 {
+	if report[0] != 0x02 {
+		return nil
+	}
+	pairs := map[uint8]uint16{}
+	for position := range int(report[1]) {
+		offset := 2 + position*3
+		pairs[report[offset]] = uint16(report[offset+1])<<8 | uint16(report[offset+2])
+	}
+	return pairs
+}
+
+// waitForReport polls the reports from the given position on until one satisfies the test, and gives its position.
+func waitForReport(screen *fakescreen.Screen, from int, limit time.Duration, holds func(map[uint8]uint16) bool) (int, bool) {
+	deadline := time.Now().Add(limit)
+	for time.Now().Before(deadline) {
+		reports := screen.Reports()
+		for position := from; position < len(reports); position++ {
+			if holds(valuePairs(reports[position])) {
+				return position, true
+			}
+		}
+		time.Sleep(20 * time.Millisecond)
+	}
+	return 0, false
+}
+
+func TestRunSendsTheShareOfRAMAndTheNetworkRates(test *testing.T) {
+	fake := fakescreen.New(test)
+	screen := fake.Add(3, "name", "")
+	tree := fakesensors.New(test, fake.SysfsRoot)
+	tree.Meminfo("MemTotal:       96187828 kB\nMemFree:         1000 kB\nMemAvailable:   73300372 kB\n")
+	addNetwork(tree)
+	config := writeConfigFile(test, "interval: 100ms\ntags:\n  ram.util: 12\n  net.up: 18\n  net.down: 19\n")
+	running := start(test, fake, environmentFor(test, tree, ""), "run", "--config", config)
+
+	first, reached := waitForReport(screen, 0, reportLimit, func(pairs map[uint8]uint16) bool {
+		value12, have12 := pairs[12]
+		value18, have18 := pairs[18]
+		value19, have19 := pairs[19]
+		return have12 && have18 && have19 && value12 == 24 && value18 == 0 && value19 == 0
+	})
+	if !reached {
+		test.Fatalf("no report held (12, 24), (18, 0) and (19, 0): %v", screen.Reports())
+	}
+	// 1048576 bytes more received, through a new file renamed into place, which gives at least 1 KiB/s for any time
+	// between two rounds below about 34 minutes
+	tree.NetDev(netDevHeader + netDevLine("lo", 5000, 5000) + netDevLine("enp6s0", 123456+1048576, 654321) +
+		netDevLine("docker0", 777, 888))
+	if _, reached := waitForReport(screen, first+1, reportLimit, func(pairs map[uint8]uint16) bool {
+		return pairs[19] >= 1
+	}); !reached {
+		test.Errorf("no later report held a download rate of 1 or more: %v", screen.Reports())
+	}
+	outcome, _ := running.stop(syscall.SIGTERM)
+	if outcome.status != 0 {
+		test.Errorf("status %d", outcome.status)
+	}
 }
 
 func TestRunEndsOnSIGTERM(test *testing.T) {

@@ -3,6 +3,7 @@
 package e2e
 
 import (
+	"fmt"
 	"path/filepath"
 	"testing"
 
@@ -32,7 +33,26 @@ func fullTree(test *testing.T, fake *fakescreen.Fake, nvidiaSMI string) []string
 	tree.CPUFrequency(1, "3000000\n")
 	tree.Stat("cpu  100 0 100 700 100 0 0 0 0 0\n")
 	tree.Meminfo("MemTotal:       96187828 kB\nMemFree:         1000 kB\nMemAvailable:   73300372 kB\n")
+	addNetwork(tree)
 	return environmentFor(test, tree, nvidiaSMI)
+}
+
+// netDevHeader and netDevLine write /proc/net/dev as the kernel does, with 0 in every field but the two byte counters.
+const netDevHeader = "Inter-|   Receive                                                |  Transmit\n" +
+	" face |bytes    packets errs drop fifo frame compressed multicast|bytes    packets errs drop fifo colls carrier compressed\n"
+
+func netDevLine(name string, received, transmitted uint64) string {
+	return fmt.Sprintf("%6s: %d 0 0 0 0 0 0 0 %d 0 0 0 0 0 0 0\n", name, received, transmitted)
+}
+
+// addNetwork gives the tree a net/dev that does not change, with loopback, a card and a bridge, of which only the
+// card belongs to a device.
+func addNetwork(tree *fakesensors.Tree) {
+	tree.NetDev(netDevHeader + netDevLine("lo", 5000, 5000) + netDevLine("enp6s0", 123456, 654321) +
+		netDevLine("docker0", 777, 888))
+	tree.NetInterface("lo", "")
+	tree.NetInterface("enp6s0", "pci0000:00/0000:00:02.2/0000:06:00.0")
+	tree.NetInterface("docker0", "")
 }
 
 func environmentFor(test *testing.T, tree *fakesensors.Tree, nvidiaSMI string) []string {
@@ -57,10 +77,13 @@ func TestSensorsListsTheReadingsOfTheHost(test *testing.T) {
 		"gpu.mem.total\t32607.0\tMiB\n" +
 		"ram.used\t21.8\tGiB\n" +
 		"ram.total\t91.7\tGiB\n" +
+		"ram.util\t23.8\t%\n" +
 		"ram.1.temp\t40.0\t°C\n" +
 		"ram.2.temp\t37.9\t°C\n" +
 		"nvme.1.temp\t33.9\t°C\n" +
-		"nvme.2.temp\t38.8\t°C\n"
+		"nvme.2.temp\t38.8\t°C\n" +
+		"net.up\t0.0\tKiB/s\n" +
+		"net.down\t0.0\tKiB/s\n"
 	runWith(test, fake, environment, "sensors").expect(test, 0, want, "")
 }
 
