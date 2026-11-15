@@ -203,20 +203,20 @@ test does not depend on the order in which the three pairs are sent.
 
 ## Verification
 
-- [ ] `go test ./...` passes
-- [ ] `go vet ./...` reports nothing
-- [ ] `gofmt -l .` prints no file name
-- [ ] `GOOS=windows GOARCH=amd64 go build ./...` succeeds and reports nothing
-- [ ] `GOOS=windows GOARCH=amd64 go vet ./...` succeeds and reports nothing
-- [ ] `go test -count=5 -run TestRunSendsTheShareOfRAMAndTheNetworkRates ./e2e` passes all five times, so that the
+- [x] `go test ./...` passes
+- [x] `go vet ./...` reports nothing
+- [x] `gofmt -l .` prints no file name
+- [x] `GOOS=windows GOARCH=amd64 go build ./...` succeeds and reports nothing
+- [x] `GOOS=windows GOARCH=amd64 go vet ./...` succeeds and reports nothing
+- [x] `go test -count=5 -run TestRunSendsTheShareOfRAMAndTheNetworkRates ./e2e` passes all five times, so that the
   test of R18 does not depend on timing
-- [ ] `npm run check-changes` passes
+- [x] `npm run check-changes` passes
 
 ## Commit Points
 
-- [ ] `feature-0007 Write the plan`, with `plan.md` and the entry of `record.md`
-- [ ] `feature-0007 Add the share of RAM and the network rates to the metrics`, the first two tasks
-- [ ] `feature-0007 Read the share of RAM in use`, the third and fourth tasks
-- [ ] `feature-0007 Read the network rates`, the fifth to the ninth tasks
-- [ ] `feature-0007 Test the share of RAM and the network rates end to end`, the tenth to the twelfth tasks
-- [ ] `feature-0007 Document the share of RAM and the network rates`, the README
+- [x] `feature-0007 Write the plan`, with `plan.md` and the entry of `record.md`
+- [x] `feature-0007 Add the share of RAM and the network rates to the metrics`, the first two tasks
+- [x] `feature-0007 Read the share of RAM in use`, the third and fourth tasks
+- [x] `feature-0007 Read the network rates`, the fifth to the ninth tasks
+- [x] `feature-0007 Test the share of RAM and the network rates end to end`, the tenth to the twelfth tasks
+- [x] `feature-0007 Document the share of RAM and the network rates`, the README

@@ -23,5 +23,12 @@ timestamp: 2026-11-15T00:11:24Z
   helpers, the end-to-end tests and the README. Every requirement has a task. The status stays `approved`
 - 2026-11-15T00:20:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, began the work. The status is
   `in-progress`
+- 2026-11-15T00:50:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, built every task of the plan in
+  the commit points it names. The tests of the new rows, of `ram.util` and of the network source were written with the
+  code and not run first against a tree without it, so that no failing run of them is recorded. Not checked: a
+  reading on the real machine, which is the human's. On the tree at `5cf55bc`, plus a later commit that changes only
+  `plan.md` and this record, the five commands of the suite succeeded and reported nothing, `go test -count=5 -run
+  TestRunSendsTheShareOfRAMAndTheNetworkRates ./e2e` passed, and `npm run check-changes` passed. The status stays
+  `in-progress`, because no review has been made yet
 
 ## Amendments
