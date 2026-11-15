@@ -370,28 +370,28 @@ What the tree on `feature-0018-windows-sensors` holds, and what the plan builds 
 
 ## Verification
 
-- [ ] `go test ./...` passes (R35)
-- [ ] `go vet ./...` reports nothing (R35)
-- [ ] `gofmt -l .` prints no file name (R35)
-- [ ] `GOOS=windows GOARCH=amd64 go build ./...` succeeds and reports nothing (R35)
-- [ ] `GOOS=windows GOARCH=amd64 go vet ./...` succeeds and reports nothing (R35)
-- [ ] `GOOS=darwin GOARCH=arm64 go build ./...` succeeds, and `sources_other.go` is unchanged (R34)
-- [ ] `git diff master -- go.mod go.sum THIRD_PARTY_LICENSES` shows no change, and no Go file imports `C` (R32)
-- [ ] Every file of `internal/windowssensors` other than `seam_windows.go` and `seam_windows_test.go` has no build
+- [x] `go test ./...` passes (R35)
+- [x] `go vet ./...` reports nothing (R35)
+- [x] `gofmt -l .` prints no file name (R35)
+- [x] `GOOS=windows GOARCH=amd64 go build ./...` succeeds and reports nothing (R35)
+- [x] `GOOS=windows GOARCH=amd64 go vet ./...` succeeds and reports nothing (R35)
+- [x] `GOOS=darwin GOARCH=arm64 go build ./...` succeeds, and `sources_other.go` is unchanged (R34)
+- [x] `git diff master -- go.mod go.sum THIRD_PARTY_LICENSES` shows no change, and no Go file imports `C` (R32)
+- [x] Every file of `internal/windowssensors` other than `seam_windows.go` and `seam_windows_test.go` has no build
   constraint, and neither has any non-test file of `internal/sampling`, `internal/nvidiasmi` or
   `internal/librehardwaremonitor` (R2, R33)
-- [ ] `npm run check-changes` passes
+- [x] `npm run check-changes` passes
 
 ## Commit Points
 
-- [ ] `feature-0018 Write the plan of the sensors on Windows`
-- [ ] `feature-0018 Share the computation from two samples`
-- [ ] `feature-0018 Share the GPU source`
-- [ ] `feature-0018 Read the line of nvidia-smi that ends in CR LF`
-- [ ] `feature-0018 Add the key librehardwaremonitor_url`
-- [ ] `feature-0018 Map the tree of LibreHardwareMonitor to the metrics`
-- [ ] `feature-0018 Read the web server of LibreHardwareMonitor`
-- [ ] `feature-0018 Read the memory, the CPU and the network of Windows over a seam`
-- [ ] `feature-0018 Call the memory, the CPU and the network of Windows behind the seam`
-- [ ] `feature-0018 Read the sensors of the machine on Windows`
-- [ ] `feature-0018 Document the sensors of the machine on Windows`
+- [x] `feature-0018 Write the plan of the sensors on Windows`
+- [x] `feature-0018 Share the computation from two samples`
+- [x] `feature-0018 Share the GPU source`
+- [x] `feature-0018 Read the line of nvidia-smi that ends in CR LF`
+- [x] `feature-0018 Add the key librehardwaremonitor_url`
+- [x] `feature-0018 Map the tree of LibreHardwareMonitor to the metrics`
+- [x] `feature-0018 Read the web server of LibreHardwareMonitor`
+- [x] `feature-0018 Read the memory, the CPU and the network of Windows over a seam`
+- [x] `feature-0018 Call the memory, the CPU and the network of Windows behind the seam`
+- [x] `feature-0018 Read the sensors of the machine on Windows`
+- [x] `feature-0018 Document the sensors of the machine on Windows`

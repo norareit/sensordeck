@@ -40,3 +40,23 @@ timestamp: 2026-11-15T23:04:03Z
   status stays `approved`
 - 2026-11-15T23:30:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, began the work. The status is
   `in-progress`
+- 2026-11-15T23:55:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, built tasks 1 to 10 of the plan in
+  ten commits, from `e3655fb` to `96e60df`, with the tests of each written with its code and all tasks ticked. Details the
+  plan left open and that the code settled: `internal/nvidiasmi/source_test.go` holds its own copy of `names` besides
+  `everything` and `read`, because its tests use it; the assertions of `procstat_test.go` and `netdev_test.go` that the
+  moved source holds no sample after an unwanted reading (`previous != nil`) are dropped, because the field is private to
+  `internal/sampling`, and what they showed, no wait and no clock asked, is still checked; the sensors of the drive and
+  the module are found by their `SensorId` alone, and their `Type` decides in the reading of the value, so a
+  `temperature/0` whose type is not `Temperature` gives no value and keeps its number; the dial error of a refused
+  connection names the address and port, as Go gives it, and is the text of the error of the client of R17
+- 2026-11-15T23:56:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, ran the suite of `AGENTS.md` on the
+  tree at `96e60df`, which holds the code and the README: `go test ./...` reported all packages ok, including `e2e` and
+  `internal/cli`, `go vet ./...` reported nothing, `gofmt -l .` printed no file name, `GOOS=windows GOARCH=amd64 go build
+  ./...` and `GOOS=windows GOARCH=amd64 go vet ./...` reported nothing, and `GOOS=darwin GOARCH=arm64 go build ./...`
+  succeeded. `git diff origin/master` shows no change of `go.mod`, `go.sum`, `THIRD_PARTY_LICENSES` or
+  `internal/cli/sources_other.go`, no Go file imports `C`, and no file of `internal/windowssensors` other than the two
+  of the seam, nor any non-test file of `internal/sampling`, `internal/nvidiasmi` or `internal/librehardwaremonitor`,
+  holds a `go:build` line. `npm run check-changes` passed. Not checked: everything on Windows, that is, the calls of the
+  seam run on a real system, the job of R43 on GitHub, and LibreHardwareMonitor itself; the "Unverified until the human
+  runs it" section of the spec lists them, and none of them has been run. The status stays `in-progress`
+
