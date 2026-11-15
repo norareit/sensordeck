@@ -300,19 +300,19 @@ What the tree on `feature-0018-windows-sensors` holds, and what the plan builds 
 
 ### 8. The seam on Windows
 
-- [ ] Add `internal/windowssensors/seam_windows_test.go`, in the package `windowssensors`: both procedures of
+- [x] Add `internal/windowssensors/seam_windows_test.go`, in the package `windowssensors`: both procedures of
   `kernel32.dll` resolve with `Find`; `System().Memory()` succeeds with a total above 0; `System().SystemTimes()`
   succeeds with the kernel plus the user time above 0; `System().Interfaces()` succeeds, whatever rows it gives (R43)
-- [ ] Add `internal/windowssensors/seam_windows.go` with `System`, as the choices above say (R2)
-- [ ] In `layout_test.go`, allow `golang.org/x/sys/windows` in `internal/windowssensors/seam_windows.go` and its test
+- [x] Add `internal/windowssensors/seam_windows.go` with `System`, as the choices above say (R2)
+- [x] In `layout_test.go`, allow `golang.org/x/sys/windows` in `internal/windowssensors/seam_windows.go` and its test
   besides those of `winhid`, still excluded from a Linux build, and allow `NewLazySystemDLL` with `"kernel32.dll"`
   besides `"hid.dll"`, renaming the test to say so; every other check stays (R34)
-- [ ] In `release_test.go`, require the step `go test ./internal/winhid ./internal/commandercore
+- [x] In `release_test.go`, require the step `go test ./internal/winhid ./internal/commandercore
   ./internal/windowssensors` of the job on Windows, and say three packages in the comment of `checkWindowsJob`; change
   the step in `.github/workflows/ci.yml` to match (R43)
-- [ ] Check `GOOS=windows GOARCH=amd64 go vet ./internal/windowssensors`, `GOOS=windows GOARCH=amd64 go test -c -o
+- [x] Check `GOOS=windows GOARCH=amd64 go vet ./internal/windowssensors`, `GOOS=windows GOARCH=amd64 go test -c -o
   /dev/null ./internal/windowssensors` and `GOOS=darwin GOARCH=arm64 go build ./...` (R2, R34, R43)
-- [ ] Run the suite and commit: `feature-0018 Call the memory, the CPU and the network of Windows behind the seam`
+- [x] Run the suite and commit: `feature-0018 Call the memory, the CPU and the network of Windows behind the seam`
 
 ### 9. The commands on Windows
 

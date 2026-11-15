@@ -299,7 +299,7 @@ func checkSuiteJob(test *testing.T, suite workflowJob) {
 }
 
 // checkWindowsJob checks the job on Windows: it checks out and sets up Go as the suite job does, and builds, vets and
-// tests the two packages written for Windows, each as a step of its own.
+// tests the three packages written for Windows, each as a step of its own.
 func checkWindowsJob(test *testing.T, suite, windows workflowJob) {
 	test.Helper()
 	for _, action := range []func(step workflowStep) bool{
@@ -312,7 +312,7 @@ func checkWindowsJob(test *testing.T, suite, windows workflowJob) {
 			test.Error("the job on Windows does not use the actions of the suite job at the same version")
 		}
 	}
-	for _, command := range []string{"go build ./...", "go vet ./...", "go test ./internal/winhid ./internal/commandercore"} {
+	for _, command := range []string{"go build ./...", "go vet ./...", "go test ./internal/winhid ./internal/commandercore ./internal/windowssensors"} {
 		if !hasStep(windows, func(step workflowStep) bool { return strings.TrimSpace(step.Run) == command }) {
 			test.Errorf("no step of the job on Windows runs exactly %q", command)
 		}

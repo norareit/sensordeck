@@ -130,7 +130,10 @@ func TestEveryFileThatImportsTheLinuxCodeIsLimitedToLinux(test *testing.T) {
 
 func TestOnlyTheSeamOnWindowsImportsTheWindowsPackage(test *testing.T) {
 	const windowsImport = "golang.org/x/sys/windows"
-	allowed := []string{"internal/winhid/seam_windows.go", "internal/winhid/seam_windows_test.go"}
+	allowed := []string{
+		"internal/winhid/seam_windows.go", "internal/winhid/seam_windows_test.go",
+		"internal/windowssensors/seam_windows.go", "internal/windowssensors/seam_windows_test.go",
+	}
 	for _, path := range goFiles(test) {
 		for _, imported := range importsOf(test, path) {
 			if imported != windowsImport {
@@ -145,7 +148,7 @@ func TestOnlyTheSeamOnWindowsImportsTheWindowsPackage(test *testing.T) {
 	}
 }
 
-func TestTheOnlyLibraryLoadedByNameIsHidDLLFromTheSystemDirectory(test *testing.T) {
+func TestTheOnlyLibrariesLoadedByNameAreHidDLLAndKernel32DLLFromTheSystemDirectory(test *testing.T) {
 	for _, path := range goFiles(test) {
 		if strings.HasSuffix(path, "layout_test.go") {
 			continue
@@ -161,8 +164,8 @@ func TestTheOnlyLibraryLoadedByNameIsHidDLLFromTheSystemDirectory(test *testing.
 			}
 		}
 		for _, call := range strings.Split(text, "NewLazySystemDLL(")[1:] {
-			if !strings.HasPrefix(call, `"hid.dll")`) {
-				test.Errorf("%s loads a library other than hid.dll", path)
+			if !strings.HasPrefix(call, `"hid.dll")`) && !strings.HasPrefix(call, `"kernel32.dll")`) {
+				test.Errorf("%s loads a library other than hid.dll and kernel32.dll", path)
 			}
 		}
 	}
