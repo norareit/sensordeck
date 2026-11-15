@@ -19,3 +19,9 @@ supersedes: 0004-linux-sensors-and-run
   supersedes 0004 in R20, D13 and the clock case of R32, and the statement on the clock in the context of 0013. The
   unit has a plan, by D8. The check on the device is the human's, and the unit does not wait for it. The status is
   `draft`
+- 2026-11-15T22:05:54Z [Claude Code, anthropic/claude-opus-5-5] read the spec under the delegation in `AGENTS.md`: its cause is the
+  human's observation on the device, its fix sends the clock at each whole second without changing the rounds, and
+  every requirement can be tested in the sandbox with fake time. The unit keeps a `plan.md` as D8 decides. Items 2 and
+  3 of "Beyond the request" are declined. Item 1 is not taken into the unit: the orchestrating session adds the
+  amendment to the record of `0004-linux-sensors-and-run` itself when it merges this unit. The device check is the
+  human's and the unit does not depend on it. The approval that follows is made under that delegation
