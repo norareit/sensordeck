@@ -125,11 +125,11 @@ tab character.
 - **R10** On Windows, `sensordeck devices` writes one line for each supported screen, in the order of R6, in the format
   of the Linux line: `<path>\t<vendor>:<product>\t<name>\t<serial>`, with the IDs in four lower-case hexadecimal digits,
   the name the product string, and `-` for an empty name or serial. With no supported screen it writes what it writes
-  on Linux
+  on Linux, followed by the lines of R33 when there are any
 - **R11** Without `--device`, the Windows transport opens the one supported screen. With none it fails with
-  `no supported screen found`, and with several with the error of Linux that lists their lines and asks for
-  `--device`. The screen is opened for reading and writing, with a share mode of read and write and
-  `FILE_FLAG_OVERLAPPED`
+  `no supported screen found`, followed by the lines of R33 when there are any, and with several with the error of
+  Linux that lists their lines and asks for `--device`. The screen is opened for reading and writing, with a share mode
+  of read and write and `FILE_FLAG_OVERLAPPED`
 - **R12** With `--device <path>`, the Windows transport opens that path as it is given, in the way of R11, whatever its
   IDs, as the Linux transport opens the node given. It reads the caps of the opened handle, and when its two report
   lengths are not both 65 it closes the handle and fails with
@@ -195,11 +195,12 @@ tab character.
   today, and its tests and the end-to-end tests pass, changed only where they name what the node is
 - **R25** On Windows, the Commander is opened for reading and writing with a share mode of read and write and
   `FILE_FLAG_OVERLAPPED`, its reads wait as R18 says with the time limit the Commander package gives them today, and its
-  writes as R19 says. With no collection of interface 0 by R8, a reading gives no probes and the setup of a session
-  gives `commandercore.ErrNoController`, as on Linux when no node is found. A failed opening makes the probes
-  unavailable, as on Linux
+  writes as R19 says. With no collection of interface 0 by R8, a reading gives no probes, and the setup of a session
+  gives `commandercore.ErrNoController` as on Linux when no node is found, unless R34 applies. A failed opening makes
+  the probes unavailable, as on Linux
 - **R26** On Windows, `sensordeck sensors` lists the probes of the Commander, `commander.<n>.temp`, which are its only
-  readings. When the Commander is missing it writes `no sensor could be read` to standard error, as on Linux
+  readings. When the Commander is missing it writes `no sensor could be read` to standard error, as on Linux, preceded
+  by the line of R34 when R34 applies
 - **R27** On Windows, `sensordeck run` runs with the Commander as its only source of readings. It sets the clock,
   uploads the theme when it is not on the screen, and sends the probes of the Commander that the config maps, with
   `commander_interval` and `commander_color` as on Linux, and `controller lost` and `controller back` as on Linux. A
@@ -237,6 +238,48 @@ tab character.
       rounding of the time limit
     - R20, as a fake of the seam that records whether an operation was still pending when the call returned
     - R22 and R25
+    - R32 to R34: a near miss of each kind of R32 and R34, several near misses, a near miss beside a match, which gives
+      no line, and the output of `devices`, `sensors` and the setup of a session with them
+- **R35** A test limited to Windows by a build constraint resolves every procedure of `hid.dll` that the seam uses, and
+  runs the listing of R6 on the real system. It passes when the listing gives no error and every collection it gives
+  has a non-empty path, whatever devices the machine has, none included. It runs in the job of R36 and not in the
+  sandbox
+
+### Devices that almost match
+
+These requirements hold on Windows only. On Linux no output changes.
+
+- **R32** A near miss of the screen is a collection with vendor ID `0x0483` and product ID `0x0065` whose two report
+  lengths are not both 65. A near miss of interface 0 is a collection with vendor ID `0x1B1C`, product ID `0x0C2A` and
+  the field `mi_00` of R9, that does not meet R8 by its usage page, its usage or its report lengths
+- **R33** When the listing of R6 gives no supported screen and one or more near misses of the screen, each near miss
+  gives one line, in the order of R6:
+  `found <path> with reports of <input> and <output> bytes, those of the screen are 65`
+- **R34** When the listing gives no collection of interface 0 and one or more near misses of it, the finding of the
+  Commander gives an error that is not `commandercore.ErrNoController`, worded
+  `no collection of interface 0 matches: <path> has usage page 0x<page>, usage 0x<usage> and reports of <input> and <output> bytes`,
+  with the numbers in four upper-case hexadecimal digits, the near misses in the order of R6 and joined by `; `, and
+  ending with `, interface 0 has usage page 0xFF42, usage 0x0001 and reports of 385 and 385 bytes`. The setup of a
+  session gives this error, so that `run` with `commander_color` writes it once as `controller setup failed: <error>`,
+  as the keeper writes a failed setup today. A reading without a session gives no probes, as R25 says. `sensors` writes
+  the error as one line to standard error
+
+### CI on Windows
+
+- **R36** The CI workflow, `.github/workflows/ci.yml`, has a second job, beside the job of the suite, that runs on
+  `windows-2025`, checks out the repository and sets up Go from `go.mod` with the same actions at the same exact
+  versions as the job of the suite, and runs, each as a step of its own:
+    - `go build ./...`
+    - `go vet ./...`
+    - `go test` of the package of the Windows transport and of the Commander package, named one by one
+- **R37** The Linux-only tests stay out of the job by what R36 names and by the build constraints they already have:
+  the end-to-end tests, the Linux transport, the Linux sensors and the fakes of the screen, the Commander and the
+  pseudo terminals are limited to Linux, and the tests of the Commander package that use the fake Commander keep that
+  constraint. No test is skipped at run time for being on Windows
+- **R38** The release workflow keeps calling the CI workflow as the gate of the release, so that the job of R36 gates a
+  release too, and its permissions stay as they are. The test of the workflows checks that the CI workflow has exactly
+  the two jobs, the job of the suite on `ubuntu-24.04` with the five commands as today, and the job of R36 with what
+  R36 names
 
 ## Unverified until the human runs it
 
@@ -253,6 +296,8 @@ it, and a wrong one is corrected by a later unit.
   all, and that the screen in the state after the reset is found by the same discovery
 - That `CancelIoEx` ends a pending HID read at once, so that a time limit is not overrun by much
 - That iCUE, when it runs, makes the opening fail or lets it succeed, and what the README's warning should say then
+- That the job of R36 passes on GitHub, R35 among it. The loop does not push, so the job first runs when the human
+  pushes
 
 ## Decisions
 
@@ -329,12 +374,28 @@ it, and a wrong one is corrected by a later unit.
   shared. Talking to a device from two programs at once stays unsupported, as the README says of the Commander
 - **D13 The roots are ignored on Windows.** `SENSORDECK_SYSFS_ROOT`, `SENSORDECK_DEV_ROOT` and `SENSORDECK_PROC_ROOT`
   are hooks of the Linux end-to-end tests. On Windows the transport and the Commander take no root
+- **D14 Near misses are worded.** When the check on Windows fails, the human needs to see what the device gave, and the
+  sandbox cannot see it. A device whose IDs match but whose lengths or usage do not is the case the checks of R7 and
+  R8 could turn into a silent "not found", so R33 and R34 name what was found beside what was expected. A collection
+  of the Commander's interface 1 or another device is no near miss, because nothing of it is expected. A near miss
+  beside a match gives nothing, because a second collection of one device is normal on Windows. For the Commander the
+  wording goes where a failed setup is written today, so that `run` and `sensors` need no new kind of output
+- **D15 The CI job on Windows runs named packages.** Running `go test ./...` on Windows was rejected: the tests of the
+  command line, the config and the themes have never run on Windows, and some may assume Linux paths or file modes.
+  The loop cannot run Windows, so it could neither find nor fix such a failure, and a red job would block every
+  release through the gate of R38. The job therefore tests the two packages this unit writes for Windows, whose tests
+  are written for it, and builds and vets everything, which type-checks every test file that Windows builds. Widening
+  the list is a later unit's, once the job is seen to run. The runner is `windows-2025` and not `windows-latest`,
+  because unit 0015 names the exact image `ubuntu-24.04` for the job of the suite, so that a change of the image is a
+  change of the workflow. The job sits in the CI workflow, and not in the release workflow, so that it runs on every
+  push and pull request and gates the release through the call that is there already. The Linux-only tests are kept
+  out by the build constraints the project already uses for them, which a skip at run time would duplicate
 
 ## Non-goals
 
 - The sensors of the machine on Windows, through LibreHardwareMonitor or otherwise, which are the next unit
 - The startup task on Windows, and `sensordeck service` on Windows
-- End-to-end tests on Windows, and a run of any test on Windows
+- End-to-end tests on Windows, and a run on Windows of any test outside R36
 - Notifications of device arrival and removal, with `RegisterDeviceNotification` or otherwise; `Reopen` as `run`
   calls it is enough
 - Flushing the input queue of the HID class driver, with `HidD_FlushQueue` or otherwise, which the Linux transport does
@@ -345,17 +406,20 @@ it, and a wrong one is corrected by a later unit.
 
 ## Beyond the request
 
-1. When the listing finds collections of `0483:0065` but none with the lengths of R7, `no supported screen found`
+Items 1 and 4 were taken into the unit by the orchestrating session, as R32 to R34 and R35 to R38. Items 2 and 3 were
+declined.
+
+1. Taken. When the listing finds collections of `0483:0065` but none with the lengths of R7, `no supported screen found`
    goes on with the lengths it found, and the same for the Commander in `sensors`. Cost: carrying the rejected
    collections out of the choice, and tests. Without it, a screen whose caps differ on a real machine shows as not
    found, and the human tells us, and the lengths are read with a debugging build
-2. The name column of `devices` on Windows made as the kernel makes `HID_NAME`, the manufacturer string, a space, and
+2. Declined. The name column of `devices` on Windows made as the kernel makes `HID_NAME`, the manufacturer string, a space, and
    the product string, so that the line is the same on both systems. Cost: one more call, `HidD_GetManufacturerString`,
    and a test. Without it, the column differs between the systems, which nothing reads
-3. A bound on the reap after `CancelIoEx`, with the handle closed and the buffer left to the system when the cancel does
+3. Declined. A bound on the reap after `CancelIoEx`, with the handle closed and the buffer left to the system when the cancel does
    not complete within a second. Cost: more states in R20 and their tests. Without it, a driver that does not honour the
    cancel would hang a call, which would be seen at the human's check and fixed then
-4. A CI job on `windows-latest` that runs the unit tests of the Windows transport and the Commander, including the files
+4. Taken. A CI job on `windows-latest` that runs the unit tests of the Windows transport and the Commander, including the files
    limited to Windows, against the fake and with no device. Cost: a job in the workflow, and limiting the end-to-end
    tests, which need Linux, to Linux by a build constraint. Without it, the Windows-only files are built and vetted but
    never run before the human's check
