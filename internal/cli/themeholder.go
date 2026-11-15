@@ -55,6 +55,11 @@ func (holder *themeHolder) ensure(stop context.Context, opened transport) (ready
 	return true, true, false
 }
 
+// onScreen tells whether values may be sent now without a check or an upload, which only a round does.
+func (holder *themeHolder) onScreen() bool {
+	return holder.theme == nil || (!holder.checkDue && !holder.due)
+}
+
 func (holder *themeHolder) check(serial string) {
 	holder.checkDue = false
 	holder.due = !holder.state.holds(serial, holder.theme.hash)

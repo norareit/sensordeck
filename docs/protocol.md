@@ -65,6 +65,9 @@ One report sets the clock:
 The year byte holds 2000 to 2255. For 2026-11-14 15:04:05, a Saturday, the report starts
 `03 01 15 1A 0B 0E 0F 04 05 06 64`.
 
+The screen shows the time of the last clock report it received and does not advance it, as seen on the device on
+2026-11-15. A program sends the clock once a second for the seconds on the screen to change.
+
 ## Theme upload
 
 The steps, in order:

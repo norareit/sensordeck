@@ -182,15 +182,23 @@ func TestRunSendsTheKeptProbesBetweenReadingsOfTheController(test *testing.T) {
 	if !reached {
 		test.Fatalf("no later value report holds (1, 43) and (4, 37): %v", screen.Reports())
 	}
+	// A clock report may stand between value reports, once a second, so only the value reports are counted.
+	var following []map[uint8]uint16
 	deadline := time.Now().Add(reportLimit)
-	for len(screen.Reports()) < changed+4 && time.Now().Before(deadline) {
+	for len(following) < 3 && time.Now().Before(deadline) {
+		following = following[:0]
+		for _, report := range screen.Reports()[changed+1:] {
+			if pairs := valuePairs(report); pairs != nil {
+				following = append(following, pairs)
+			}
+		}
 		time.Sleep(20 * time.Millisecond)
 	}
-	if len(screen.Reports()) < changed+4 {
-		test.Fatalf("fewer than three reports followed: %v", screen.Reports())
+	if len(following) < 3 {
+		test.Fatalf("fewer than three value reports followed: %v", screen.Reports())
 	}
-	for _, report := range screen.Reports()[changed+1 : changed+4] {
-		if pairs := valuePairs(report); pairs[4] != 37 {
+	for _, pairs := range following[:3] {
+		if pairs[4] != 37 {
 			test.Errorf("a report after the change holds %v", pairs)
 		}
 	}

@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/norareit/sensordeck/internal/smartmonitor"
 	"github.com/norareit/sensordeck/internal/uploadstate"
@@ -122,7 +123,7 @@ func TestRunTriesAFailedUploadAgainAfterTenSeconds(test *testing.T) {
 	harness, statePath := runningTheme(test, 13)
 	harness.transport.queue = []readResult{{report: reportOf(0x43)}}
 	harness.run("run", "--config", themeConfig(test, folder))
-	if got := themeKinds(harness.transport.writes); got != "UCV" {
+	if got := themeKinds(harness.transport.writes); got != "UCVCVCV" {
 		test.Errorf("writes %s", got)
 	}
 	if strings.Count(harness.stdout.String(), "uploading theme") != 2 || strings.Count(harness.stdout.String(), "theme uploaded") != 1 {
@@ -208,5 +209,39 @@ func TestRunRefusesWhatItCannotStartWithAThemeBeforeOpeningTheScreen(test *testi
 		if len(harness.opened) != 0 || len(harness.transport.writes) != 0 {
 			test.Errorf("%s: opened %v, wrote %d", each.name, harness.opened, len(harness.transport.writes))
 		}
+	}
+}
+
+// uploadStarts gives the moments, since the start of the run, of the reports that equal the first report of the run,
+// which is the first report of an upload and the same for each one.
+func uploadStarts(written []stamped) []time.Duration {
+	var starts []time.Duration
+	for _, write := range written {
+		if write.report == written[0].report {
+			starts = append(starts, write.at)
+		}
+	}
+	return starts
+}
+
+func TestATickWritesNothingAndUploadsNothingWhileTheThemeIsNotOnTheScreen(test *testing.T) {
+	folder := writeThemeFolder(test, compiledTheme)
+	harness, _ := runningTheme(test, 16)
+	harness.transport.queue = []readResult{{report: reportOf(0x43)}}
+	written := stampWrites(harness, startOfTheRun())
+	harness.run("run", "--config", writeConfig(test, "interval: 5s\ntheme: '"+folder+"'\n"))
+	if got := themeKinds(harness.transport.writes); got != "UCVC" { // the last clock is the tick after the round of the second upload
+		test.Errorf("writes %s", got)
+	}
+	if starts := uploadStarts(*written); len(starts) != 2 || starts[0] != 0 || starts[1] < 10*time.Second || starts[1]%(5*time.Second) != 0 {
+		test.Errorf("uploads started at %v", starts)
+	}
+	for _, write := range *written {
+		if write.isClock() && write.at < 10*time.Second {
+			test.Errorf("a clock report at %v, before the theme was on the screen", write.at)
+		}
+	}
+	if strings.Count(harness.stdout.String(), "uploading theme") != 2 {
+		test.Errorf("stdout %q", harness.stdout.String())
 	}
 }

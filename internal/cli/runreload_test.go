@@ -110,7 +110,7 @@ func TestRunUploadsTheThemeAfterAChangeFromTagsToThemeAndSendsItsTags(test *test
 	path := writeConfig(test, "tags: {cpu.clock: 2}\n")
 	changeAtWait(harness, 1, 3, func() { rewrite(test, path, "theme: '"+folder+"'\n", 1) })
 	harness.run("run", "--config", path)
-	if got := themeKinds(harness.transport.writes); got != "CUCV" && got != "CVUCV" {
+	if got := themeKinds(harness.transport.writes); got != "CUCVCV" {
 		test.Errorf("writes %s", got)
 	}
 	if !strings.Contains(harness.stdout.String(), "uploading theme "+folder+"\n") {
@@ -128,7 +128,7 @@ func TestRunUploadsNothingAfterAChangeFromThemeToTags(test *testing.T) {
 	path := themeConfig(test, folder)
 	changeAtWait(harness, 1, 3, func() { rewrite(test, path, "tags: {cpu.clock: 2}\n", 1) })
 	harness.run("run", "--config", path)
-	if strings.Contains(harness.stdout.String(), "uploading") || len(harness.transport.writes) != 4 {
+	if strings.Contains(harness.stdout.String(), "uploading") || len(harness.transport.writes) != 6 {
 		test.Errorf("stdout %q, %d reports", harness.stdout.String(), len(harness.transport.writes))
 	}
 	if reports := valueReports(harness); reports[len(reports)-1] != valueReport(smartmonitor.Value{Tag: 2, Value: 1234}) {
@@ -158,7 +158,7 @@ func TestARewriteOfTheSameThemeUploadsNothingAndAnEditedFolderIsUploaded(test *t
 	if got := strings.Count(harness.stdout.String(), "uploading theme"); got != 2 {
 		test.Errorf("%d uploads, stdout %q", got, harness.stdout.String())
 	}
-	if got := themeKinds(harness.transport.writes); got != "UCVUCV" {
+	if got := themeKinds(harness.transport.writes); got != "UCVCVCVUCVCV" {
 		test.Errorf("writes %s", got)
 	}
 }
@@ -170,7 +170,7 @@ func TestAReloadToAThemeWithNoCacheDirectoryIsRefusedWithItsLine(test *testing.T
 	changeAtWait(harness, 1, 3, func() { rewrite(test, path, "theme: '"+folder+"'\n", 1) })
 	harness.run("run", "--config", path)
 	want := "config file " + path + ": cannot find the cache directory: no cache directory in this test, keeping the running config\n"
-	if harness.stderr.String() != want || themeKinds(harness.transport.writes) != "CV" {
+	if harness.stderr.String() != want || themeKinds(harness.transport.writes) != "CVCVCV" {
 		test.Errorf("stderr %q, writes %s", harness.stderr.String(), themeKinds(harness.transport.writes))
 	}
 }

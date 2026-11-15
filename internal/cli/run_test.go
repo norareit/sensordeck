@@ -140,42 +140,182 @@ func TestRunAsksTheSourcesOnlyForTheMappedNames(test *testing.T) {
 	}
 }
 
-func TestRunSetsTheClockAgainAfterSixtySecondsAndNotBefore(test *testing.T) {
-	harness := runWith(twoMetrics(), 61) // rounds 0 to 60 of one second each
-	harness.run("run", "--config", writeConfig(test, twoTags))
-	want := "C" + strings.Repeat("V", 60) + "CV"
-	if got := kinds(test, harness.transport.writes); got != want {
+// stamped is a report written, with the moment of the fake clock at which it was written.
+type stamped struct {
+	report smartmonitor.Report
+	at     time.Duration // since the start of the run
+}
+
+func (write stamped) isClock() bool { return write.report[0] == 0x03 }
+
+// clockSecond is the second of the time that a clock report holds, since the start of the run.
+func (write stamped) clockSecond() int { return int(write.report[8]) - startOfTheRun().Second() }
+
+// stampWrites records every report written, and gives them as the run goes on.
+func stampWrites(harness *harness, started time.Time) *[]stamped {
+	var written []stamped
+	harness.transport.afterWrite = func(count int) {
+		written = append(written, stamped{report: harness.transport.writes[count-1], at: harness.clock.current.Sub(started)})
+	}
+	return &written
+}
+
+// timeline writes C for a clock and V for a value report, each with the milliseconds of its write, as C0 V0 C1000.
+func timeline(written []stamped) string {
+	var result []string
+	for _, write := range written {
+		kind := "V"
+		if write.isClock() {
+			kind = "C"
+		}
+		result = append(result, fmt.Sprintf("%s%d", kind, write.at.Milliseconds()))
+	}
+	return strings.Join(result, " ")
+}
+
+func runStamped(test *testing.T, interval string, waits int, setup func(*harness)) (*harness, []stamped) {
+	test.Helper()
+	harness := runWith(twoMetrics(), waits)
+	if setup != nil {
+		setup(harness)
+	}
+	written := stampWrites(harness, startOfTheRun())
+	harness.run("run", "--config", writeConfig(test, "interval: "+interval+"\n"+twoTags))
+	return harness, *written
+}
+
+func TestRunWithAnIntervalOfOneSecondWritesTheClockInEveryRoundAndTicksApartFromThem(test *testing.T) {
+	harness, written := runStamped(test, "1s", 5, nil)
+	if got, want := timeline(written), "C0 V0 C1000 V1000 C2000 V2000 C3000 V3000 C4000 V4000"; got != want {
+		test.Errorf("writes %s", got)
+	}
+	for position := 0; position < len(written); position += 2 {
+		if written[position].clockSecond() != position/2 {
+			test.Errorf("the clock %d holds second %d", position/2, written[position].clockSecond())
+		}
+	}
+	if want := []time.Duration{time.Second, time.Second, time.Second, time.Second, time.Second}; !reflect.DeepEqual(harness.waits, want) {
+		test.Errorf("waits %v", harness.waits)
+	}
+}
+
+func TestRunWithAnIntervalOfFiveSecondsWritesTheClockEverySecondAndTheValuesEveryFive(test *testing.T) {
+	_, written := runStamped(test, "5s", 11, nil)
+	want := "C0 V0 C1000 C2000 C3000 C4000 C5000 V5000 C6000 C7000 C8000 C9000 C10000 V10000"
+	if got := timeline(written); got != want {
+		test.Errorf("writes %s", got)
+	}
+	seconds := 0
+	for _, write := range written {
+		if write.isClock() {
+			if write.clockSecond() != seconds {
+				test.Errorf("a clock holds second %d, want %d", write.clockSecond(), seconds)
+			}
+			seconds++
+		}
+	}
+}
+
+func TestRunWithAnIntervalOfThreeHundredMillisecondsWritesTheClockOncePerSecond(test *testing.T) {
+	_, written := runStamped(test, "300ms", 10, nil)
+	want := "C0 V0 V300 V600 V900 C1000 V1200 V1500 V1800 C2000 V2100"
+	if got := timeline(written); got != want {
 		test.Errorf("writes %s", got)
 	}
 }
 
-// The clock written at 2.5 seconds, after the reopening, is 60 seconds old at 62.5, so the round that starts at 62.6
-// after a long round sets it, although the place of that round on the grid of one second is 62.
-func TestRunSetsTheClockByTheTimeARoundStartsNotByItsPlaceOnTheGrid(test *testing.T) {
+func TestRunStartedWithinASecondTicksOnTheWholeSecondsAndRoundsKeepTheirPlaces(test *testing.T) {
+	started := startOfTheRun().Add(400 * time.Millisecond)
+	harness := runWith(twoMetrics(), 6)
+	harness.clock.current = started
+	written := stampWrites(harness, started)
+	harness.run("run", "--config", writeConfig(test, "interval: 1s\n"+twoTags))
+	// the times are since the start at 400 milliseconds, so a tick at the whole second is at 600 and a round at 1000
+	if got, want := timeline(*written), "C0 V0 C600 V1000 C1600 V2000 C2600"; got != want {
+		test.Errorf("writes %s", got)
+	}
+}
+
+func TestRunFollowsALongRoundAtOnceAndMakesUpNoClockOfThePassedSeconds(test *testing.T) {
 	source := twoMetrics()
 	var harness *harness
 	reads := 0
-	var writtenBeforeRead62 string
 	source.onRead = func() {
 		reads++
-		switch reads {
-		case 1:
+		if reads == 1 {
 			harness.clock.sleep(2500 * time.Millisecond)
-		case 61:
-			harness.clock.sleep(1600 * time.Millisecond)
-		case 62:
-			writtenBeforeRead62 = kinds(test, harness.transport.writes)
-		case 63:
-			harness.cancelStop()
 		}
 	}
-	harness = newHarness()
+	harness = runWith(source, 2)
 	harness.sources = []sensors.Source{source}
-	harness.transport.failWrites = []bool{false, true}
-	harness.transport.reopenResults = []error{nil}
+	written := stampWrites(harness, startOfTheRun())
 	harness.run("run", "--config", writeConfig(test, twoTags))
-	if reads < 62 || !strings.HasSuffix(writtenBeforeRead62, "VC") {
-		test.Errorf("reads %d, writes before the 62nd read end in %q", reads, writtenBeforeRead62[max(0, len(writtenBeforeRead62)-4):])
+	if got, want := timeline(*written), "C0 V2500 C2500 V2500 C3000 V3000"; got != want {
+		// the first values are written after the long read, at 2500
+		test.Errorf("writes %s", got)
+	}
+	for _, write := range *written {
+		if write.isClock() && write.clockSecond() == 1 {
+			test.Error("a clock report holds the second that passed during the long round")
+		}
+	}
+}
+
+func TestRunWritesNothingInATickWhileTheScreenIsLostAndReopensItInTheNextRound(test *testing.T) {
+	var reopensBeforeTheRound int
+	harness, written := runStamped(test, "5s", 6, func(harness *harness) {
+		harness.transport.failWrites = []bool{false, true}
+		harness.transport.reopenResults = []error{nil}
+		harness.onWait = func(count int) {
+			if count == 5 {
+				reopensBeforeTheRound = harness.transport.reopens
+			}
+			if count >= 6 {
+				harness.cancelStop()
+			}
+		}
+	})
+	if got, want := timeline(written), "C0 C5000 V5000"; got != want {
+		test.Errorf("writes %s", got)
+	}
+	if reopensBeforeTheRound != 0 || harness.transport.reopens != 1 {
+		test.Errorf("reopens %d before the round, %d in all", reopensBeforeTheRound, harness.transport.reopens)
+	}
+	if got := harness.stderr.String(); got != "screen lost: fake failure\nscreen back\n" {
+		test.Errorf("stderr %q", got)
+	}
+}
+
+func TestRunWritesTheClockInTheRoundThatReopensTheScreenWithinASecondWhoseClockWasWritten(test *testing.T) {
+	_, written := runStamped(test, "300ms", 3, func(harness *harness) {
+		harness.transport.failWrites = []bool{false, false, true}
+	})
+	if got, want := timeline(written), "C0 V0 C600 V600"; got != want {
+		test.Errorf("writes %s", got)
+	}
+}
+
+func TestRunMarksTheScreenLostWhenTheClockOfATickFailsAndLeavesTheReopeningToTheNextRound(test *testing.T) {
+	var reopensBeforeTheRound int
+	harness, written := runStamped(test, "5s", 6, func(harness *harness) {
+		harness.transport.failWrites = []bool{false, false, true}
+		harness.onWait = func(count int) {
+			if count == 5 {
+				reopensBeforeTheRound = harness.transport.reopens
+			}
+			if count >= 6 {
+				harness.cancelStop()
+			}
+		}
+	})
+	if got, want := timeline(written), "C0 V0 C5000 V5000"; got != want {
+		test.Errorf("writes %s", got)
+	}
+	if reopensBeforeTheRound != 0 || harness.transport.reopens != 1 {
+		test.Errorf("reopens %d before the round, %d in all", reopensBeforeTheRound, harness.transport.reopens)
+	}
+	if got := harness.stderr.String(); got != "screen lost: fake failure\nscreen back\n" {
+		test.Errorf("stderr %q", got)
 	}
 }
 
@@ -192,7 +332,7 @@ func TestRunLeavesAnUnavailableMetricOut(test *testing.T) {
 func TestRunWritesNoReportWhenEveryMetricIsUnavailable(test *testing.T) {
 	harness := runWith(&fakeSource{names: []string{"cpu.temp", "cpu.clock"}}, 2)
 	harness.run("run", "--config", writeConfig(test, twoTags))
-	if got := kinds(test, harness.transport.writes); got != "C" {
+	if got := kinds(test, harness.transport.writes); got != "CC" {
 		test.Errorf("writes %s", got)
 	}
 }

@@ -10,8 +10,8 @@
 //     because the tests may run as root
 //   - the build for Windows is covered by the two commands of the suite that build and vet for Windows, and its
 //     message is not run
-//   - the clock of `run` again after 60 seconds, and a reopening that fails before it succeeds, are covered by the
-//     tests of the feeder in internal/cli, which move the time themselves and fail the reopenings as they like
+//   - a reopening that fails before it succeeds is covered by the tests of the feeder in internal/cli, which move the
+//     time themselves and fail the reopenings as they like
 //   - the GPU metrics in `run`, with no nvidia-smi in these tests, are covered by the tests of the feeder in
 //     internal/cli and of the GPU source in internal/linuxsensors
 //   - `cpu.util`, which needs two samples that differ, and the time limit of nvidia-smi are covered by the tests of

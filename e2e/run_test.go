@@ -69,6 +69,32 @@ func TestRunSendsTheClockAndThenTheValues(test *testing.T) {
 	running.stop(syscall.SIGTERM)
 }
 
+// clockOf decodes the time of a clock report.
+func clockOf(report smartmonitor.Report) time.Time {
+	return time.Date(2000+int(report[3]), time.Month(report[4]), int(report[5]), int(report[6]), int(report[7]), int(report[8]), 0, time.Local)
+}
+
+func TestRunSendsTheClockOnceASecondBetweenRoundsOfAnIntervalOfThreeSeconds(test *testing.T) {
+	fake, screen, environment, _ := runningSetup(test)
+	config := writeConfigFile(test, strings.Replace(runConfig, "interval: 100ms", "interval: 3s", 1))
+	before := time.Now().Truncate(time.Second)
+	running := start(test, fake, environment, "run", "--config", config)
+	reports, reached := screen.WaitReports(4, 6*time.Second)
+	after := time.Now()
+	if !reached {
+		test.Fatalf("%d reports arrived", len(reports))
+	}
+	expectClockReport(test, reports[0][:], before, after)
+	if !bytes.Equal(reports[1][:], valueReportOf42And1234) {
+		test.Errorf("second report % X", reports[1])
+	}
+	first := clockOf(reports[0])
+	for position, seconds := range map[int]time.Duration{2: 1, 3: 2} {
+		expectClockReport(test, reports[position][:], first.Add(seconds*time.Second), first.Add(seconds*time.Second))
+	}
+	running.stop(syscall.SIGTERM)
+}
+
 // valuePairs decodes a value report into its tags and values, and gives nil for a report of another kind.
 func valuePairs(report smartmonitor.Report) map[uint8]uint16 {
 	if report[0] != 0x02 {

@@ -15,10 +15,6 @@ import (
 	"github.com/norareit/sensordeck/internal/smartmonitor"
 )
 
-// clockPeriod is how often the clock of the screen is set again. The screen keeps time itself, so this only corrects
-// drift.
-const clockPeriod = time.Minute
-
 func (current *session) runCommand() *cobra.Command {
 	var configPath string
 	command := &cobra.Command{
@@ -149,7 +145,8 @@ func (locked *lockedWriter) Write(data []byte) (int, error) {
 	return locked.writer.Write(data)
 }
 
-// feeder sends the clock and the values of the mapped metrics to the screen in rounds, and reopens the transport
+// feeder sends the clock and the values of the mapped metrics to the screen in rounds, and the clock alone in ticks at
+// each whole second between them, and reopens the transport
 // when the screen is lost. Without commander_color it reads the controller at most once per period and sends the kept
 // readings of its last reading in the other rounds. With it the controller is read through the keeper, which holds a
 // session of the controller, and a round with a probe mapped asks it for a reading of its own. The holder keeps the
@@ -180,31 +177,41 @@ func (feeding *feeder) probesMapped() bool {
 	return false
 }
 
-// feed works until stop is done, and gives an error only when the clock cannot be encoded.
+// feed works until stop is done, and gives an error only when the clock cannot be encoded. Besides its rounds it ticks
+// at each whole second of the time, and a tick writes the clock alone.
 func (feeding *feeder) feed(stop context.Context) error {
 	feeding.clockDue = true
 	first := feeding.now()
 	interval := feeding.config.Interval
+	nextRound := first
 	index := 0
 	for stop.Err() == nil {
-		if err := feeding.round(stop); err != nil {
+		start := feeding.now()
+		var err error
+		if !start.Before(nextRound) {
+			err = feeding.round(stop, start)
+			// A round that ran into the next one is followed at once, and the rounds missed are not made up.
+			index = max(index+1, int(feeding.now().Sub(first)/interval))
+			nextRound = first.Add(time.Duration(index) * interval)
+		} else {
+			err = feeding.tick(stop, start)
+		}
+		if err != nil {
 			return err
 		}
-		end := feeding.now()
-		// A round that ran into the next one is followed at once, and the rounds missed are not made up.
-		index = max(index+1, int(end.Sub(first)/interval))
-		next := first.Add(time.Duration(index) * interval)
-		if next.After(end) && !feeding.wait(stop, next.Sub(end)) {
+		next := start.Truncate(time.Second).Add(time.Second)
+		if nextRound.Before(next) {
+			next = nextRound
+		}
+		if end := feeding.now(); next.After(end) && !feeding.wait(stop, next.Sub(end)) {
 			return nil
 		}
 	}
 	return nil
 }
 
-// round does one round. The age of the clock is measured at the time the round actually starts, because a round
-// that follows a long one starts after its place on the grid.
-func (feeding *feeder) round(stop context.Context) error {
-	start := feeding.now()
+// round does one round, which started at start.
+func (feeding *feeder) round(stop context.Context, start time.Time) error {
 	feeding.reload()
 	if feeding.lost {
 		if feeding.transport.Reopen() != nil {
@@ -223,11 +230,8 @@ func (feeding *feeder) round(stop context.Context) error {
 		return nil
 	}
 	feeding.clockDue = feeding.clockDue || uploaded
-	if feeding.clockDue || start.Sub(feeding.lastClock) >= clockPeriod {
-		if written, err := feeding.writeClock(stop); !written || err != nil {
-			return err
-		}
-		feeding.clockDue = false
+	if written, err := feeding.writeClockWhenDue(stop, start); !written || err != nil {
+		return err
 	}
 	for _, report := range smartmonitor.EncodeValues(feeding.read(stop, start)) {
 		if !feeding.write(stop, report) {
@@ -235,6 +239,31 @@ func (feeding *feeder) round(stop context.Context) error {
 		}
 	}
 	return nil
+}
+
+// tick writes the clock between the rounds, and nothing else. It leaves a lost screen and a theme that is not known
+// to be on the screen to the next round.
+func (feeding *feeder) tick(stop context.Context, start time.Time) error {
+	if feeding.lost || !feeding.holder.onScreen() {
+		return nil
+	}
+	_, err := feeding.writeClockWhenDue(stop, start)
+	return err
+}
+
+// writeClockWhenDue writes the clock when it is due or when the whole second of start differs from that of the last
+// clock report. The screen shows the time of the last clock report it received and does not advance it, so the clock
+// is written once a second for the seconds on the screen to change. A second that differs, and not one that is later,
+// makes a time set back count. It tells whether the work may go on, which is not so after a failed write.
+func (feeding *feeder) writeClockWhenDue(stop context.Context, start time.Time) (bool, error) {
+	if !feeding.clockDue && start.Truncate(time.Second).Equal(feeding.lastClock.Truncate(time.Second)) {
+		return true, nil
+	}
+	written, err := feeding.writeClock(stop)
+	if written {
+		feeding.clockDue = false
+	}
+	return written, err
 }
 
 // reload applies the config file when it changed: the mappings and the theme at once, and for the other keys a line

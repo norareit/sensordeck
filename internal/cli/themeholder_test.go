@@ -179,3 +179,39 @@ func TestHolderStartsNoUploadOnceStopIsDone(test *testing.T) {
 		test.Errorf("ready %v uploaded %v failed %v, %d reports", ready, uploaded, failed, len(fixture.fake.writes))
 	}
 }
+
+func TestHolderOnScreenTellsWhetherValuesMayBeSentWithoutACheckOrAnUpload(test *testing.T) {
+	if !newHolderFixture(test, nil).holder.onScreen() {
+		test.Error("a holder with no theme is not on screen")
+	}
+	theme := aTheme("theme one")
+	fixture := newHolderFixture(test, theme)
+	if fixture.holder.onScreen() {
+		test.Error("on screen before the first check")
+	}
+	writeEntries(test, fixture.state, map[string]string{"S1": theme.hash})
+	fixture.ensure()
+	if !fixture.holder.onScreen() {
+		test.Error("not on screen after a check that found the hash")
+	}
+	fixture.holder.screenBack()
+	if fixture.holder.onScreen() {
+		test.Error("on screen after the screen came back")
+	}
+	fixture.ensure()
+	fixture.holder.setTheme(aTheme("theme two"))
+	if fixture.holder.onScreen() {
+		test.Error("on screen after a theme of another hash")
+	}
+	fixture.ensure()
+	if !fixture.holder.onScreen() {
+		test.Error("not on screen after an upload that completed")
+	}
+	failing := newHolderFixture(test, aTheme("theme three"))
+	failing.fake.ackWhenEmpty = false
+	failing.fake.queue = []readResult{{report: reportOf(0x43)}}
+	failing.ensure()
+	if failing.holder.onScreen() {
+		test.Error("on screen after an upload that failed")
+	}
+}

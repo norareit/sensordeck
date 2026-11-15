@@ -1,6 +1,6 @@
 ---
 kind: bug
-status: approved
+status: in-progress
 timestamp: 2026-11-15T22:04:29Z
 supersedes: 0004-linux-sensors-and-run
 ---
@@ -31,3 +31,16 @@ supersedes: 0004-linux-sensors-and-run
   and `onScreen` on the theme holder for the tick. A throwaway prototype of the schedule, run against the suite and
   reverted, named the existing tests whose expected reports or counts of waits change, which the plan lists. The
   status stays `approved`
+- 2026-11-15T22:40:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, began the work. The status is
+  `in-progress`
+- 2026-11-15T22:41:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, built the schedule of rounds and
+  ticks in `feed`, `onScreen` on the theme holder, the tests of R10 and R11, the scaled counts of waits of the keeper
+  tests, the updated expected reports of the existing tests, and the README, protocol and test-comment changes. Added
+  a task to `plan.md` for work it did not list: `TestRunSendsTheKeptProbesBetweenReadingsOfTheController` in
+  `e2e/commander_test.go` took the next three reports after a change to be value reports, which fails now that a clock
+  report stands between them once a second, so it counts the value reports only. Two details of the tests differ from
+  the plan: the test of a tick while the theme is not on the screen runs 16 waits and expects `UCVC`, because the
+  failed upload advanced the fake clock by a second and so the retry came at the round at 15 seconds, and a clock
+  report of the tick follows the upload. The tests of R10 were written after the schedule and not before; they fail
+  against the tree without the schedule and `onScreen`, which was checked by stashing `run.go` and `themeholder.go`
+- 2026-11-15T22:50:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, ran the five commands of the suite on the final tree: `go test ./...` passed with no failing package, `go vet ./...`, the build and the vet for Windows reported nothing, and `gofmt -l .` printed no file name. The end-to-end suite also passed four times in a row with `-count=4`. The check on the device, that the seconds on the screen change every second, is not done, and is the human's. The status stays `in-progress`

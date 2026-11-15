@@ -248,7 +248,7 @@ Values are sent as whole numbers, rounded, so 51.5 is sent as 52. A metric that 
 screen keeps its last value.
 
 `sensordeck run` sends the values until Ctrl+C or SIGTERM. It sets the clock of the screen when it starts and once a
-minute, and it keeps running when the screen is unplugged and plugged in again.
+second, and it keeps running when the screen is unplugged and plugged in again.
 
 `run` reads the config file again when its modification time or its size changes, at the start of a round, so an edit
 or `sensordeck theme use` takes effect within a round, with no restart. A reload applies the theme and the tags. A change

@@ -78,14 +78,14 @@ func startOfThe(lighting *fakeLighting) time.Time { return lighting.setups[0].at
 
 func TestRunKeepsTheControllerAwakeWithAnIntervalOfTenSeconds(test *testing.T) {
 	lighting := &fakeLighting{}
-	harness := runKeeping(lighting, 6)
+	harness := runKeeping(lighting, 60) // run waits once a second for its ticks, so 60 waits are one minute
 	harness.run("run", "--config", writeConfig(test, colourTags("10s")))
 	checkTheKeepalive(test, lighting)
 }
 
 func TestRunKeepsTheControllerAwakeWhileTheScreenIsLost(test *testing.T) {
 	lighting := &fakeLighting{}
-	harness := runKeeping(lighting, 6)
+	harness := runKeeping(lighting, 60) // one minute of waits of one second
 	harness.transport.failWrites = []bool{false, true}
 	harness.transport.reopenErr = errFake
 	harness.run("run", "--config", writeConfig(test, colourTags("10s")))
@@ -130,7 +130,7 @@ func TestRunReadsTheControllerInEveryRoundAndSendsItsProbes(test *testing.T) {
 
 func TestRunAsksForNoReadingWhenNoProbeIsMappedAndKeepsTheSession(test *testing.T) {
 	lighting := &fakeLighting{}
-	harness := runKeeping(lighting, 3)
+	harness := runKeeping(lighting, 30) // 30 seconds of waits of one second
 	harness.run("run", "--config", writeConfig(test, "interval: 10s\ncommander_color: \"#ff0000\"\ntags:\n  cpu.temp: 1\n"))
 	if len(lighting.reads) != 30 {
 		test.Fatalf("%d readings", len(lighting.reads))
@@ -167,7 +167,7 @@ func TestRunWaitsLongerAfterEachFailedSetup(test *testing.T) {
 	for position := range lighting.setupErrors {
 		lighting.setupErrors[position] = errFake
 	}
-	harness := runKeeping(lighting, 100)
+	harness := runKeeping(lighting, 1000) // 1000 seconds of waits of one second
 	harness.run("run", "--config", writeConfig(test, colourTags("10s")))
 	var gaps []time.Duration
 	for position := 1; position < len(lighting.setups); position++ {
@@ -181,7 +181,7 @@ func TestRunWaitsLongerAfterEachFailedSetup(test *testing.T) {
 
 func TestRunSetsUpAgainTenSecondsAfterALostSessionAndLightsTheColourAgain(test *testing.T) {
 	lighting := &fakeLighting{setupErrors: []error{errFake, errFake, errFake}, readErrors: []error{errFake}}
-	harness := runKeeping(lighting, 10)
+	harness := runKeeping(lighting, 100) // 100 seconds of waits of one second
 	harness.run("run", "--config", writeConfig(test, colourTags("10s")))
 	if len(lighting.setups) < 5 || len(lighting.reads) == 0 {
 		test.Fatalf("%d setups, %d readings", len(lighting.setups), len(lighting.reads))
@@ -198,7 +198,7 @@ func TestRunSetsUpAgainTenSecondsAfterALostSessionAndLightsTheColourAgain(test *
 
 func TestRunWritesTheLinesOfTheControllerOnceEach(test *testing.T) {
 	lighting := &fakeLighting{setupErrors: []error{errFake, errFake, errFake}, readErrors: []error{errFake}}
-	harness := runKeeping(lighting, 10)
+	harness := runKeeping(lighting, 100) // 100 seconds of waits of one second
 	harness.run("run", "--config", writeConfig(test, colourTags("10s")))
 	want := "controller setup failed: fake failure\ncontroller lost: fake failure\ncontroller back\n"
 	if got := harness.stderr.String(); got != want {
@@ -208,7 +208,7 @@ func TestRunWritesTheLinesOfTheControllerOnceEach(test *testing.T) {
 
 func TestRunWritesNoLineWhenThereIsNoController(test *testing.T) {
 	lighting := &fakeLighting{setupErrors: []error{errNoController, errNoController, errNoController}}
-	harness := runKeeping(lighting, 10)
+	harness := runKeeping(lighting, 100) // 100 seconds of waits of one second
 	harness.run("run", "--config", writeConfig(test, colourTags("10s")))
 	if got := harness.stderr.String(); got != "" || len(lighting.setups) < 4 {
 		test.Errorf("stderr %q after %d setups", got, len(lighting.setups))
