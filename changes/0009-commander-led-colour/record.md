@@ -23,3 +23,8 @@ timestamp: 2026-11-15T00:48:51Z
   every requirement can be tested in the sandbox with the fake controller. Items 1 and 2 of "Beyond the request" are
   declined. The approval that follows is made under that delegation
 - 2026-11-15T00:50:08Z [human] approved the spec. The status is `approved`
+- 2026-11-15T00:57:24Z [Claude Code, anthropic/claude-opus-5-5] as the planner, wrote the plan against the tree of
+  the branch. Every task names the requirements it delivers, and every requirement from R1 to R27 has a task. The plan
+  reads the rounds in which `run` calls `Reopen` of R16 as the plan of unit 0008 read the same words of its R8: the
+  rounds whose reopening fails, which R22 of unit 0004 makes instead of the round, while the round of a reopening that
+  succeeds goes on with the round. The status stays `approved`
