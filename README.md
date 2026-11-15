@@ -10,11 +10,13 @@ uploads when it is not on the screen, `compile` turns a theme, by name or folder
 theme as a PNG, `dump` reads a theme file and `list` lists the themes. The built-in theme `minimal-dark` is there.
 
 On Windows the screen and the Commander Core XT work with the commands that open a device, with `sensors` and with
-`run`, and need no driver and no rule to install. The sensors of the machine are not read on Windows yet, so `sensors`
-lists only the probes of the Commander and `run` sends only them, besides the clock and the theme. `--device` takes a
+`run`, and need no driver and no rule to install. The sensors of the machine are read on Windows too, natively for the
+CPU load, the memory and the network, and through `nvidia-smi` and LibreHardwareMonitor for the rest, as
+[Windows: the sensors of the machine](#windows-the-sensors-of-the-machine) says. `--device` takes a
 device path on Windows, as `devices` writes it. Corsair iCUE, or the software of the screen's vendor, may hold the
 device and make the opening fail, and running either at the same time as sensordeck is not supported. The service is
-not available on Windows yet. The Windows transport has not yet been checked on a real Windows machine.
+not available on Windows yet. The Windows transport and the sensors of Windows have not yet been checked on a real
+Windows machine.
 
 ![The preview of the built-in theme minimal-dark: tiles for the CPU, the GPU, the memory, the disk, the network and the
 clock, each with the number 42 as a sample value](docs/minimal-dark.png)
@@ -62,7 +64,8 @@ Take the archive for your platform from the
 * `sensordeck_<version>_linux_amd64.tar.gz` for Linux on 64-bit x86
 * `sensordeck_<version>_linux_arm64.tar.gz` for Linux on 64-bit ARM
 * `sensordeck_<version>_windows_amd64.zip` for Windows, where the screen and the Commander Core XT work with the commands that
-  open a device, `sensors` and `run`, with the sensors of the Commander only
+  open a device, `sensors` and `run`, and the sensors of the machine are read natively and through LibreHardwareMonitor,
+  as [Windows: the sensors of the machine](#windows-the-sensors-of-the-machine) says
 
 Take `sensordeck_<version>_checksums.txt` from the same release, and check the archive you took against it:
 
@@ -103,9 +106,9 @@ CGO_ENABLED=0 go build -trimpath -o sensordeck .
 
 ## Quick start
 
-This takes you from nothing to the built-in theme `minimal-dark` on the screen. On Windows `run` sends only the clock
-and the probes of the Commander Core XT, because the sensors of the machine are not read there yet, and the first step is
-for Linux only.
+This takes you from nothing to the built-in theme `minimal-dark` on the screen. On Windows the sensors of the machine are
+read natively and through LibreHardwareMonitor, as [Windows: the sensors of the machine](#windows-the-sensors-of-the-machine)
+says, and the first step is for Linux only.
 
 1. On Linux, install the udev rule of [Linux: access to the screen](#linux-access-to-the-screen)
 2. Set the theme: `sensordeck theme use minimal-dark`. It writes the key `theme` into the config file, which it creates
@@ -182,7 +185,8 @@ cpu.clock	4425.4	MHz
 ram.used	21.8	GiB
 ```
 
-The metrics are:
+The metrics are listed below with their sources on Linux. [Windows: the sensors of the machine](#windows-the-sensors-of-the-machine)
+names those of Windows.
 
 | Metric | Unit | Source |
 |---|---|---|
@@ -257,10 +261,71 @@ second, and it keeps running when the screen is unplugged and plugged in again.
 
 `run` reads the config file again when its modification time or its size changes, at the start of a round, so an edit
 or `sensordeck theme use` takes effect within a round, with no restart. A reload applies the theme and the tags. A change
-of `interval`, `commander_interval` or `commander_color` is not applied: `run` writes a line to standard error that
+of `interval`, `commander_interval`, `commander_color` or `librehardwaremonitor_url` is not applied: `run` writes a line to standard error that
 says a restart applies it, and keeps the value it runs with. A file that cannot be read, is not valid or names a theme
 that does not compile is not applied: `run` writes one line to standard error and goes on with the config it has. An
 upload that has begun is not interrupted by Ctrl+C or SIGTERM: `run` ends after the upload ended.
+
+## Windows: the sensors of the machine
+
+On Windows `sensordeck sensors` and `sensordeck run` give the same metric names, with the same units, as on Linux, so a
+config written on one system feeds the same tiles on the other. They come from three places.
+
+Windows gives these natively, with nothing to install: `cpu.util`, `ram.used`, `ram.total`, `ram.util`, `net.up` and
+`net.down`. The GPU metrics come from `nvidia-smi`, which the NVIDIA driver installs, when it is on `PATH`. An old driver
+may put it in `C:\Program Files\NVIDIA Corporation\NVSMI`, which is not on `PATH`, and then there are no GPU metrics until
+you add that folder to `PATH`. `net.up` and `net.down` are the sum over the network adapters with a connector, so that
+loopback, tunnels, filter modules and the virtual adapters of Hyper-V, WSL and VPNs are left out.
+
+The temperatures and the clock of the CPU, and the temperatures of the drives and the memory modules, need a kernel
+driver that Windows does not give a program. `cpu.temp`, `cpu.ccd<n>.temp`, `cpu.clock`, `ram.<n>.temp` and
+`nvme.<n>.temp` come from [LibreHardwareMonitor](https://github.com/LibreHardwareMonitor/LibreHardwareMonitor), a program
+that has such a driver and serves its readings over HTTP. sensordeck neither installs nor starts it, and the native
+metrics do not depend on it.
+
+To turn on its web server, start LibreHardwareMonitor as an administrator, which its driver needs, check
+Options > Remote Web Server > Run, and keep it running. Options > Run On Windows Startup starts it with Windows. The
+groups CPU, RAM and Storage Devices of its menu must be on, as they are by default.
+
+The key `librehardwaremonitor_url` of the config file is the address of its document. Its default is
+`http://localhost:8085/data.json`, which is right while the web server is left as it is. Set it when you changed the
+port, the address or the authentication of the web server, with the user and the password in the URL when the
+authentication is on:
+
+```yaml
+librehardwaremonitor_url: http://monitor:secret@localhost:9000/data.json
+```
+
+The key does nothing on Linux, and a config that has it is valid there. `sensordeck sensors` on Windows reads the key
+from the config file at the place where `run` reads it without `--config`, so that it reads the same address as `run`,
+and takes the default when it finds no file there. It writes one line to standard error and goes on with the default
+when that file cannot be read or is not valid. The user and the password are left out of the lines that name the URL.
+
+The sensors of LibreHardwareMonitor give the metrics as follows. The CPU is the first AMD CPU, or else the first Intel
+CPU, of the document:
+
+* `cpu.temp` is `Core (Tctl/Tdie)`, or without it `Core (Tctl)`, or without it `CPU Package`
+* `cpu.ccd<n>.temp` is `CCD<n> (Tdie)`
+* `cpu.clock` is the highest of the clocks `Core #<n>`, `P-Core #<n>`, `E-Core #<n>` and `CPU Core`
+* `nvme.<n>.temp` is the temperature of the *n*-th NVMe drive, the sensor that LibreHardwareMonitor numbers 0, the
+  composite temperature
+* `ram.<n>.temp` is the temperature of the *n*-th memory module that has a thermal sensor
+
+A CPU sensor that you renamed in LibreHardwareMonitor is not found, because the CPU sensors are told by their names. The
+temperatures of memory modules need LibreHardwareMonitor 0.9.5 or newer. The numbers of `nvme.<n>.temp` and `ram.<n>.temp`
+follow the numbers that LibreHardwareMonitor gives the drives and the modules, in order, counted from 1, and a drive keeps
+its number when its temperature is missing. They may differ from the numbers on Linux on the same machine.
+
+When the web server cannot be read, `sensordeck sensors` writes the line `LibreHardwareMonitor cannot be read at <URL>:
+<error>. The temperatures and cpu.clock need it running, with Options > Remote Web Server > Run checked` to standard
+error, and lists the other metrics. When it can be read and gives none of these metrics, it writes the line
+`LibreHardwareMonitor at <URL> gives no temperature and no clock that sensordeck knows`. `sensordeck run` writes the first
+line once when the reading fails, and not again while it keeps failing, and writes `LibreHardwareMonitor read again at
+<URL>` when it works again. A reading waits at most half a second, and the tiles of the metrics that could not be read
+keep their last value. The other metrics keep working throughout. `run` asks the web server only while a metric that
+needs it is mapped.
+
+The sensors of Windows have not yet been checked on a real Windows machine.
 
 ## The Corsair iCUE Commander Core XT
 

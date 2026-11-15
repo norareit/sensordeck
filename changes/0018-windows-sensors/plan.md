@@ -353,7 +353,7 @@ What the tree on `feature-0018-windows-sensors` holds, and what the plan builds 
 
 ### 10. The documents
 
-- [ ] In `README.md`, add the section `## Windows: the sensors of the machine` right after "Showing sensor values on
+- [x] In `README.md`, add the section `## Windows: the sensors of the machine` right after "Showing sensor values on
   the screen", saying every point of R36: the native metrics and the GPU metrics with `nvidia-smi` on `PATH`; the
   adapters with a connector for the network; the metrics that need LibreHardwareMonitor, which sensordeck neither
   installs nor starts; turning on its web server, Options > Run On Windows Startup, and the CPU, RAM and Storage Devices
@@ -361,12 +361,12 @@ What the tree on `feature-0018-windows-sensors` holds, and what the plan builds 
   Linux; the sensors behind each metric by R21 to R24, a renamed CPU sensor not found, version 0.9.5 for the modules,
   and the numbering that may differ from Linux; what `sensors` and `run` do when the server cannot be read; and that
   the sensors of Windows have not been checked on a real Windows machine (R36)
-- [ ] In `README.md`, change the opening, the line of the Windows archive under "A release archive" and the quick
+- [x] In `README.md`, change the opening, the line of the Windows archive under "A release archive" and the quick
   start to say that the sensors of the machine are read on Windows, natively and through LibreHardwareMonitor, with a
   link to the new section; say in "Showing sensor values on the screen" that its table names the sources of Linux and
   that the new section names those of Windows; and name `librehardwaremonitor_url` in its sentence on the keys that a
   restart applies (R37)
-- [ ] Run the suite and commit: `feature-0018 Document the sensors of the machine on Windows`
+- [x] Run the suite and commit: `feature-0018 Document the sensors of the machine on Windows`
 
 ## Verification
 
