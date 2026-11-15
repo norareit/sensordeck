@@ -91,3 +91,9 @@ timestamp: 2026-11-15T23:04:03Z
   branch. On the Linux host, `sensors` of the executable built from the branch still listed every metric it listed
   before the move of the shared code, the two probes of the Commander included. Everything on Windows is the human's
   to check and follows the merge. The status is `implemented`
+
+## Amendments
+
+- 2026-11-15T23:33:27Z [Claude Code, anthropic/claude-opus-5-5] corrected the account of the findings in the
+  last log entry: the review had two rounds, not three. Round 1 returned C1, which was corrected, and round 2 returned
+  none
