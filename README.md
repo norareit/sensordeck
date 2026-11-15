@@ -4,9 +4,9 @@ Turn a cheap USB "sensor panel" screen into a hardware-monitoring dashboard on *
 
 > **Status: early development.** The screen can be driven on Linux: with the low-level commands (`devices`, `clock`,
 > `values`, `upload`, `listen` and `raw`), with `sensordeck sensors` and with `sensordeck run`, which also reads the temperature probes of a Corsair iCUE
-> Commander Core XT. `sensordeck theme dump` reads a theme file, `sensordeck theme compile` compiles a theme folder
-> into one and `sensordeck theme preview` draws a theme folder as a PNG, all with no screen. The built-in themes,
-> Windows and the service are still to come. This README describes what sensordeck is meant to become.
+> Commander Core XT. `sensordeck theme dump` reads a theme file, `sensordeck theme compile` compiles a theme, by name or
+> folder, into one, `sensordeck theme preview` draws a theme as a PNG and `sensordeck theme list` lists the themes, all
+> with no screen. The built-in theme `minimal-dark` is there. Windows and the service are still to come. This README describes what sensordeck is meant to become.
 
 ## What it will do
 
@@ -34,6 +34,45 @@ Version 1 targets a single device:
 
 The architecture is generic, so other screens can be added later.
 
+## Quick start
+
+This is for Linux, because `run` reads no sensors on Windows yet. It takes you from nothing to the built-in theme
+`minimal-dark` on the screen.
+
+1. Install the udev rule of [Linux: access to the screen](#linux-access-to-the-screen)
+2. Compile the theme: `sensordeck theme compile minimal-dark img.dat`. It writes `img.dat` and `img.tags.yaml`
+3. Put it on the screen: `sensordeck upload img.dat`
+4. Write the config file at the path that [Showing sensor values on the screen](#showing-sensor-values-on-the-screen)
+   names, holding the `tags:` block of `img.tags.yaml`:
+
+   ```yaml
+   tags:
+     cpu.temp: 1
+     cpu.util: 2
+     gpu.mem.total: 3
+     gpu.mem.used: 4
+     gpu.temp: 5
+     gpu.util: 6
+     net.down: 7
+     net.up: 8
+     nvme.1.temp: 9
+     ram.used: 10
+     ram.util: 11
+   ```
+
+5. Start `sensordeck run`
+
+The tiles show the CPU temperature and load, the GPU temperature and load, the share of RAM in use and the GiB used, the
+VRAM used and its total in MiB, the temperature of the first NVMe drive, the network rates up and down in KiB/s, and the
+time and the date. The GPU tiles need `nvidia-smi` and show the first NVIDIA GPU. The disk tile is the first NVMe drive
+in the order of the places of the hardware, as the table of metrics says.
+
+When the host cannot read a metric of a tile, `run` does not send its value, so the tile keeps the last value it was
+sent. A tile that was never sent one shows what the screen shows for a number with no value, which has not been checked
+on the device.
+
+`sensordeck theme preview minimal-dark preview.png` draws the theme as a PNG, with no screen.
+
 ## Planned usage
 
 ```bash
@@ -41,7 +80,7 @@ sensordeck devices                # list connected screens
 sensordeck run                    # send live sensor values to the screen
 sensordeck theme list             # show built-in and installed themes
 sensordeck theme use minimal-dark # switch themes
-sensordeck theme preview <theme-dir> <out.png> # render a theme to PNG with sample values
+sensordeck theme preview <name-or-folder> <out.png> # render a theme to PNG with sample values
 sensordeck service install        # run in the background at startup
 ```
 
@@ -215,12 +254,20 @@ widgets:                          # drawn in this order
   - {type: datetime, font: label, format: "YYYY-MM-DD HH:mm:ss", x: 20, y: 280}
 ```
 
-Two commands work on a folder and need no screen:
+Two commands work on a theme and need no screen. The first argument is a theme name or a folder:
 
 ```bash
-sensordeck theme preview my-theme preview.png   # draw the theme as the compiled file would show it
-sensordeck theme compile my-theme img.dat       # write img.dat and img.tags.yaml
+sensordeck theme preview ./my-theme preview.png   # draw the theme as the compiled file would show it
+sensordeck theme compile ./my-theme img.dat       # write img.dat and img.tags.yaml
 ```
+
+A first argument is a folder path when it is `.` or `..` or holds `/` (on Windows also `\` or `:`), and a theme name
+otherwise, so a folder in the working directory is named `./my-theme`. A name is looked up first among the installed
+themes, the directories in the themes directory, and then among the built-in ones. The themes directory is
+`~/.config/sensordeck/themes`, or `$XDG_CONFIG_HOME/sensordeck/themes`, on Linux and `%AppData%\sensordeck\themes` on
+Windows. A theme folder copied there under a name is found by that name, and replaces a built-in theme of that name.
+`sensordeck theme list` lists the built-in and the installed themes, one line each, with tabs between the name, the kind
+and the folder of an installed theme.
 
 The compiler gives each metric of the number widgets a tag and writes the mapping beside the theme file, in
 `img.tags.yaml`:

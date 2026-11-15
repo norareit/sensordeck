@@ -30,3 +30,10 @@ timestamp: 2026-11-15T09:21:42Z
   of the items of "Beyond the request" is planned, as decided before the approval. The status stays `approved`
 - 2026-11-15T09:35:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, began the work. The status is
   `in-progress`
+- 2026-11-15T10:10:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, built every task of `plan.md`. Two
+  deviations from the plan: `theme compile`, `theme preview` and `theme list` were committed together as one commit
+  and not two, because they share `themes.go` and `theme.go`; and the end-to-end tests add `runIn` to
+  `e2e/main_test.go`, which `runWith` now calls, as the plan allowed. A commit trailer that the harness asks for was
+  left out, as the standards forbid it. On the final tree, `go test ./...` (which runs `e2e/`), `go vet ./...`,
+  `gofmt -l .` (no file), and the Windows build and vet all succeed, and `go generate ./internal/builtinthemes/` leaves
+  `background.png` unchanged. Not checked: the screen showing the theme, and anything on Windows, which are the human's

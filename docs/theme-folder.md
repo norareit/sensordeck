@@ -11,6 +11,25 @@ OTF files. Every path in `theme.yaml` is relative to the folder and uses `/` bet
 cannot leave the folder: `..` that climbs out of it, an absolute path and a symbolic link that points outside it are
 errors. `a/../b.png` stays inside and names `b.png`.
 
+## Naming a theme
+
+The first argument of `theme compile` and `theme preview` is a folder path or a theme name. It is a folder path when it
+is `.` or `..` or holds `/`, and on Windows also when it holds `\` or `:`. Any other argument is a name, and the empty
+argument is an error. The rule looks at the text alone, so a folder in the working directory is named `./my-theme`.
+
+A name is looked up in this order, and the first found is compiled:
+
+1. an installed theme: the entry of that exact name in the themes directory, when it is a directory or a symbolic link
+   to one. The themes directory is `sensordeck/themes` in the config directory of the user: `~/.config/sensordeck/themes`,
+   or `$XDG_CONFIG_HOME/sensordeck/themes`, on Linux and `%AppData%\sensordeck\themes` on Windows. A themes directory
+   that does not exist holds no theme
+2. a built-in theme of that name. The built-in themes are `minimal-dark`
+
+So a theme folder copied into the themes directory is found by its name, and one named like a built-in theme replaces it.
+
+`sensordeck theme list` writes one line for each theme, sorted by name, with tabs between the fields: `<name>` and
+`built-in`; `<name>`, `installed` and the folder; or `<name>`, `installed, overrides built-in` and the folder.
+
 ## theme.yaml
 
 `theme.yaml` is a YAML mapping. A key that is not listed here, at any level, is an error that names the key and where it
@@ -91,7 +110,7 @@ the distinct metric names of the theme, sorted by their bytes, get 1, 2, 3 and u
 of the clock. Two widgets with the same metric have the same tag, and no number gets 0. The tags do not depend on the
 order of the widgets.
 
-`sensordeck theme compile <theme-dir> <out.dat>` writes the tags beside the theme file, in a file named like it with its
+`sensordeck theme compile <name-or-folder> <out.dat>` writes the tags beside the theme file, in a file named like it with its
 extension replaced by `.tags.yaml`, or with `.tags.yaml` added when there is none, so `img.dat` gives `img.tags.yaml`.
 It is a block in the shape of the `tags:` section of the config file of `sensordeck run`, to be pasted into it. For a
 theme with no number it is `tags: {}`, and such a theme needs no values from `run`.

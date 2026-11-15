@@ -260,7 +260,7 @@ with --config: <cause>` as it is.
 
 ### The documents
 
-- [ ] Update `README.md` (R19, R20):
+- [x] Update `README.md` (R19, R20):
     - the status line names the built-in theme `minimal-dark` and `theme list` among what works, and says that
       `theme compile` and `theme preview` take a theme by name or folder
     - a section "Quick start" before "Planned usage", in the order of R19, with the tags block of R6 in full, every
@@ -271,7 +271,7 @@ with --config: <cause>` as it is.
       R8, the order of R10, the themes directory (`~/.config/sensordeck/themes`, or `$XDG_CONFIG_HOME/sensordeck/themes`,
       on Linux, and `%AppData%\sensordeck\themes` on Windows), and that a folder copied there under a name is found by
       that name and replaces a built-in theme of that name
-- [ ] Update `docs/theme-folder.md` (R20, R21): a section "Naming a theme" after "The folder" with the rule of R8, the
+- [x] Update `docs/theme-folder.md` (R20, R21): a section "Naming a theme" after "The folder" with the rule of R8, the
   lookup order of R10, the themes directory on Linux and on Windows, the override of a built-in theme, `theme list` and
   its three kinds of line, and the built-in themes by name, `minimal-dark`; and `<theme-dir>` in the command of "The
   tags" written as `<name-or-folder>`. Check with `grep -n "theme \(compile\|preview\) [a-z]" README.md docs/*.md` that
@@ -279,12 +279,12 @@ with --config: <cause>` as it is.
 
 ## Verification
 
-- [ ] `go test ./...` passes
-- [ ] `go vet ./...` reports nothing
-- [ ] `gofmt -l .` prints no file name
-- [ ] `GOOS=windows GOARCH=amd64 go build ./...` succeeds and reports nothing
-- [ ] `GOOS=windows GOARCH=amd64 go vet ./...` succeeds and reports nothing
-- [ ] `go generate ./internal/builtinthemes/` leaves `git status` clean
+- [x] `go test ./...` passes
+- [x] `go vet ./...` reports nothing
+- [x] `gofmt -l .` prints no file name
+- [x] `GOOS=windows GOARCH=amd64 go build ./...` succeeds and reports nothing
+- [x] `GOOS=windows GOARCH=amd64 go vet ./...` succeeds and reports nothing
+- [x] `go generate ./internal/builtinthemes/` leaves `git status` clean
 - [ ] `npm run check-changes` passes on the committed work
 
 ## Commit Points
@@ -295,4 +295,4 @@ with --config: <cause>` as it is.
 - [x] `feature-0012 Find a theme by name in theme compile and theme preview`, the lookup with its tests and the help
 - [x] `feature-0012 Add theme list`, with its tests
 - [x] `feature-0012 Test the built-in theme and the theme names end to end`
-- [ ] `feature-0012 Document the quick start and the theme names`, the README and `docs/theme-folder.md`
+- [x] `feature-0012 Document the quick start and the theme names`, the README and `docs/theme-folder.md`
