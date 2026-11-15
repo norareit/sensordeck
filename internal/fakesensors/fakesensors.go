@@ -98,6 +98,13 @@ func (tree *Tree) replace(path, content string) {
 	}
 }
 
+// ReplaceInput writes <entry>/temp<number>_input as the input and a newline, as Hwmon does. It writes a temporary file
+// in the same directory and renames it into place, so that a reader never sees a file half written.
+func (tree *Tree) ReplaceInput(entry string, number int, input string) {
+	tree.test.Helper()
+	tree.replace(filepath.Join(entry, fmt.Sprintf("temp%d_input", number)), input+"\n")
+}
+
 // NetInterface makes <SysfsRoot>/class/net/<name>. With device not empty, <entry>/device is a link to
 // <SysfsRoot>/devices/<device>, which it makes, as Hwmon does.
 func (tree *Tree) NetInterface(name, device string) {

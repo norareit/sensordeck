@@ -11,6 +11,7 @@ import (
 
 	"github.com/norareit/sensordeck/internal/fakecommander"
 	"github.com/norareit/sensordeck/internal/fakescreen"
+	"github.com/norareit/sensordeck/internal/fakesensors"
 )
 
 // controllerCommands are the eight commands of a reading, after the report ID byte.
@@ -113,6 +114,91 @@ func TestSensorsInterruptedDuringTheReadingRestoresHardwareMode(test *testing.T)
 		test.Errorf("the process ended %v after the signal", took)
 	}
 	expectWrites(test, controller.Writes(), 1, 2, 3, 4, 5, 6, 8)
+	if controller.Mode() != fakecommander.HardwareMode {
+		test.Error("the controller is not in hardware mode")
+	}
+}
+
+// startRunWithController starts run with the tree of runningTree, a fake controller and a config that reads the
+// controller at the given period. It gives what the tests of the period need.
+func startRunWithController(test *testing.T, period string) (*fakescreen.Screen, *fakecommander.Controller, *fakesensors.Tree, string, *process) {
+	test.Helper()
+	fake := fakescreen.New(test)
+	screen := fake.Add(3, "name", "")
+	tree, entry := runningTree(test, fake)
+	controller := fakecommander.New(test, fake.SysfsRoot, fake.DevRoot).Add(9, 10)
+	config := writeConfigFile(test, "interval: 100ms\ncommander_interval: "+period+"\ntags:\n  cpu.temp: 1\n  commander.1.temp: 4\n")
+	return screen, controller, tree, entry, start(test, fake, environmentFor(test, tree, ""), "run", "--config", config)
+}
+
+func holdsPairs(want map[uint8]uint16) func(map[uint8]uint16) bool {
+	return func(pairs map[uint8]uint16) bool {
+		for tag, value := range want {
+			if got, found := pairs[tag]; !found || got != value {
+				return false
+			}
+		}
+		return len(pairs) == len(want)
+	}
+}
+
+func TestRunReadsTheControllerAgainAfterItsPeriod(test *testing.T) {
+	screen, controller, _, _, running := startRunWithController(test, "100ms")
+	first, reached := waitForReport(screen, 0, reportLimit, holdsPairs(map[uint8]uint16{1: 42, 4: 37}))
+	if !reached {
+		test.Fatalf("no value report holds (1, 42) and (4, 37): %v", screen.Reports())
+	}
+	controller.SetProbes(fakecommander.Probe{Tenths: 400}, fakecommander.Probe{Tenths: 227})
+	if _, reached := waitForReport(screen, first, reportLimit, holdsPairs(map[uint8]uint16{1: 42, 4: 40})); !reached {
+		test.Errorf("no later value report holds (1, 42) and (4, 40): %v", screen.Reports())
+	}
+	outcome, _ := running.stop(syscall.SIGTERM)
+	if outcome.status != 0 {
+		test.Errorf("status %d, stderr %q", outcome.status, outcome.stderr)
+	}
+	starts := 0
+	for _, written := range controller.Writes() {
+		if bytes.Equal(written, controllerWrite(1)) {
+			starts++
+		}
+	}
+	if starts < 2 {
+		test.Errorf("the controller got step 1 %d times", starts)
+	}
+	if controller.Mode() != fakecommander.HardwareMode {
+		test.Error("the controller is not in hardware mode")
+	}
+}
+
+func TestRunSendsTheKeptProbesBetweenReadingsOfTheController(test *testing.T) {
+	screen, controller, tree, entry, running := startRunWithController(test, "1h")
+	first, reached := waitForReport(screen, 0, reportLimit, holdsPairs(map[uint8]uint16{1: 42, 4: 37}))
+	if !reached {
+		test.Fatalf("no value report holds (1, 42) and (4, 37): %v", screen.Reports())
+	}
+	controller.SetProbes(fakecommander.Probe{Tenths: 400}, fakecommander.Probe{Tenths: 227})
+	tree.ReplaceInput(entry, 1, "43000")
+	changed, reached := waitForReport(screen, first, reportLimit, holdsPairs(map[uint8]uint16{1: 43, 4: 37}))
+	if !reached {
+		test.Fatalf("no later value report holds (1, 43) and (4, 37): %v", screen.Reports())
+	}
+	deadline := time.Now().Add(reportLimit)
+	for len(screen.Reports()) < changed+4 && time.Now().Before(deadline) {
+		time.Sleep(20 * time.Millisecond)
+	}
+	if len(screen.Reports()) < changed+4 {
+		test.Fatalf("fewer than three reports followed: %v", screen.Reports())
+	}
+	for _, report := range screen.Reports()[changed+1 : changed+4] {
+		if pairs := valuePairs(report); pairs[4] != 37 {
+			test.Errorf("a report after the change holds %v", pairs)
+		}
+	}
+	outcome, _ := running.stop(syscall.SIGTERM)
+	if outcome.status != 0 {
+		test.Errorf("status %d, stderr %q", outcome.status, outcome.stderr)
+	}
+	expectWrites(test, controller.Writes(), 1, 2, 3, 4, 5, 6, 7, 8)
 	if controller.Mode() != fakecommander.HardwareMode {
 		test.Error("the controller is not in hardware mode")
 	}

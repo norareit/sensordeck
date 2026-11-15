@@ -249,15 +249,15 @@ quiet while `run` runs, and a count of writes taken later can only be larger.
 
 ### The end-to-end tests
 
-- [ ] In `internal/fakesensors/fakesensors.go`, extract the write to a temporary file and the rename of `NetDev` into
+- [x] In `internal/fakesensors/fakesensors.go`, extract the write to a temporary file and the rename of `NetDev` into
   `(*Tree).replace(path, content string)`, which writes `<path>.tmp` and renames it to `path`, and make `NetDev` call
   it. `NetDev` keeps its doc comment and its behaviour, and the tests of the network pass as they are. Commit:
   `feature-0008 Extract the rename into place of the fake sensors`
-- [ ] Add `(*Tree).ReplaceInput(entry string, number int, input string)` to `internal/fakesensors/fakesensors.go`,
+- [x] Add `(*Tree).ReplaceInput(entry string, number int, input string)` to `internal/fakesensors/fakesensors.go`,
   with a doc comment, calling `replace` with `<entry>/temp<number>_input` and the input with a trailing newline
-- [ ] In `e2e/run_test.go`, add `runningTree` as "The end-to-end tests" says and make `runningSetup` use it, so that
+- [x] In `e2e/run_test.go`, add `runningTree` as "The end-to-end tests" says and make `runningSetup` use it, so that
   the tests of `run` keep their tree and pass as they are
-- [ ] In `e2e/commander_test.go`, add the helper that starts `run` with the controller and the config of a given
+- [x] In `e2e/commander_test.go`, add the helper that starts `run` with the controller and the config of a given
   period, and (R15, R16):
     - a test with `commander_interval: 100ms`: once a value report holds (4, 37), it calls
       `controller.SetProbes(fakecommander.Probe{Tenths: 400}, fakecommander.Probe{Tenths: 227})`; a later value report
@@ -271,7 +271,7 @@ quiet while `run` runs, and a count of writes taken later can only be larger.
       (R16)
 
   `TestRunSendsTheProbesOfTheController` stays as it is (R17)
-- [ ] Run the five commands of the suite and commit: `feature-0008 Test the period of the controller end to end`
+- [x] Run the five commands of the suite and commit: `feature-0008 Test the period of the controller end to end`
 
 ### The documents
 

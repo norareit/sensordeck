@@ -39,10 +39,18 @@ func runningSetup(test *testing.T) (*fakescreen.Fake, *fakescreen.Screen, []stri
 	test.Helper()
 	fake := fakescreen.New(test)
 	screen := fake.Add(3, "name", "")
-	tree := fakesensors.New(test, fake.SysfsRoot)
-	tree.Hwmon(1, "k10temp", "pci0000:00/0000:00:18.3", fakesensors.Sensor{Number: 1, Label: "Tctl", Input: "42000"})
-	tree.CPUFrequency(0, "1234000\n")
+	tree, _ := runningTree(test, fake)
 	return fake, screen, environmentFor(test, tree, ""), writeConfigFile(test, runConfig)
+}
+
+// runningTree makes the tree of the spec of unit 0004 for the fake screen, and gives it with the path of the entry of
+// k10temp.
+func runningTree(test *testing.T, fake *fakescreen.Fake) (*fakesensors.Tree, string) {
+	test.Helper()
+	tree := fakesensors.New(test, fake.SysfsRoot)
+	entry := tree.Hwmon(1, "k10temp", "pci0000:00/0000:00:18.3", fakesensors.Sensor{Number: 1, Label: "Tctl", Input: "42000"})
+	tree.CPUFrequency(0, "1234000\n")
+	return tree, entry
 }
 
 func TestRunSendsTheClockAndThenTheValues(test *testing.T) {
