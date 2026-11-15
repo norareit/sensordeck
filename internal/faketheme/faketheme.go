@@ -38,11 +38,11 @@ func (builder *Builder) Bytes() []byte {
 }
 
 // Head gives a slot with the common head of the spec written in bytes 0 to 10, big-endian, and zeros after it.
-func Head(recordType, index, tag byte, x, y, width, height uint16) [64]byte {
+func Head(recordType, index, tag byte, left, top, width, height uint16) [64]byte {
 	var slot [64]byte
 	slot[0], slot[1], slot[2] = recordType, index, tag
-	Put16(&slot, 3, x)
-	Put16(&slot, 5, y)
+	Put16(&slot, 3, left)
+	Put16(&slot, 5, top)
 	Put16(&slot, 7, width)
 	Put16(&slot, 9, height)
 	return slot

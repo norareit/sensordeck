@@ -26,7 +26,7 @@ func Dump(file []byte) ([]File, []string, error) {
 		return nil, nil, err
 	}
 	var pictures []File
-	records := []any{}
+	records := []recordJSON{}
 	for _, entry := range theme.Entries {
 		names := []string{}
 		for number, picture := range nonEmpty(themeimage.Resources(entry.Record)) {

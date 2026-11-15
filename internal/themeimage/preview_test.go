@@ -38,14 +38,14 @@ func expectRedWithin(test *testing.T, name string, screen *image.RGBA, column, r
 	}
 }
 
-func addBackgroundFill(builder *faketheme.Builder, number int, x, y, width, height uint16, colour uint16) {
-	slot := faketheme.Head(0x81, byte(number), 0, x, y, width, height)
+func addBackgroundFill(builder *faketheme.Builder, number int, left, top, width, height uint16, colour uint16) {
+	slot := faketheme.Head(0x81, byte(number), 0, left, top, width, height)
 	faketheme.Put16(&slot, 12, colour)
 	builder.Slot(number, slot)
 }
 
-func addText(builder *faketheme.Builder, number int, x, y, width, height uint16, colour uint16, alpha []byte) {
-	slot := faketheme.Head(0x93, byte(number), 0, x, y, width, height)
+func addText(builder *faketheme.Builder, number int, left, top, width, height uint16, colour uint16, alpha []byte) {
+	slot := faketheme.Head(0x93, byte(number), 0, left, top, width, height)
 	faketheme.Put32(&slot, 11, builder.Resource(alpha))
 	faketheme.Put16(&slot, 15, colour)
 	builder.Slot(number, slot)
@@ -120,8 +120,8 @@ func glyphMasks(height int, widths []uint16) []byte {
 	return masks
 }
 
-func addNumber(builder *faketheme.Builder, number int, x, y, width uint16, alignment byte, widths [12]uint16) {
-	slot := faketheme.Head(0x92, byte(number), 1, x, y, width, 1)
+func addNumber(builder *faketheme.Builder, number int, left, top, width uint16, alignment byte, widths [12]uint16) {
+	slot := faketheme.Head(0x92, byte(number), 1, left, top, width, 1)
 	slot[11] = alignment
 	faketheme.Put16(&slot, 12, 0xffff)
 	faketheme.Put32(&slot, 16, builder.Resource(glyphMasks(1, widths[:])))

@@ -23,6 +23,12 @@ func (colour colourHex) MarshalJSON() ([]byte, error) {
 	return json.Marshal(fmt.Sprintf("%04x", uint16(colour)))
 }
 
+// recordJSON is what a record of the dump is described as: one of the eight types below, and no other.
+type recordJSON interface{ describesRecord() }
+
+func (head) describesRecord()        {}
+func (unknownJSON) describesRecord() {}
+
 type head struct {
 	Slot     int    `json:"slot"`
 	Type     byte   `json:"type"`
@@ -128,10 +134,10 @@ type headerJSON struct {
 }
 
 type themeJSON struct {
-	FileSize int        `json:"file_size"`
-	Header   headerJSON `json:"header"`
-	Records  []any      `json:"records"`
-	Warnings []string   `json:"warnings"`
+	FileSize int          `json:"file_size"`
+	Header   headerJSON   `json:"header"`
+	Records  []recordJSON `json:"records"`
+	Warnings []string     `json:"warnings"`
 }
 
 func describeHead(slot int, source themefile.Head) head {
@@ -140,7 +146,7 @@ func describeHead(slot int, source themefile.Head) head {
 }
 
 // describe gives the JSON value of a record. The files are the names of the PNG files written for it.
-func describe(entry themefile.Entry, files []string) any {
+func describe(entry themefile.Entry, files []string) recordJSON {
 	raw := entry.Record.Encode()
 	closing := tail{Raw: raw[:], Files: files}
 	switch typed := entry.Record.(type) {

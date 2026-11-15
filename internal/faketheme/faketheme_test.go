@@ -78,7 +78,7 @@ func TestSampleHasTheSlotsOfItsDescription(test *testing.T) {
 	if offset+258 != len(file) {
 		test.Errorf("the last resource ends at %d, the file at %d", offset+258, len(file))
 	}
-	if x := int(file[3*64+3])<<8 | int(file[3*64+4]); x != 10 {
-		test.Errorf("image x %d", x)
+	if left := int(file[3*64+3])<<8 | int(file[3*64+4]); left != 10 {
+		test.Errorf("image x %d", left)
 	}
 }

@@ -72,8 +72,8 @@ func fill(screen *image.RGBA, area image.Rectangle, colour color.NRGBA) {
 	draw.Draw(screen, area, image.NewUniform(colour), image.Point{}, draw.Over)
 }
 
-func drawAt(screen *image.RGBA, x, y int, picture *image.NRGBA) {
-	target := image.Rectangle{Min: image.Pt(x, y), Max: image.Pt(x, y).Add(picture.Bounds().Size())}
+func drawAt(screen *image.RGBA, left, top int, picture *image.NRGBA) {
+	target := image.Rectangle{Min: image.Pt(left, top), Max: image.Pt(left, top).Add(picture.Bounds().Size())}
 	draw.Draw(screen, target, picture, image.Point{}, draw.Over)
 }
 
@@ -88,12 +88,12 @@ func drawOutline(screen *image.RGBA, area image.Rectangle) {
 	fill(screen, image.Rect(area.Max.X-1, area.Min.Y, area.Max.X, area.Max.Y), barColour)
 }
 
-// drawGlyphs places the glyphs of the indexes side by side from x, each the next at the right edge of the one before,
-// with their tops at y.
-func drawGlyphs(screen *image.RGBA, x, y int, glyphs []*image.NRGBA, indexes []int) {
+// drawGlyphs places the glyphs of the indexes side by side from left, each the next at the right edge of the one before,
+// with their tops at top.
+func drawGlyphs(screen *image.RGBA, left, top int, glyphs []*image.NRGBA, indexes []int) {
 	for _, index := range indexes {
-		drawAt(screen, x, y, glyphs[index])
-		x += glyphs[index].Bounds().Dx()
+		drawAt(screen, left, top, glyphs[index])
+		left += glyphs[index].Bounds().Dx()
 	}
 }
 
