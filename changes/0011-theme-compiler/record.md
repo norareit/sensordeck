@@ -48,3 +48,16 @@ timestamp: 2026-11-15T08:52:10Z
   `.reviews/0011-theme-compiler/review-round-1.md`. The five suite commands, the change check, an uncached run of
   the end-to-end, compiler and CLI tests, and `git diff --check` passed. Physical-device behavior and Windows
   runtime behavior were not verified. The status stays `in-progress`
+- 2026-11-15T09:40:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, accepted S1 of
+  `.reviews/0011-theme-compiler/review-round-1.md` under the definition of the orchestrator for round 2, not as a
+  decision of the human. `checkBox` now compares each size with the space left after its coordinate, so no coordinate
+  of up to the largest 64-bit number overflows. A new test with the largest coordinate on each axis, for a text, a
+  number and an image, and for an image whose header claims 10000 x 10000, failed before the fix (no error) and passes
+  after it
+- 2026-11-15T09:41:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, accepted S2 and P1 the same way.
+  Added tests for a folder with no `theme.yaml`, for malformed YAML at the compiler and at the command (the path of
+  `theme.yaml` in the message and no file written), for a text with an accented letter that compiles, and for an image
+  widget whose PNG is a symbolic link out of the folder. No ticked task was removed
+- 2026-11-15T09:42:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, ran the five suite commands on
+  the tree of commit `1b0aaf8`, which reported nothing besides the passing packages. The status stays
+  `in-progress`
