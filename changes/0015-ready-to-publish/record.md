@@ -26,3 +26,10 @@ timestamp: 2026-11-15T13:06:35Z
   by a test, and put into each archive by R15. Item 5 became R19, R20 and D14: the release workflow calls the CI
   workflow as a reusable workflow, and the job that runs GoReleaser needs it, with the permissions granted per job.
   R12 and R24 follow both. The status stays `draft`
+- 2026-11-15T13:10:23Z [Claude Code, anthropic/claude-opus-5-5] read the spec under the delegation in `AGENTS.md`: it keeps the
+  README's reference sections and lists each change to them, pins the release to the three platforms of the plan, and
+  every requirement can be tested in the sandbox. Items 2 and 5 of "Beyond the request" were taken, because the
+  licences of the linked modules require their notices in the archives and a release must not be built from a tag
+  whose suite fails, and the spec was amended for them; items 1, 3, 4, 6, 7 and 8 are declined. The unit pushes, tags
+  and releases nothing; the first runs of the workflows are the human's. The approval that follows is made under that
+  delegation
