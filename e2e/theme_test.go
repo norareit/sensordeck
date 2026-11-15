@@ -5,6 +5,8 @@ package e2e
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
+	"image"
 	"image/color"
 	"image/png"
 	"os"
@@ -13,8 +15,13 @@ import (
 	"sort"
 	"testing"
 
+	"golang.org/x/image/font/gofont/goregular"
+
+	"github.com/norareit/sensordeck/internal/config"
 	"github.com/norareit/sensordeck/internal/fakescreen"
 	"github.com/norareit/sensordeck/internal/faketheme"
+	"github.com/norareit/sensordeck/internal/themefile"
+	"github.com/norareit/sensordeck/internal/themeimage"
 )
 
 const sampleWarning = "warning: slot 9: record type 0x77 is not known, kept as raw bytes\n"
@@ -157,5 +164,118 @@ func TestThemeDumpOfAShortFileFailsAndLeavesNoDirectory(test *testing.T) {
 	}
 	if _, err := os.Stat(output); !os.IsNotExist(err) {
 		test.Error("the output directory exists")
+	}
+}
+
+const folderTheme = `name: end to end
+background: "#102030"
+fonts:
+  body: {file: body.ttf, size: 20, color: "#ffffff"}
+  clock: {builtin: go-mono, size: 16, color: "#00c8ff"}
+widgets:
+  - {type: text, font: body, text: Hello, x: 4, y: 4}
+  - {type: number, font: body, metric: gpu.temp, x: 4, y: 40}
+  - {type: number, font: body, metric: cpu.temp, x: 100, y: 40}
+  - {type: datetime, font: clock, format: "YYYY-MM-DD HH:mm:ss", x: 4, y: 100}
+  - {type: image, file: dot.png, x: 200, y: 4}
+`
+
+func writeThemeFolder(test *testing.T, theme string) string {
+	test.Helper()
+	folder := filepath.Join(test.TempDir(), "folder")
+	if err := os.Mkdir(folder, 0o755); err != nil {
+		test.Fatal(err)
+	}
+	var dot bytes.Buffer
+	if err := png.Encode(&dot, image.NewNRGBA(image.Rect(0, 0, 4, 4))); err != nil {
+		test.Fatal(err)
+	}
+	files := map[string][]byte{"theme.yaml": []byte(theme), "body.ttf": goregular.TTF, "dot.png": dot.Bytes()}
+	for name, content := range files {
+		if err := os.WriteFile(filepath.Join(folder, name), content, 0o644); err != nil {
+			test.Fatal(err)
+		}
+	}
+	return folder
+}
+
+func TestThemeCompileWritesTheThemeFileAndTheTagsFileWithNoScreen(test *testing.T) {
+	folder := writeThemeFolder(test, folderTheme)
+	directory := test.TempDir()
+	out := filepath.Join(directory, "img.dat")
+	got := run(test, fakescreen.New(test), "theme", "compile", folder, out)
+	tagsFile := filepath.Join(directory, "img.tags.yaml")
+	content, err := os.ReadFile(out)
+	if err != nil {
+		test.Fatal(err)
+	}
+	if want := fmt.Sprintf("wrote %s (%d bytes) and %s\n", out, len(content), tagsFile); got.status != 0 || got.stdout != want || got.stderr != "" {
+		test.Fatalf("status %d, stdout %q, stderr %q", got.status, got.stdout, got.stderr)
+	}
+	theme, warnings, err := themefile.Parse(content)
+	if err != nil || len(warnings) != 0 || len(theme.Entries) != 6 {
+		test.Fatalf("%v, %v, %d entries", err, warnings, len(theme.Entries))
+	}
+	tags, err := os.ReadFile(tagsFile)
+	if err != nil {
+		test.Fatal(err)
+	}
+	parsed, err := config.Parse(tags)
+	if err != nil || !reflect.DeepEqual(parsed.Mappings, []config.Mapping{{Name: "cpu.temp", Tag: 1}, {Name: "gpu.temp", Tag: 2}}) {
+		test.Errorf("tags %+v, %v", parsed.Mappings, err)
+	}
+}
+
+func TestThemePreviewIsThePreviewOfTheCompiledFile(test *testing.T) {
+	folder := writeThemeFolder(test, folderTheme)
+	directory := test.TempDir()
+	out, preview := filepath.Join(directory, "img.dat"), filepath.Join(directory, "preview.png")
+	if got := run(test, fakescreen.New(test), "theme", "compile", folder, out); got.status != 0 {
+		test.Fatalf("compile: %+v", got)
+	}
+	got := run(test, fakescreen.New(test), "theme", "preview", folder, preview)
+	if got.status != 0 || got.stdout != "wrote "+preview+"\n" || got.stderr != "" {
+		test.Fatalf("status %d, stdout %q, stderr %q", got.status, got.stdout, got.stderr)
+	}
+	content, err := os.ReadFile(out)
+	if err != nil {
+		test.Fatal(err)
+	}
+	theme, _, err := themefile.Parse(content)
+	if err != nil {
+		test.Fatal(err)
+	}
+	var want bytes.Buffer
+	if err := png.Encode(&want, themeimage.Preview(theme)); err != nil {
+		test.Fatal(err)
+	}
+	if written, _ := os.ReadFile(preview); !bytes.Equal(written, want.Bytes()) {
+		test.Error("the preview differs from the preview of the compiled file")
+	}
+}
+
+func TestThemeCompileAndPreviewFailOnAFaultAndLeaveNoFile(test *testing.T) {
+	folder := writeThemeFolder(test, "name: x\nbackground: \"#000000\"\ncolour: 1\n")
+	for _, command := range []string{"compile", "preview"} {
+		directory := test.TempDir()
+		got := run(test, fakescreen.New(test), "theme", command, folder, filepath.Join(directory, "out"))
+		want := "sensordeck: " + filepath.Join(folder, "theme.yaml") + ": unknown key \"colour\", the keys are author, background, fonts, license, name and widgets\n"
+		if got.status != 1 || got.stdout != "" || got.stderr != want {
+			test.Errorf("%s: status %d, stdout %q, stderr %q", command, got.status, got.stdout, got.stderr)
+		}
+		if names := listDirectory(test, directory); len(names) != 0 {
+			test.Errorf("%s: left %q", command, names)
+		}
+	}
+}
+
+func TestThemeCompileAndPreviewIgnoreTheDeviceOption(test *testing.T) {
+	folder := writeThemeFolder(test, folderTheme)
+	for _, command := range []string{"compile", "preview"} {
+		out := filepath.Join(test.TempDir(), "out")
+		got := run(test, fakescreen.New(test), "--device", "/nonexistent", "theme", command, folder, out)
+		if got.status != 0 || got.stderr != "" {
+			test.Errorf("%s: status %d, stderr %q", command, got.status, got.stderr)
+		}
 	}
 }

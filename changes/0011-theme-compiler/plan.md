@@ -464,7 +464,7 @@ Nothing is written before the whole compilation and, for `preview`, the PNG enco
 
 ### End to end
 
-- [ ] Add to `e2e/theme_test.go`, with a theme folder of each widget type in a temporary directory and
+- [x] Add to `e2e/theme_test.go`, with a theme folder of each widget type in a temporary directory and
   `fakescreen.New(test)` with no screen added (R30):
     - `theme compile` exits 0 with the line of R22 and empty standard error; the theme file read by
       `themefile.Parse` gives no error and one entry for each widget plus the background; the tags file read by
@@ -474,7 +474,7 @@ Nothing is written before the whole compilation and, for `preview`, the PNG enco
     - a theme with an unknown key exits 1 with `sensordeck: <dir>/theme.yaml: unknown key ...` and leaves neither
       output file
     - both commands with `--device /nonexistent` succeed with no screen in the fake roots
-- [ ] Run the five commands of the suite and commit: `feature-0011 Test theme compile and theme preview end to end`
+- [x] Run the five commands of the suite and commit: `feature-0011 Test theme compile and theme preview end to end`
 
 ### The documents
 
