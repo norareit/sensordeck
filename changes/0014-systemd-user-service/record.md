@@ -1,6 +1,6 @@
 ---
 kind: feature
-status: draft
+status: approved
 timestamp: 2026-11-15T12:44:19Z
 ---
 
@@ -26,3 +26,4 @@ timestamp: 2026-11-15T12:44:19Z
   take effect on a reinstall. Items 1 to 4 of "Beyond the request" are declined. Running the service on the real
   machine is the human's check and the unit does not depend on it. The approval that follows is made under that
   delegation
+- 2026-11-15T12:46:17Z [human] approved the spec. The status is `approved`
