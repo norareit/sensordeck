@@ -1,4 +1,4 @@
-//go:build !linux
+//go:build !linux && !windows
 
 package cli
 
@@ -7,8 +7,8 @@ import (
 	"runtime"
 )
 
-func listScreens(sysfsRoot, devRoot string) ([]string, error) {
-	return nil, unsupported()
+func listScreens(sysfsRoot, devRoot string) ([]string, []string, error) {
+	return nil, nil, unsupported()
 }
 
 func openTransport(sysfsRoot, devRoot, device string) (transport, error) {

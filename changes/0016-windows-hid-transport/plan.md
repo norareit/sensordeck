@@ -290,27 +290,27 @@ What the tree on `feature-0016-windows-hid-transport` holds, and what the plan b
 
 ### 6. The command line on Windows
 
-- [ ] In `internal/cli/commands_test.go`, give the harness `nearMisses []string` and `controllerProblem error`, returned
+- [x] In `internal/cli/commands_test.go`, give the harness `nearMisses []string` and `controllerProblem error`, returned
   by `listScreens` and by the `controllerProblem` of the `sourceSet`. Add tests: `devices` with no screen and two near
   misses writes `no supported screen found` and the two lines to standard error and succeeds; `devices` with a screen
   and near misses writes only the screen; `sensors` with no reading and a problem writes the problem and then `no
   sensor could be read` to standard error; with no problem only the second line, as today (R10, R26, R33, R34)
-- [ ] Change `listScreens` in `main.go`, `commands.go` and `device_linux.go` to give the near misses, nil on Linux,
+- [x] Change `listScreens` in `main.go`, `commands.go` and `device_linux.go` to give the near misses, nil on Linux,
   and write them in `devices` as the test says. Add `controllerProblem` to `sourceSet`, fill it in
   `commanderSources` from `finder.Problem`, and write its error in `sensors` before `noSensorMessage` (R10, R26, R33,
   R34)
-- [ ] Add `internal/cli/device_windows.go`: `listScreens` from `winhid.List(winhid.Windows())` and `winhid.Screens`,
+- [x] Add `internal/cli/device_windows.go`: `listScreens` from `winhid.List(winhid.Windows())` and `winhid.Screens`,
   the lines and `NearMissLines`; `openTransport` by `winhid.OpenPath` with `--device` and `winhid.OpenDiscovered`
   without, returning a nil interface on an error as Linux does. The roots are ignored (R10, R11, R12, D13)
-- [ ] Add `internal/cli/sources_windows.go`: `newSources` gives `commanderSources(commandercore.Windows())` with no
+- [x] Add `internal/cli/sources_windows.go`: `newSources` gives `commanderSources(commandercore.Windows())` with no
   other source, and no error. The roots are ignored (R25, R26, R27, D13)
-- [ ] Change the build line of `device_other.go` and `sources_other.go` to `//go:build !linux && !windows`, and check
+- [x] Change the build line of `device_other.go` and `sources_other.go` to `//go:build !linux && !windows`, and check
   `GOOS=darwin GOARCH=arm64 go build ./...` and `GOOS=freebsd GOARCH=amd64 go vet ./internal/cli`, so that another
   system still fails with `<system> is not supported yet` (R4)
-- [ ] Check that `internal/cli/keeper_test.go` still passes its test of `controller setup failed: fake failure`, which
+- [x] Check that `internal/cli/keeper_test.go` still passes its test of `controller setup failed: fake failure`, which
   shows that a setup error that is not `errNoController`, as that of R34, is written once with no change of the keeper
   (R27, R34)
-- [ ] Run the suite and commit: `feature-0016 Open the screen and the Commander on Windows`
+- [x] Run the suite and commit: `feature-0016 Open the screen and the Commander on Windows`
 
 ### 7. The CI job on Windows
 

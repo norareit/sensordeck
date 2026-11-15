@@ -6,16 +6,16 @@ import "github.com/norareit/sensordeck/internal/hidraw"
 
 // This file and device_other.go do nothing but choose the transport: they list the supported screens and open one.
 
-func listScreens(sysfsRoot, devRoot string) ([]string, error) {
+func listScreens(sysfsRoot, devRoot string) ([]string, []string, error) {
 	screens, err := hidraw.Discover(sysfsRoot, devRoot)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	lines := make([]string, len(screens))
 	for position, screen := range screens {
 		lines[position] = screen.Line()
 	}
-	return lines, nil
+	return lines, nil, nil
 }
 
 func openTransport(sysfsRoot, devRoot, device string) (transport, error) {

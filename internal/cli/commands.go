@@ -57,12 +57,15 @@ func (current *session) devicesCommand() *cobra.Command {
 		Short: "List the supported screens that are connected",
 		Args:  cobra.NoArgs,
 		RunE: func(command *cobra.Command, args []string) error {
-			lines, err := current.env.listScreens(current.env.sysfsRoot, current.env.devRoot)
+			lines, nearMisses, err := current.env.listScreens(current.env.sysfsRoot, current.env.devRoot)
 			if err != nil {
 				return err
 			}
 			if len(lines) == 0 {
 				_, _ = fmt.Fprintln(current.env.stderr, noScreenMessage)
+				for _, line := range nearMisses {
+					_, _ = fmt.Fprintln(current.env.stderr, line)
+				}
 				return nil
 			}
 			for _, line := range lines {
@@ -275,6 +278,9 @@ func (current *session) sensorsCommand() *cobra.Command {
 				return errors.New("interrupted")
 			}
 			if len(readings) == 0 {
+				if problem := sources.problem(); problem != nil {
+					_, _ = fmt.Fprintln(current.env.stderr, problem)
+				}
 				_, _ = fmt.Fprintln(current.env.stderr, noSensorMessage)
 				return nil
 			}

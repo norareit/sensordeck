@@ -19,29 +19,31 @@ import (
 
 // harness runs the command line against a fake environment.
 type harness struct {
-	stdout, stderr bytes.Buffer
-	clock          *fakeClock
-	transport      *fakeTransport
-	opened         []string // the device asked for by each opening
-	screens        []string
-	openErr        error
-	sources        []sensors.Source // the sources other than the controller
-	controller     sensors.Source
-	startSession   func(stop context.Context, colour config.Colour) (heldSession, error)
-	sourcesErr     error
-	configDir      string // what userConfigDir gives
-	configDirErr   error
-	cacheDir       string // what userCacheDir gives
-	cacheDirErr    error
-	stopped        context.Context // ends when cancelStop is called, which is what a signal does in the real command
-	cancelStop     context.CancelFunc
-	waits          []time.Duration
-	onWait         func(count int) // called after each wait has moved the clock, with the count of waits so far
-	system         string          // what the system is, linux unless a test sets it
-	executablePath string          // what executable gives
-	executableErr  error
-	version        string     // what the environment gives as the version
-	calls          [][]string // the arguments of each call of systemctl
+	stdout, stderr    bytes.Buffer
+	clock             *fakeClock
+	transport         *fakeTransport
+	opened            []string // the device asked for by each opening
+	screens           []string
+	nearMisses        []string // what listScreens gives besides the screens
+	controllerProblem error    // what the controller says of why it was not found
+	openErr           error
+	sources           []sensors.Source // the sources other than the controller
+	controller        sensors.Source
+	startSession      func(stop context.Context, colour config.Colour) (heldSession, error)
+	sourcesErr        error
+	configDir         string // what userConfigDir gives
+	configDirErr      error
+	cacheDir          string // what userCacheDir gives
+	cacheDirErr       error
+	stopped           context.Context // ends when cancelStop is called, which is what a signal does in the real command
+	cancelStop        context.CancelFunc
+	waits             []time.Duration
+	onWait            func(count int) // called after each wait has moved the clock, with the count of waits so far
+	system            string          // what the system is, linux unless a test sets it
+	executablePath    string          // what executable gives
+	executableErr     error
+	version           string     // what the environment gives as the version
+	calls             [][]string // the arguments of each call of systemctl
 	// answer gives the result of a call of systemctl, and a call succeeds with no output when it is nil.
 	answer          func(arguments []string) (stdout, stderr string, err error)
 	configDirCalls  int // how often userConfigDir was called
@@ -69,8 +71,8 @@ func (harness *harness) run(args ...string) int {
 		now:       harness.clock.now,
 		sleep:     harness.clock.sleep,
 		after:     harness.clock.after,
-		listScreens: func(sysfsRoot, devRoot string) ([]string, error) {
-			return harness.screens, nil
+		listScreens: func(sysfsRoot, devRoot string) ([]string, []string, error) {
+			return harness.screens, harness.nearMisses, nil
 		},
 		openTransport: func(sysfsRoot, devRoot, device string) (transport, error) {
 			harness.opened = append(harness.opened, device)
@@ -88,7 +90,8 @@ func (harness *harness) run(args ...string) int {
 			if sysfsRoot != "/sysroot" || devRoot != "/devroot" || procRoot != "/procroot" {
 				return sourceSet{}, errors.New("the roots were not passed on")
 			}
-			return sourceSet{others: harness.sources, controller: harness.controller, startSession: harness.startSession}, harness.sourcesErr
+			return sourceSet{others: harness.sources, controller: harness.controller, startSession: harness.startSession,
+				controllerProblem: func() error { return harness.controllerProblem }}, harness.sourcesErr
 		},
 		notifyStop: func(parent context.Context) (context.Context, context.CancelFunc) {
 			return harness.stopped, func() {}
@@ -225,6 +228,30 @@ func TestDevicesWithNoScreen(test *testing.T) {
 	}
 	if harness.stdout.Len() != 0 || harness.stderr.String() != "no supported screen found\n" || len(harness.opened) != 0 {
 		test.Errorf("stdout %q stderr %q opened %v", harness.stdout.String(), harness.stderr.String(), harness.opened)
+	}
+}
+
+func TestDevicesWithNoScreenAndNearMissesNamesThem(test *testing.T) {
+	harness := newHarness()
+	harness.nearMisses = []string{"found a with reports of 64 and 65 bytes, those of the screen are 65", "found b"}
+	if status := harness.run("devices"); status != 0 {
+		test.Fatalf("status %d", status)
+	}
+	want := "no supported screen found\nfound a with reports of 64 and 65 bytes, those of the screen are 65\nfound b\n"
+	if harness.stdout.Len() != 0 || harness.stderr.String() != want {
+		test.Errorf("stdout %q stderr %q", harness.stdout.String(), harness.stderr.String())
+	}
+}
+
+func TestDevicesWithAScreenWritesOnlyTheScreen(test *testing.T) {
+	harness := newHarness()
+	harness.screens = []string{"/dev/hidraw2\t0483:0065\ta\t-"}
+	harness.nearMisses = []string{"found a"}
+	if status := harness.run("devices"); status != 0 {
+		test.Fatalf("status %d", status)
+	}
+	if harness.stdout.String() != harness.screens[0]+"\n" || harness.stderr.Len() != 0 {
+		test.Errorf("stdout %q stderr %q", harness.stdout.String(), harness.stderr.String())
 	}
 }
 

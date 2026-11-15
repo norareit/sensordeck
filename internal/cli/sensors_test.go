@@ -69,6 +69,31 @@ func TestSensorsWithNoReadingSaysSoOnStandardError(test *testing.T) {
 	}
 }
 
+func TestSensorsWithNoReadingAndAProblemWritesTheProblemFirst(test *testing.T) {
+	harness := newHarness()
+	harness.sources = []sensors.Source{&fakeSource{}}
+	harness.controllerProblem = errors.New("no collection of interface 0 matches: p")
+	if status := harness.run("sensors"); status != 0 {
+		test.Fatalf("status %d", status)
+	}
+	want := "no collection of interface 0 matches: p\nno sensor could be read\n"
+	if harness.stdout.Len() != 0 || harness.stderr.String() != want {
+		test.Errorf("stdout %q, stderr %q", harness.stdout.String(), harness.stderr.String())
+	}
+}
+
+func TestSensorsWithAReadingWritesNoProblem(test *testing.T) {
+	harness := newHarness()
+	harness.sources = []sensors.Source{&fakeSource{names: []string{"cpu.temp"}, values: map[string]float64{"cpu.temp": 1}}}
+	harness.controllerProblem = errors.New("a problem")
+	if status := harness.run("sensors"); status != 0 {
+		test.Fatalf("status %d", status)
+	}
+	if harness.stderr.Len() != 0 {
+		test.Errorf("stderr %q", harness.stderr.String())
+	}
+}
+
 func TestSensorsTakesNoArguments(test *testing.T) {
 	newHarness().expectFailure(test, `unknown command "x" for "sensordeck sensors"`, "sensors", "x")
 }

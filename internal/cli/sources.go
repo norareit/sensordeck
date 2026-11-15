@@ -18,6 +18,16 @@ type sourceSet struct {
 	// startSession makes a setup of a session that lights the LEDs of the controller in the colour and gives the
 	// session, or errNoController when there is no controller. On an error the setup has ended.
 	startSession func(stop context.Context, colour config.Colour) (heldSession, error)
+	// controllerProblem gives why a controller that seems to be there was not found, or nil.
+	controllerProblem func() error
+}
+
+// problem gives the problem of the controller, nil when the set has no way to tell one.
+func (set sourceSet) problem() error {
+	if set.controllerProblem == nil {
+		return nil
+	}
+	return set.controllerProblem()
 }
 
 // all gives every source, the controller last, in the order in which sensors reads them.
@@ -43,8 +53,9 @@ func commanderSources(finder commandercore.Finder) sourceSet {
 		return commanderSession{session: session}, nil
 	}
 	return sourceSet{
-		controller:   commandercore.Source{Finder: finder, TimeLimit: commandercore.ReplyTimeLimit},
-		startSession: startSession,
+		controller:        commandercore.Source{Finder: finder, TimeLimit: commandercore.ReplyTimeLimit},
+		startSession:      startSession,
+		controllerProblem: finder.Problem,
 	}
 }
 
