@@ -40,6 +40,7 @@ type harness struct {
 	system         string          // what the system is, linux unless a test sets it
 	executablePath string          // what executable gives
 	executableErr  error
+	version        string     // what the environment gives as the version
 	calls          [][]string // the arguments of each call of systemctl
 	// answer gives the result of a call of systemctl, and a call succeeds with no output when it is nil.
 	answer          func(arguments []string) (stdout, stderr string, err error)
@@ -103,7 +104,8 @@ func (harness *harness) run(args ...string) int {
 			}
 			return stop.Err() == nil
 		},
-		system: harness.system,
+		system:  harness.system,
+		version: harness.version,
 		executable: func() (string, error) {
 			harness.executableCalls++
 			return harness.executablePath, harness.executableErr
@@ -522,3 +524,17 @@ func TestRawFailsWhenTheWriteFails(test *testing.T) {
 }
 
 var _ smartmonitor.Transport = (*fakeTransport)(nil)
+
+func TestVersionFlagPrintsTheVersionLine(test *testing.T) {
+	harness := newHarness()
+	harness.version = "v1.2.3"
+	if status := harness.run("--version"); status != 0 {
+		test.Fatalf("status %d, stderr %q", status, harness.stderr.String())
+	}
+	if got := harness.stdout.String(); got != "sensordeck version v1.2.3\n" {
+		test.Errorf("stdout %q", got)
+	}
+	if harness.stderr.Len() != 0 {
+		test.Errorf("stderr %q", harness.stderr.String())
+	}
+}

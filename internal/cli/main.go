@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/signal"
 	"runtime"
+	"runtime/debug"
 	"syscall"
 	"time"
 
@@ -53,6 +54,8 @@ type environment struct {
 	// nil when the call succeeded, an *exec.ExitError when it ended with another status, and the error of the start when
 	// it could not start.
 	systemctl func(arguments ...string) (stdout, stderr string, err error)
+	// version is what --version prints.
+	version string
 }
 
 const (
@@ -65,8 +68,9 @@ const (
 )
 
 // Main runs the command line of the process and gives its exit status. It is the one place where the environment
-// variables for the tests are read.
-func Main() int {
+// variables for the tests are read. The linked version is the one the release build sets, empty for any other build.
+func Main(linked string) int {
+	info, ok := debug.ReadBuildInfo()
 	return run(os.Args[1:], environment{
 		stdout:        os.Stdout,
 		stderr:        os.Stderr,
@@ -88,6 +92,7 @@ func Main() int {
 		system:     runtime.GOOS,
 		executable: os.Executable,
 		systemctl:  runSystemctl,
+		version:    resolveVersion(linked, info, ok),
 	})
 }
 
@@ -136,6 +141,7 @@ func newRootCommand(env environment, start time.Time) *cobra.Command {
 		Short:         "Drive a SmartMonitor screen",
 		SilenceErrors: true,
 		SilenceUsage:  true,
+		Version:       env.version,
 	}
 	root.CompletionOptions.DisableDefaultCmd = true
 	root.PersistentFlags().StringVar(&chosen.device, "device", "", "open the transport on this node instead of looking for the screen")
