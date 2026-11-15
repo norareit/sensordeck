@@ -1,6 +1,6 @@
 ---
 kind: feature
-status: draft
+status: approved
 timestamp: 2026-11-15T13:32:18Z
 ---
 
@@ -35,3 +35,4 @@ timestamp: 2026-11-15T13:32:18Z
   failed check on Windows needs and a CI job on Windows is the only automatic check of that code, and the spec was
   amended for them; items 2 and 3 are declined. Everything on Windows is the human's to check and the unit does not
   depend on it. The approval that follows is made under that delegation
+- 2026-11-15T22:29:31Z [human] approved the spec. The status is `approved`
