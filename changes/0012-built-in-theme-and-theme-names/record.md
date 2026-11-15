@@ -1,6 +1,6 @@
 ---
 kind: feature
-status: in-progress
+status: implemented
 timestamp: 2026-11-15T09:21:42Z
 ---
 
@@ -28,9 +28,9 @@ timestamp: 2026-11-15T09:21:42Z
   a background drawn by the rule of R4: it compiles, its dump gives no warning, and its tags file holds the mapping of
   R6, so the spec fits the tree. Every requirement has a task and every task names the requirements it delivers. None
   of the items of "Beyond the request" is planned, as decided before the approval. The status stays `approved`
-- 2026-11-15T09:35:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, began the work. The status is
+- 2026-11-15T09:28:21Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, began the work. The status is
   `in-progress`
-- 2026-11-15T10:10:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, built every task of `plan.md`. Two
+- 2026-11-15T12:01:49Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, built every task of `plan.md`. Two
   deviations from the plan: `theme compile`, `theme preview` and `theme list` were committed together as one commit
   and not two, because they share `themes.go` and `theme.go`; and the end-to-end tests add `runIn` to
   `e2e/main_test.go`, which `runWith` now calls, as the plan allowed. A commit trailer that the harness asks for was
@@ -43,7 +43,7 @@ timestamp: 2026-11-15T09:21:42Z
   The five required suite commands, an uncached `go test -count=1 ./...` including end-to-end tests,
   `npm run check-changes` and the diff whitespace check pass. Not verified: generation by rerunning the writing
   command, the physical screen, or Windows runtime behavior. The status stays `in-progress`
-- 2026-11-15T12:30:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, accepted the findings P1, C1 and
+- 2026-11-15T12:05:13Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, accepted the findings P1, C1 and
   C2 of `round-1-20261115T120307Z.md` under the definition of the orchestrator for round 2, which accepts findings the
   implementer agrees with, and not as a decision of the human. C1: the coordinates `x` and `y` of the background and
   its two tests are now `column` and `row`, with the rule unchanged and the committed pixels still equal to the
@@ -60,3 +60,10 @@ timestamp: 2026-11-15T09:21:42Z
   including end-to-end tests, vet, formatting, Windows cross-build and vet, the change check and the diff whitespace
   check pass. Not verified: rerunning `go generate` against the committed artifact, the physical screen or Windows
   runtime behavior. The status stays `in-progress`
+- 2026-11-15T12:07:26Z [Claude Code, anthropic/claude-opus-5-5] under the delegation in `AGENTS.md`, decided the findings: P1, C1 and
+  C2 of round 1 were corrected and round 2 returned none, so no blocking finding is open. The timestamps of three
+  entries of the implementer, which did not match their commits, were corrected to the times of the commits that added
+  them. Every task of `plan.md` is ticked, and the five commands of the suite passed on the branch. On the host,
+  `theme list` listed `minimal-dark` as built in, and its preview was identical at every pixel to that of the
+  prototype the spec was written from. The check on the device is the human's and follows the merge. The status is
+  `implemented`
