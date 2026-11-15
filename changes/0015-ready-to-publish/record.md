@@ -1,6 +1,6 @@
 ---
 kind: feature
-status: draft
+status: approved
 timestamp: 2026-11-15T13:06:35Z
 ---
 
@@ -33,3 +33,4 @@ timestamp: 2026-11-15T13:06:35Z
   whose suite fails, and the spec was amended for them; items 1, 3, 4, 6, 7 and 8 are declined. The unit pushes, tags
   and releases nothing; the first runs of the workflows are the human's. The approval that follows is made under that
   delegation
+- 2026-11-15T13:10:23Z [human] approved the spec. The status is `approved`
