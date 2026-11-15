@@ -12,5 +12,9 @@ timestamp: 2026-11-15T00:11:24Z
   vendor theme that the human found on the device, from the specs of units 0004 and 0005 and from the sensor registry
   and the Linux sources of the tree, with the network rates made from two samples as `cpu.util` is. The status is
   `draft`
+- 2026-11-15T00:12:12Z [Claude Code, anthropic/claude-opus-5-5] read the spec under the delegation in `AGENTS.md`: every
+  requirement can be tested in the sandbox with fake proc and sysfs trees, the names follow `cpu.util` and
+  `gpu.util`, D4 counts the interfaces the kernel ties to a device, and D5 keeps the units of the table binary. The
+  three items of "Beyond the request" are declined. The approval that follows is made under that delegation
 
 ## Amendments
