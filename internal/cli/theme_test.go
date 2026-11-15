@@ -344,3 +344,15 @@ func TestThemeFolderRefusesAnImageLinkedOutOfTheFolder(test *testing.T) {
 	newHarness().expectFailure(test, filepath.Join(folder, "theme.yaml")+": widget 1 (image): cannot read link.png: path escapes from parent",
 		"theme", "compile", folder, filepath.Join(test.TempDir(), "out.dat"))
 }
+
+func TestThemeCompileAndPreviewHelpNameTheFirstArgumentAsANameOrFolder(test *testing.T) {
+	for _, command := range []string{"compile", "preview"} {
+		harness := newHarness()
+		if status := harness.run("theme", command, "--help"); status != 0 {
+			test.Fatalf("%s: status %d", command, status)
+		}
+		if !strings.Contains(harness.stdout.String(), command+" <name-or-folder>") {
+			test.Errorf("%s: the help is %q", command, harness.stdout.String())
+		}
+	}
+}

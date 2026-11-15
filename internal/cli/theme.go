@@ -10,6 +10,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/norareit/sensordeck/internal/builtinthemes"
 	"github.com/norareit/sensordeck/internal/themecompile"
 	"github.com/norareit/sensordeck/internal/themedump"
 	"github.com/norareit/sensordeck/internal/themefile"
@@ -21,7 +22,8 @@ func (current *session) themeCommand() *cobra.Command {
 		Use:   "theme",
 		Short: "Work with theme files without a screen",
 	}
-	theme.AddCommand(current.themeDumpCommand(), current.themeCompileCommand(), current.themePreviewCommand())
+	theme.AddCommand(current.themeDumpCommand(), current.themeCompileCommand(), current.themePreviewCommand(),
+		current.themeListCommand())
 	return theme
 }
 
@@ -61,15 +63,15 @@ func (current *session) themeDumpCommand() *cobra.Command {
 	}
 }
 
-// themeCompileCommand compiles a theme folder into a theme file and writes the tags file beside it. It opens no device
+// themeCompileCommand compiles a theme, by name or folder, into a theme file and writes the tags file beside it. It opens no device
 // and reads no sensor.
 func (current *session) themeCompileCommand() *cobra.Command {
 	return &cobra.Command{
-		Use:   "compile <theme-dir> <out.dat>",
-		Short: "Compile a theme folder into a theme file and its tags file",
+		Use:   "compile <name-or-folder> <out.dat>",
+		Short: "Compile a theme, by name or folder, into a theme file and its tags file",
 		Args:  cobra.ExactArgs(2),
 		RunE: func(command *cobra.Command, args []string) error {
-			result, err := compileFolder(args[0])
+			result, err := current.compileTheme(args[0])
 			if err != nil {
 				return err
 			}
@@ -87,14 +89,14 @@ func (current *session) themeCompileCommand() *cobra.Command {
 	}
 }
 
-// themePreviewCommand compiles a theme folder in memory and writes the preview of the compiled file as a PNG.
+// themePreviewCommand compiles a theme, by name or folder, in memory and writes the preview of the compiled file as a PNG.
 func (current *session) themePreviewCommand() *cobra.Command {
 	return &cobra.Command{
-		Use:   "preview <theme-dir> <out.png>",
-		Short: "Draw the preview of a theme folder as a PNG",
+		Use:   "preview <name-or-folder> <out.png>",
+		Short: "Draw the preview of a theme, by name or folder, as a PNG",
 		Args:  cobra.ExactArgs(2),
 		RunE: func(command *cobra.Command, args []string) error {
-			result, err := compileFolder(args[0])
+			result, err := current.compileTheme(args[0])
 			if err != nil {
 				return err
 			}
@@ -110,6 +112,25 @@ func (current *session) themePreviewCommand() *cobra.Command {
 				return err
 			}
 			current.say("wrote " + args[1])
+			return nil
+		},
+	}
+}
+
+// themeListCommand lists the built-in and the installed themes. It opens no device and reads no sensor.
+func (current *session) themeListCommand() *cobra.Command {
+	return &cobra.Command{
+		Use:   "list",
+		Short: "List the built-in and installed themes",
+		Args:  cobra.NoArgs,
+		RunE: func(command *cobra.Command, args []string) error {
+			installed, err := current.installedThemes()
+			if err != nil {
+				return err
+			}
+			for _, line := range themeListLines(builtinthemes.Names(), installed) {
+				current.say(line)
+			}
 			return nil
 		},
 	}

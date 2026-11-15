@@ -193,7 +193,7 @@ with --config: <cause>` as it is.
 
 ### The lookup
 
-- [ ] Write `internal/cli/themes_test.go` with the tests of the lookup, through the harness with `configDir` set to a
+- [x] Write `internal/cli/themes_test.go` with the tests of the lookup, through the harness with `configDir` set to a
   temporary directory, each checking the exit status, standard output and the files written (R22):
     - `isFolderPath` is true for `.`, `..`, `./x`, `a/b` and `/abs` and false for `x`, `x.y` and `minimal-dark` on
       Linux, and `theme compile` and `theme preview` with the empty argument fail with the error of R8 and write
@@ -219,15 +219,15 @@ with --config: <cause>` as it is.
     - `theme preview minimal-dark` writes the preview of the compiled built-in theme (R10)
     - each command of the lookup, with `--device /nowhere` and without it, with `sourcesErr` set, opens no transport
       (R18)
-- [ ] Add to `internal/cli/theme_test.go` a test that the help of `theme compile` and of `theme preview` holds
+- [x] Add to `internal/cli/theme_test.go` a test that the help of `theme compile` and of `theme preview` holds
   `<name-or-folder>` (R14)
-- [ ] Write `isFolderPath`, `themesDirectory`, `installedTheme` and `compileTheme` in `internal/cli/themes.go`, and make
+- [x] Write `isFolderPath`, `themesDirectory`, `installedTheme` and `compileTheme` in `internal/cli/themes.go`, and make
   `theme compile` and `theme preview` in `internal/cli/theme.go` call `current.compileTheme(args[0])` with the use
   lines and short texts of the table above, until the tests and the existing tests of the folder pass (R8 to R14, R18)
 
 ### The list
 
-- [ ] Add to `internal/cli/themes_test.go` (R22):
+- [x] Add to `internal/cli/themes_test.go` (R22):
     - `themeListLines` with no installed theme, with an installed theme whose name sorts before the built-in one, and
       with one that overrides it, against the exact lines of R15 (R15)
     - `theme list` through the harness for the cases of the lookup: no themes directory gives `minimal-dark\tbuilt-in`
@@ -235,7 +235,7 @@ with --config: <cause>` as it is.
       `minimal-dark` listed once as `installed, overrides built-in` with its folder; a config directory that cannot be
       found and a themes directory that is a regular file fail with status 1 and the errors of the table; an argument
       is refused; no transport is opened, with `--device /nowhere` and without it (R15 to R18)
-- [ ] Write `themeListLines` in `internal/cli/themes.go` and the command `theme list` in `internal/cli/theme.go`, added
+- [x] Write `themeListLines` in `internal/cli/themes.go` and the command `theme list` in `internal/cli/theme.go`, added
   to `themeCommand`, until the tests pass (R15 to R17)
 
 ### End to end
@@ -292,7 +292,7 @@ with --config: <cause>` as it is.
 - [x] `feature-0012 Extract the config directory of sensordeck`, the refactoring alone
 - [x] `feature-0012 Add the built-in theme minimal-dark`, the background, its generator, the theme folder and
   `internal/builtinthemes` with their tests
-- [ ] `feature-0012 Find a theme by name in theme compile and theme preview`, the lookup with its tests and the help
-- [ ] `feature-0012 Add theme list`, with its tests
+- [x] `feature-0012 Find a theme by name in theme compile and theme preview`, the lookup with its tests and the help
+- [x] `feature-0012 Add theme list`, with its tests
 - [ ] `feature-0012 Test the built-in theme and the theme names end to end`
 - [ ] `feature-0012 Document the quick start and the theme names`, the README and `docs/theme-folder.md`
