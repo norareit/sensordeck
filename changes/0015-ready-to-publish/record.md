@@ -89,3 +89,10 @@ timestamp: 2026-11-15T13:06:35Z
   GOPROXY off) and of the generator command (success, wrong argument count, unwritable destination, an existing file
   kept when generation fails). No decline is proposed. The five commands of the suite succeeded on the tree before this
   commit. The status stays `in-progress`
+- 2026-11-15T13:25:31Z [OpenCode, openai/gpt-6.1-sol] as the reviewer, performed a delta review of
+  `changes/0015-ready-to-publish` at `d98918f9f4bbeb0997b20c80802e0828c4064770`, compared against the previous
+  review's commit `151f8323bf2649531478668317ed3bd8be010e4e`. Verified corrections of C1, C2 and C3 and returned no
+  findings on any axis. Saved the review in `.reviews/0015-ready-to-publish/review-20261115T132531Z.md`.
+  Independently ran all five suite commands, an uncached full test run including end-to-end tests and the new notices
+  tests, and `npm run check-changes`, all successfully. Workflow execution, actual release archives, GitHub README
+  rendering and Windows runtime behavior remain unverified. The status stays `in-progress`
