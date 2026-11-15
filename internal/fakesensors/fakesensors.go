@@ -85,9 +85,15 @@ func (tree *Tree) NetDev(content string) {
 	tree.test.Helper()
 	directory := filepath.Join(tree.ProcRoot, "net")
 	tree.mkdir(directory)
-	temporary := filepath.Join(directory, "dev.tmp")
+	tree.replace(filepath.Join(directory, "dev"), content)
+}
+
+// replace writes the content to <path>.tmp and renames it to path.
+func (tree *Tree) replace(path, content string) {
+	tree.test.Helper()
+	temporary := path + ".tmp"
 	tree.write(temporary, content)
-	if err := os.Rename(temporary, filepath.Join(directory, "dev")); err != nil {
+	if err := os.Rename(temporary, path); err != nil {
 		tree.test.Fatalf("fake sensors: %v", err)
 	}
 }
