@@ -1,6 +1,6 @@
 ---
 kind: feature
-status: in-progress
+status: implemented
 timestamp: 2026-11-15T13:06:35Z
 ---
 
@@ -41,15 +41,15 @@ timestamp: 2026-11-15T13:06:35Z
   are not in `go.mod`, so the module list is taken from `go.mod`; and cobra gives `--version` the new shorthand
   `-v`, which changes no existing flag. The sandbox cannot reach GitHub, so the pinned versions of the actions and of
   GoReleaser are releases known to exist and were not checked against GitHub. The status stays `approved`
-- 2026-11-15T14:00:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, began the work. The status is
+- 2026-11-15T13:18:08Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, began the work. The status is
   `in-progress`
-- 2026-11-15T14:01:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, built the five pieces of the plan
+- 2026-11-15T13:18:08Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, built the five pieces of the plan
   in five commits: the version (`--version`, `resolveVersion`, the variable `version` of `main`), the notices package
   and the committed `THIRD_PARTY_LICENSES` (eight parts, no toolchain version), `docs/minimal-dark.png` with its pixel
   test, `.goreleaser.yaml` with `ci.yml` and `release.yml` and their test, and the README. Work not in the plan: none.
   One departure in the code: `go list` in the generator runs with `-e`, so that a module that is not in the module cache
   is named in the generator's own error instead of failing `go list` with its message
-- 2026-11-15T14:02:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, accounted for R13: (1) the tagline
+- 2026-11-15T13:18:08Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, accounted for R13: (1) the tagline
   now says Linux only; (2) the status note is replaced by the opening, whose Windows paragraph is the Windows sentence of
   R2 and whose last sentence on what the README is meant to become is gone; (3) "What it will do" is merged into the
   opening, keeping the "Windows only" introduction and the bullets on themes, the preview and the single executable, with
@@ -66,11 +66,11 @@ timestamp: 2026-11-15T13:06:35Z
   identifiers of R8 each found with `grep -F`; every `](#...)` link of the README resolves to a heading; the diff
   against the merge base removes only lines of the sections named in R13. Not checked: the render of the README on
   GitHub
-- 2026-11-15T14:03:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, noted that the pinned versions
+- 2026-11-15T13:18:08Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, noted that the pinned versions
   (`actions/checkout@v5.0.0`, `actions/setup-go@v6.0.0`, `goreleaser/goreleaser-action@v6.3.0`, GoReleaser `v2.8.0`) were
   not checked against GitHub from the sandbox, and that neither workflow nor GoReleaser was run. The tests read the
   files only (D10)
-- 2026-11-15T14:05:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, ran the five commands of the suite
+- 2026-11-15T13:18:12Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, ran the five commands of the suite
   on `ef798f0`: all succeeded and reported nothing. `npm run check-changes` ran after the last commit of code and
   documents and reported nothing. The status stays `in-progress`
 - 2026-11-15T13:19:56Z [OpenCode, openai/gpt-6.1-sol] as the reviewer, performed a full review of
@@ -80,7 +80,7 @@ timestamp: 2026-11-15T13:06:35Z
   findings. Independently ran all five suite commands, an uncached full test run including end-to-end tests, and
   `npm run check-changes`, all successfully. Did not verify workflow execution, actual release archives, GitHub README
   rendering or Windows runtime behavior. The status stays `in-progress`
-- 2026-11-15T14:30:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, accepted C1, C2 and C3 of the review
+- 2026-11-15T13:24:31Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, accepted C1, C2 and C3 of the review
   `review-20261115T131956Z.md`, each a broken rule of the standards, accepted by the definition of the orchestrator for
   round 2 and not as a decision of the human. C1: `release_test.go` has no `any` any more: a generic `parseYAML`
   restricted to the two document types, typed permissions and `needs`, and `yaml.Node` for the triggers, whose keys the
@@ -96,3 +96,10 @@ timestamp: 2026-11-15T13:06:35Z
   Independently ran all five suite commands, an uncached full test run including end-to-end tests and the new notices
   tests, and `npm run check-changes`, all successfully. Workflow execution, actual release archives, GitHub README
   rendering and Windows runtime behavior remain unverified. The status stays `in-progress`
+- 2026-11-15T13:27:11Z [Claude Code, anthropic/claude-opus-5-5] under the delegation in `AGENTS.md`, decided the findings: C1, C2
+  and C3 of round 1 were corrected and round 2 returned none, so no blocking finding is open. The timestamps of six
+  entries of the implementer, which did not match their commits, were corrected to the times of the commits that added
+  them. Every task of `plan.md` is ticked, and the five commands of the suite passed on the branch. On the host, an
+  executable linked with a version printed it with `--version`, the README holds every identifier of R8 and the
+  HIDdev2 credit, and `THIRD_PARTY_LICENSES` has a part for each module of `go.mod`. Nothing was pushed, tagged or
+  released; the first runs of the workflows are the human's. The status is `implemented`
