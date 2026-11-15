@@ -17,3 +17,10 @@ timestamp: 2026-11-15T12:11:23Z
   after a reload that changes the theme and after the screen came back; the config file is checked by its modification
   time and size each round; a reload applies the theme and the tags only; `theme use` edits one line and writes only a
   config that `run` accepts. The device check is the human's and the unit does not wait for it. The status is `draft`
+- 2026-11-15T12:14:10Z [Claude Code, anthropic/claude-opus-5-5] as the specifier, amended the spec on the decision of
+  the orchestrating session under the delegation in `AGENTS.md`: item 1 of "Beyond the request" is taken, because
+  without it a manual `upload` of another file leaves the state file naming the earlier theme, so that `run` skips the
+  upload it needs. Added R35 to R38 and D20: `upload` removes the screen's entry before the upload and records the hash
+  after a completed one, through the same code as `run`. R8 now says what a failed record after a completed upload
+  does, R30, R32, R33, D17, a non-goal and item 1 were changed to match. Items 2 to 4 are declined and stay in the
+  list. D8 and D15 stand as written. The status stays `draft`

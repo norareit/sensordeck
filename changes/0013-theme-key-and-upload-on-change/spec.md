@@ -77,7 +77,9 @@ on the screen" means that the state file holds the hash of its compiled file for
   opened again after its reboot. Before the first report of the upload is written, `run` removes the entry of the
   serial from the state file and writes the file. When that write fails, the upload does not start and counts as
   failed. After an `Upload` that returned no error, `run` records the hash under the serial in the state file, sends
-  the clock, and goes on to send the values of the round
+  the clock, and goes on to send the values of the round. When the write of that record fails, `run` writes one line
+  on standard error that names the state file and the cause, and goes on as after a completed upload; the entry stays
+  absent, so the next check uploads again
 - **R9** An upload that returned an error records nothing, writes `theme upload failed: <error>` to standard error,
   and marks the screen lost, so that the rounds that follow reopen it as they do for any lost screen. While the theme
   of the config is not on the screen, `run` sends the screen no value and no clock. The next attempt of the upload is
@@ -104,6 +106,25 @@ on the screen" means that the state file holds the hash of its compiled file for
   exit status 1 and an error that says the cache directory cannot be found
 - **R16** No compiled theme file is kept on disk by `run`: it compiles the theme in memory at the start and at each
   reload, and the state file is the only file it writes
+
+### The state file kept by `upload`
+
+These requirements were added by the amendment of the spec recorded in `record.md`, and are numbered after the last
+one of the first version.
+
+- **R35** `sensordeck upload <file>` keeps the state file true as `run` does, through the same code: before the first
+  report of the upload is written it removes the entry of the serial of the screen, by R6, and writes the file, and
+  after an `Upload` that returned no error it records the hash of R5 of the uploaded file under that serial. A file
+  that is not a theme compiled by sensordeck, such as a vendor theme, is recorded by its hash in the same way
+- **R36** When the cache directory cannot be found or the removal of R35 cannot be written, `upload` writes no report
+  to the screen and fails with exit status 1 and an error that names the cause and, where there is one, the path of the
+  state file. A state file that cannot be read or is not an object of R14 is taken as holding no entry, as R15 says
+- **R37** When the record after a completed upload cannot be written, `upload` writes one line on standard error that
+  names the state file and the cause, writes its line `upload complete: ...` and ends with exit status 0, because the
+  upload completed and the absent entry claims nothing. An upload that returned an error records nothing and ends as
+  it does today. The lines of `upload` on standard output are otherwise unchanged
+- **R38** After `upload` of a file whose hash differs from that of the theme of the config, the next check of `run` by
+  R7 uploads the theme of the config, and after `upload` of the compiled file of that theme, it uploads nothing
 
 ### A change of the config file while `run` runs
 
@@ -159,8 +180,10 @@ on the screen" means that the state file holds the hash of its compiled file for
 - **R30** The README, in the section on themes and in the section on the config file of `run`, describes: the key
   `theme` and that it excludes `tags`; that `run` uploads the theme only when the hash of its compiled file differs from
   the one stored for the serial of the screen; the path of the state file on Linux and on Windows; that deleting the
-  state file makes the next start upload; that a theme uploaded otherwise, as with `sensordeck upload`, is not known to
-  `run`, which is why deleting the file is the way to put the theme of the config back; that `theme use` sets the key
+  state file makes the next start upload; that `sensordeck upload` keeps the state file true, so that `run` puts its
+  theme back after a manual upload of another file at its next start or reload; that a theme put on the screen by
+  other software, such as the vendor's, is not known to `run`, which is why deleting the file is the way to put the
+  theme of the config back then; that `theme use` sets the key
   and that a running `run` applies it within a round; that running `theme use` again after editing a theme folder puts
   the edit on the screen; which keys a reload applies and which need a restart; that an upload is not interrupted by a
   stop; and that `tags` stays for a vendor theme uploaded with `upload`. The status line names `theme use` among what
@@ -186,12 +209,17 @@ on the screen" means that the state file holds the hash of its compiled file for
     - R24 to R28: a missing file, a file with `theme` replaced, one with another key and comments where `theme` is
       added, one with no final line feed, one of comments only, a root in flow style, a file with `tags`, a file that is
       not YAML, a value that needs quotes, a symbolic link to the config file and the permissions kept
+    - R35 to R37 with a fake transport: the entry removed before the first report of `upload`, the hash recorded after
+      an upload that completed and not after one that failed, no report written when the removal cannot be written or
+      the cache directory cannot be found, and the line and exit status 0 when the record cannot be written
 - **R33** The end-to-end tests run the built executable against the fake screen, with `XDG_CONFIG_HOME` and
   `XDG_CACHE_HOME` set to temporary directories, and check: `theme use minimal-dark` creating the config file; `run`
   uploading the compiled `minimal-dark`, whose reports are those `smartmonitor.Upload` writes for it, then sending the
   clock and values, and recording the hash in the state file; a second `run` that uploads nothing; `theme use` of an
   installed theme while `run` runs, followed by its upload and its tags; `theme` with `tags` refused before the screen is
-  opened; and a theme that does not compile, refused by `theme use` and by `run`. The fake screen may be extended to
+  opened; a theme that does not compile, refused by `theme use` and by `run`; and, for R35 and R38, `upload` of another
+  file recording its hash, after which `run` uploads `minimal-dark` again, and `upload` of the compiled `minimal-dark`
+  recording its hash, after which `run` uploads nothing. The fake screen may be extended to
   answer the items of an upload
 - **R34** The five commands of the suite in `AGENTS.md` succeed
 
@@ -279,7 +307,8 @@ on the screen" means that the state file holds the hash of its compiled file for
 - **D17 The threat model.** The config file, the themes directory and the state file belong to the user who runs
   `run`, and are trusted as theirs. A state file that is not what R14 says is taken as empty, so a damaged file costs an
   upload and nothing else. Two processes of `run` that write the state file at the same time, as with two screens each
-  named with `--device`, may lose the entry the other wrote, which costs an upload at a later check. The unit does not
+  named with `--device`, or `upload` and `run` at the same time, may lose the entry the other wrote, which costs an
+  upload at a later check. The unit does not
   defend against another user who can write these files
 - **D18 No device check in this unit.** Whether the device reboots and comes back after an upload made by `run` as the
   fake screen does, whether its serial is the one the discovery reads and whether that serial is unique, is for the
@@ -290,6 +319,14 @@ on the screen" means that the state file holds the hash of its compiled file for
   of Go, which work on Windows with no code of their own, and the suite builds and vets for Windows. The transport of
   `run` is not supported on Windows yet, so the serial of R6 has no Windows source in this unit. Running it on Windows is
   the human's to check, and the unit does not wait for it
+
+- **D20 `upload` keeps the state file too.** The state file is only useful when it is true for every way sensordeck
+  puts a theme on the screen. Without R35 a manual `upload` of another file leaves the entry naming the theme `run`
+  uploaded before, so `run` skips the upload it needs and sends values to the tiles of the wrong theme, which makes
+  the upload on change false in ordinary use. `upload` therefore follows the same rule as `run`, by D7, through the
+  same code, so that the rule is written once. A failed record after a completed upload is not an error of `upload`,
+  because the entry was removed first and the state file claims nothing then. This decision was taken by the
+  amendment recorded in `record.md`
 
 ## Non-goals
 
@@ -302,13 +339,14 @@ on the screen" means that the state file holds the hash of its compiled file for
 - A local IPC or HTTP call to a running `run`, which the initial plan names beside a file watch
 - Following the screen by its serial when several screens are connected, which item 3 of "Beyond the request" of unit
   0003 names
-- Changing `upload`, which neither reads nor writes the state file
+- Any other change to `upload` than the state file of R35 to R37
 - Changing `smartmonitor.Upload`, its pauses or its number of attempts
 - Interrupting an upload with Ctrl+C or SIGTERM
 
 ## Beyond the request
 
-1. `sensordeck upload` recording the hash of the file it uploaded under the serial of the screen, so that `run` sees
+1. Taken into the unit by the amendment recorded in `record.md`, as R35 to R38 and D20. `sensordeck upload` recording
+   the hash of the file it uploaded under the serial of the screen, so that `run` sees
    that the screen holds another theme and uploads its own at its next check. Cost: the serial in `upload`, a write of
    the state file and tests. Without it, after a manual upload of another file `run` keeps sending values for its own
    theme to the other one until the state file is deleted, which the README says
