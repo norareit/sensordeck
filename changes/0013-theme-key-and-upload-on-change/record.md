@@ -1,6 +1,6 @@
 ---
 kind: feature
-status: draft
+status: approved
 timestamp: 2026-11-15T12:11:23Z
 ---
 
@@ -30,3 +30,4 @@ timestamp: 2026-11-15T12:11:23Z
   manual upload would leave the state file false, and the spec was amended for it; items 2 to 4 are declined. D8 and
   D15 stand as written. The device check is the human's and the unit does not depend on it. The approval that follows
   is made under that delegation
+- 2026-11-15T12:14:53Z [human] approved the spec. The status is `approved`
