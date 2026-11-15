@@ -179,3 +179,17 @@ func TestParseWithoutColour(test *testing.T) {
 		test.Errorf("%+v, %v", got.CommanderColour, err)
 	}
 }
+
+func TestDecodeColour(test *testing.T) {
+	for _, text := range []string{"#00c8ff", "#00C8FF"} {
+		got, ok := DecodeColour(text)
+		if !ok || got != (Colour{Red: 0, Green: 200, Blue: 255}) {
+			test.Errorf("%s: got %+v, %v", text, got, ok)
+		}
+	}
+	for _, text := range []string{"00c8ff", "#00c8f", "#00c8fff", "#00c8fg", ""} {
+		if _, ok := DecodeColour(text); ok {
+			test.Errorf("%q: want false", text)
+		}
+	}
+}

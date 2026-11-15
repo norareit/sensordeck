@@ -233,14 +233,23 @@ func parseCommanderColour(node *yaml.Node) (*Colour, error) {
 	if node.Kind == yaml.ScalarNode && (node.ShortTag() == "!!null" || text == "") {
 		return nil, errors.New(`commander_color: no colour given, write it in quotes such as "#00c8ff", because # starts a comment in YAML`)
 	}
-	notAColour := fmt.Errorf(`commander_color: %q is not a colour such as "#00c8ff"`, text)
+	colour, ok := DecodeColour(text)
+	if !ok {
+		return nil, fmt.Errorf(`commander_color: %q is not a colour such as "#00c8ff"`, text)
+	}
+	return &colour, nil
+}
+
+// DecodeColour reads a colour written as # and six hexadecimal digits, in either case. It gives false for any other
+// text.
+func DecodeColour(text string) (Colour, bool) {
 	digits, found := strings.CutPrefix(text, "#")
 	if !found || len(digits) != 6 {
-		return nil, notAColour
+		return Colour{}, false
 	}
 	components, err := hex.DecodeString(digits)
 	if err != nil {
-		return nil, notAColour
+		return Colour{}, false
 	}
-	return &Colour{Red: components[0], Green: components[1], Blue: components[2]}, nil
+	return Colour{Red: components[0], Green: components[1], Blue: components[2]}, true
 }

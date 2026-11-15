@@ -1,6 +1,6 @@
 ---
 kind: feature
-status: approved
+status: in-progress
 timestamp: 2026-11-15T08:52:10Z
 ---
 
@@ -28,3 +28,5 @@ timestamp: 2026-11-15T08:52:10Z
   extracts the decoding of a colour from `internal/config` for R2, and `golang.org/x/image` v0.48.0, whose font calls
   and the confinement of `os.Root` were checked in the sandbox. Every task names the requirements it delivers and every
   requirement R1 to R31 has a task. The status stays `approved`
+- 2026-11-15T09:10:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, began the work on the branch
+  `feature-0011-theme-compiler`. The status is `in-progress`

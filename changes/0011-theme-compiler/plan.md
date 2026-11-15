@@ -352,11 +352,11 @@ Nothing is written before the whole compilation and, for `preview`, the PNG enco
 
 ### The colour of R2, a refactoring
 
-- [ ] In `internal/config/config_test.go`, add a test of `DecodeColour`: `#00c8ff` and `#00C8FF` give 0, 200, 255 and
+- [x] In `internal/config/config_test.go`, add a test of `DecodeColour`: `#00c8ff` and `#00C8FF` give 0, 200, 255 and
   true; `00c8ff`, `#00c8f`, `#00c8fff`, `#00c8fg` and the empty text give false (R2)
-- [ ] Extract `DecodeColour` as "The colour of R2" says and call it from `parseCommanderColour`, with its messages
+- [x] Extract `DecodeColour` as "The colour of R2" says and call it from `parseCommanderColour`, with its messages
   unchanged, until `go test ./internal/config` passes and the tests of `commander_color` pass unchanged (R2)
-- [ ] Run the five commands of the suite and commit: `feature-0011 Extract the decoding of a colour from the config`
+- [x] Run the five commands of the suite and commit: `feature-0011 Extract the decoding of a colour from the config`
 
 ### The glyphs, the pixels, the format and the tags
 
@@ -515,7 +515,7 @@ Nothing is written before the whole compilation and, for `preview`, the PNG enco
 
 ## Commit Points
 
-- [ ] `feature-0011 Extract the decoding of a colour from the config`
+- [x] `feature-0011 Extract the decoding of a colour from the config`
 - [ ] `feature-0011 Draw the glyphs and convert the pixels of a theme`
 - [ ] `feature-0011 Compile a theme folder into a theme file`
 - [ ] `feature-0011 Test that the theme compiler does no I/O`
