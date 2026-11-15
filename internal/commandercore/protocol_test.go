@@ -142,3 +142,94 @@ func TestInvalidityNamesWhatIsWrong(test *testing.T) {
 		}
 	}
 }
+
+func TestTheCommandsOfAnEndpointOnAChannel(test *testing.T) {
+	cases := []struct {
+		name string
+		got  []byte
+		want []byte
+	}{
+		{"open 0x20 on channel 1", openCommand(channelOne, 0x20), []byte{0x08, 0x0D, 0x01, 0x20}},
+		{"read 0x20 on channel 1", readCommand(channelOne, 0x20), []byte{0x08, 0x08, 0x01, 0x20}},
+		{"close 0x20 on channel 1", closeCommand(channelOne, 0x20), []byte{0x08, 0x05, 0x01, 0x01, 0x20}},
+		{"open 0x22 on channel 0", openCommand(channelZero, ledEndpoint), []byte{0x08, 0x0D, 0x00, 0x22}},
+		{"close 0x22 on channel 0", closeCommand(channelZero, ledEndpoint), []byte{0x08, 0x05, 0x01, 0x00, 0x22}},
+	}
+	for _, each := range cases {
+		if !bytes.Equal(each.got, each.want) {
+			test.Errorf("%s: got % x, want % x", each.name, each.got, each.want)
+		}
+	}
+}
+
+func TestStepNameIsMadeFromTheCommand(test *testing.T) {
+	cases := map[string][]byte{
+		"close of endpoint 0x20 on channel 1": closeCommand(channelOne, 0x20),
+		"open of endpoint 0x22 on channel 0":  openCommand(channelZero, ledEndpoint),
+		"read of endpoint 0x1a on channel 1":  readCommand(channelOne, 0x1A),
+		"enter software mode":                 enterSoftware,
+		"return to hardware mode":             returnHardware,
+		"colour write":                        colourCommand(1, 0, 0, 0),
+	}
+	for want, command := range cases {
+		if got := stepName(command); got != want {
+			test.Errorf("got %q, want %q", got, want)
+		}
+	}
+}
+
+func TestColourCommand(test *testing.T) {
+	sixteen := colourCommand(16, 0xFF, 0, 0)
+	want := append([]byte{0x08, 0x06, 0x00, 0x32, 0x00, 0x00, 0x00, 0x12, 0x00}, bytes.Repeat([]byte{0xFF, 0x00, 0x00}, 16)...)
+	want = append(want, make([]byte, 96-len(want))...)
+	if !bytes.Equal(sixteen, want) {
+		test.Errorf("16 LEDs: got % x", sixteen)
+	}
+	twentyFour := colourCommand(24, 1, 2, 3)
+	if len(twentyFour) != 96 || !bytes.Equal(twentyFour[:9], []byte{0x08, 0x06, 0x00, 0x4A, 0x00, 0x00, 0x00, 0x12, 0x00}) ||
+		!bytes.Equal(twentyFour[9:81], bytes.Repeat([]byte{1, 2, 3}, 24)) || !bytes.Equal(twentyFour[81:], make([]byte, 15)) {
+		test.Errorf("24 LEDs: got % x", twentyFour)
+	}
+}
+
+// portsAnswer makes an answer of the endpoint 0x20 with the entries as mode and LED count pairs.
+func portsAnswer(entries ...[2]uint16) []byte {
+	answer := answerOf(0x00, 0x08, 0x00, 0x0F, 0x00, byte(len(entries)))
+	for position, entry := range entries {
+		offset := 6 + 4*position
+		if offset+4 > len(answer) {
+			break
+		}
+		copy(answer[offset:], []byte{byte(entry[0]), byte(entry[0] >> 8), byte(entry[1]), byte(entry[1] >> 8)})
+	}
+	return answer
+}
+
+func TestLedCount(test *testing.T) {
+	host := portsAnswer([2]uint16{0, 0}, [2]uint16{3, 0}, [2]uint16{3, 0}, [2]uint16{2, 4}, [2]uint16{2, 4}, [2]uint16{2, 4}, [2]uint16{2, 4})
+	if count, err := ledCount(host); err != nil || count != 16 {
+		test.Errorf("host: %d, %v", count, err)
+	}
+	disconnected := portsAnswer([2]uint16{2, 4}, [2]uint16{3, 8}, [2]uint16{0, 8})
+	if count, err := ledCount(disconnected); err != nil || count != 4 {
+		test.Errorf("only mode 2 counts: %d, %v", count, err)
+	}
+	if count, err := ledCount(portsAnswer([2]uint16{2, 29})); err != nil || count != 29 {
+		test.Errorf("29: %d, %v", count, err)
+	}
+	refusals := []struct {
+		name   string
+		answer []byte
+		want   string
+	}{
+		{"data type", append([]byte{0x00, 0x08, 0x00, 0x06, 0x00, 0x00}, make([]byte, 90)...), "data type 06 00"},
+		{"23 entries", portsAnswer(make([][2]uint16, 23)...), "count 23 leaves no room for its entries"},
+		{"no LEDs", portsAnswer([2]uint16{2, 0}), "LED count 0 is outside 1 to 29"},
+		{"30 LEDs", portsAnswer([2]uint16{2, 15}, [2]uint16{2, 15}), "LED count 30 is outside 1 to 29"},
+	}
+	for _, each := range refusals {
+		if _, err := ledCount(each.answer); err == nil || err.Error() != each.want {
+			test.Errorf("%s: %v, want %q", each.name, err, each.want)
+		}
+	}
+}
