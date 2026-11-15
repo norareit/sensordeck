@@ -52,3 +52,7 @@ supersedes: 0004-linux-sensors-and-run
   the CLI and end-to-end tests passed. The physical-screen behavior, historical test order and historical repeated
   test runs could not be independently verified; Windows execution was not performed. The status stays `in-progress`
 - 2026-11-15T23:10:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, read `review-round-1.md`, which has one finding, P1, non-blocking: the tests of R10 were written after the schedule. Proposed decline, not a decision: there is nothing to change, because the order of the work cannot be undone, the record already discloses it, and the tests were checked to fail on the tree without the schedule. The finding stays open until the human decides it. The status stays `in-progress`
+- 2026-11-15T22:24:13Z [Claude Code, anthropic/claude-opus-5-5] under the delegation in `AGENTS.md`, decided the proposed decline of
+  P1 of round 1: declined. The tests were written after the code, against the order of the plan, but the order cannot
+  be restored after the fact, the record states it, and the tests were shown to fail on the tree without the schedule,
+  so they guard the fix. P1 does not block
