@@ -1,6 +1,6 @@
 ---
 kind: feature
-status: in-progress
+status: implemented
 timestamp: 2026-11-15T12:11:23Z
 ---
 
@@ -36,8 +36,8 @@ timestamp: 2026-11-15T12:11:23Z
   spec fits the tree. The plan makes the keeper of the controller take whether a probe is mapped from the running
   mappings, because otherwise a reload that maps a probe under `commander_color` would get no value for it and R18
   would be false. The status stays `approved`
-- 2026-11-15T12:30:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, began the work on the branch `feature-0013-theme-key-and-upload-on-change`. The status is `in-progress`
-- 2026-11-15T13:40:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, built the unit from the plan on
+- 2026-11-15T12:22:36Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, began the work on the branch `feature-0013-theme-key-and-upload-on-change`. The status is `in-progress`
+- 2026-11-15T12:33:30Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, built the unit from the plan on
   the branch. Deviations from the plan, none of which changes the spec: the tests of `run` with a theme and with a
   changed config file are in the new files `internal/cli/runtheme_test.go` and `internal/cli/runreload_test.go` and not
   in `run_test.go`; the keeper has no test of its own for a probe mapped by a reload, which `run`'s test
@@ -45,7 +45,7 @@ timestamp: 2026-11-15T12:11:23Z
   `run`; `Decode` of the state file refuses a `null` value too, by reading the values as pointers, so that `{"a": null}`
   is not an object of strings; the fake screen's `AcceptUpload` is in its own commit. The plan was changed for the
   first two. Not built: the `Beyond the request` items 2 to 4, as the spec says
-- 2026-11-15T13:41:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, ran the suite on the final tree of
+- 2026-11-15T12:33:30Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, ran the suite on the final tree of
   the implementation: `go test ./...` passed, including the end-to-end tests in `e2e/` and `go test -race ./internal/cli`;
   `go vet ./...` and `gofmt -l .` reported nothing; `GOOS=windows GOARCH=amd64 go build ./...` and
   `GOOS=windows GOARCH=amd64 go vet ./...` succeeded and reported nothing. Not checked: a real device, as D18 says, and
@@ -57,7 +57,7 @@ timestamp: 2026-11-15T12:11:23Z
   Independently ran the five required suite commands, `go test -count=1 ./...`, `go test -race ./internal/cli` and
   `npm run check-changes`, all passing. Could not verify the physical device or Windows runtime behavior, as D18 and
   D19 reserve those checks for the human. The status stays `in-progress`
-- 2026-11-15T14:30:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, accepted review findings S1 and C1
+- 2026-11-15T12:38:57Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, accepted review findings S1 and C1
   of round 1 under the definition of the orchestrator, not as a decision of the human. S1: `SetTheme` now adds the key at
   the indentation of the root mapping, with a unit test and a command test for an indented mapping. C1: `Decode` of the
   state file reads non-object content into a `json.RawMessage` and not an `any`. Ran on the tree after the change:
@@ -70,3 +70,10 @@ timestamp: 2026-11-15T12:11:23Z
   commands, `go test -count=1 ./...`, `go test -race ./internal/cli` and `npm run check-changes`, all passing.
   Could not verify the physical device or Windows runtime behavior, as D18 and D19 reserve those checks for the human.
   The status stays `in-progress`
+- 2026-11-15T12:42:08Z [Claude Code, anthropic/claude-opus-5-5] under the delegation in `AGENTS.md`, decided the findings: S1, the
+  blocking one, and C1 of round 1 were corrected, and round 2 returned none, so no blocking finding is open. The
+  timestamps of four entries of the implementer, which did not match their commits, were corrected to the times of the
+  commits that added them. Every task of `plan.md` is ticked, and the five commands of the suite passed on the branch.
+  On the host, `theme use minimal-dark` added the key to a config and kept its other lines and comment, and refused a
+  config that holds `tags`. The upload and the reboot on the device are the human's to check and follow the merge.
+  The status is `implemented`
