@@ -273,29 +273,29 @@ What the tree on `feature-0018-windows-sensors` holds, and what the plan builds 
 
 ### 7. The native sources of Windows over a seam
 
-- [ ] Add `internal/windowssensors/seam.go` with the package comment, `Seam` and `Interface` (R2)
-- [ ] Add `internal/fakewinsensors/fakewinsensors.go` and `fakewinsensors_test.go` for what the fake gives and counts
+- [x] Add `internal/windowssensors/seam.go` with the package comment, `Seam` and `Interface` (R2)
+- [x] Add `internal/fakewinsensors/fakewinsensors.go` and `fakewinsensors_test.go` for what the fake gives and counts
   (R2, R38)
-- [ ] Add `internal/windowssensors/memory_test.go`: the three metrics from one call, each checked for a total of 32
+- [x] Add `internal/windowssensors/memory_test.go`: the three metrics from one call, each checked for a total of 32
   GiB and 12 GiB available; `ram.util` alone; a failed call, a total of 0 and an available above the total giving
   nothing; and no call when none of the three is wanted (R3, R9, R38)
-- [ ] Add `internal/windowssensors/memory.go` with `NewMemory` (R3, R9)
-- [ ] Add `internal/windowssensors/cpu_test.go`, with a wait the test gives: the first reading makes two calls and
+- [x] Add `internal/windowssensors/memory.go` with `NewMemory` (R3, R9)
+- [x] Add `internal/windowssensors/cpu_test.go`, with a wait the test gives: the first reading makes two calls and
   waits 200 ms once, with kernel time that includes idle time giving the expected share; a second reading makes one
   call and does not wait; a growth of 0 gives nothing; a share above 100 is clamped to 100; a failed call gives
   nothing and does not wait; no call when `cpu.util` is not wanted (R4, R9, R38)
-- [ ] Add `internal/windowssensors/cpu.go` with `NewCPU` (R4)
-- [ ] Add `internal/windowssensors/network_test.go`, with a wait and a clock the test gives: the first reading and its
+- [x] Add `internal/windowssensors/cpu.go` with `NewCPU` (R4)
+- [x] Add `internal/windowssensors/network_test.go`, with a wait and a clock the test gives: the first reading and its
   two samples with one wait of 200 ms; a second reading without a wait; the seconds between the moments deciding the
   value; two rows that count summed; a row without `HardwareInterface`, one without `ConnectorPresent` and one with
   `FilterInterface` adding nothing; a row whose flags change between samples counting only where it counts; an
   interface that appears and one that vanishes; a counter that went back adding nothing to its direction for one
   reading; a failed call; no row that counts; a time of 0; `net.down` alone; and no call when neither is wanted (R5,
   R6, R7, R9, R38)
-- [ ] Add `internal/windowssensors/network.go` with `NewNetwork` and the rule of R6 on the flags `0x01`, `0x02` and
+- [x] Add `internal/windowssensors/network.go` with `NewNetwork` and the rule of R6 on the flags `0x01`, `0x02` and
   `0x04` as named constants (R5, R6, R7)
-- [ ] Add `internal/windowssensors/sources.go` with `Sources` (R1, R10)
-- [ ] Run the suite, check `GOOS=windows GOARCH=amd64 go vet ./internal/windowssensors ./internal/fakewinsensors`, and
+- [x] Add `internal/windowssensors/sources.go` with `Sources` (R1, R10)
+- [x] Run the suite, check `GOOS=windows GOARCH=amd64 go vet ./internal/windowssensors ./internal/fakewinsensors`, and
   commit: `feature-0018 Read the memory, the CPU and the network of Windows over a seam`
 
 ### 8. The seam on Windows
