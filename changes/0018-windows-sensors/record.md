@@ -77,4 +77,10 @@ timestamp: 2026-11-15T23:04:03Z
   tree at the commit that applies C1: `go test -count=1 ./...` reported all packages ok, `go vet ./...` and `gofmt -l .`
   reported nothing, and `GOOS=windows GOARCH=amd64 go build ./...` and `go vet ./...` reported nothing. Real Windows
   execution is not checked. The status stays `in-progress`
-
+- 2026-11-15T23:31:37Z [OpenCode, openai/gpt-6.1-sol] as the reviewer, completed a delta review of
+  `changes/0018-windows-sensors` at `a8d62fc5fc3f0dad79daff4369a594c77fb15621`, compared against the previous review's
+  commit `3d2a828bb51113b9cfaa9836350de76e195f6e4f`. Checked the correction of C1 and returned no new findings on any
+  axis; the review is saved in `.reviews/0018-windows-sensors/review-round-2.md`. Independently ran
+  `go test -count=1 ./...` including the end-to-end tests, `go vet ./...`, `gofmt -l .`, the Windows amd64 build and vet,
+  and `npm run check-changes`, all successfully. Could not verify real Windows execution, the GitHub Windows job,
+  physical hardware or a real LibreHardwareMonitor server. The status stays `in-progress`
