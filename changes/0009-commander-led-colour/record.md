@@ -44,3 +44,10 @@ timestamp: 2026-11-15T00:48:51Z
   Not checked: the device itself, which is the human's check, and Windows
 - 2026-11-15T02:31:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, noted that no review has been run
   yet, so no finding is open. The status stays `in-progress`
+- 2026-11-15T07:06:36Z [OpenCode, openai/gpt-6.1-sol] as the reviewer, made a full review of
+  `0009-commander-led-colour` at `958afc1ec231fd38765cc3fb37397ab237803a65`, against merge base
+  `b5889f3479926078b21180ffeb945b14739f34b4` with `origin/master`. Returned S1 and C1, saved in
+  `.reviews/changes/0009-commander-led-colour/review-round-1.md`. Independently ran all five commands of the project
+  suite, `npm run check-changes`, a fresh `go test -count=1 ./...`, and race checks of `internal/cli`,
+  `internal/commandercore` and `internal/fakecommander`; all passed. The physical device and Windows runtime could not
+  be checked. The status stays `in-progress`
