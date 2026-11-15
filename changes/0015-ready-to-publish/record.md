@@ -41,3 +41,32 @@ timestamp: 2026-11-15T13:06:35Z
   are not in `go.mod`, so the module list is taken from `go.mod`; and cobra gives `--version` the new shorthand
   `-v`, which changes no existing flag. The sandbox cannot reach GitHub, so the pinned versions of the actions and of
   GoReleaser are releases known to exist and were not checked against GitHub. The status stays `approved`
+- 2026-11-15T14:00:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, began the work. The status is
+  `in-progress`
+- 2026-11-15T14:01:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, built the five pieces of the plan
+  in five commits: the version (`--version`, `resolveVersion`, the variable `version` of `main`), the notices package
+  and the committed `THIRD_PARTY_LICENSES` (eight parts, no toolchain version), `docs/minimal-dark.png` with its pixel
+  test, `.goreleaser.yaml` with `ci.yml` and `release.yml` and their test, and the README. Work not in the plan: none.
+  One departure in the code: `go list` in the generator runs with `-e`, so that a module that is not in the module cache
+  is named in the generator's own error instead of failing `go list` with its message
+- 2026-11-15T14:02:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, accounted for R13: (1) the tagline
+  now says Linux only; (2) the status note is replaced by the opening, whose Windows paragraph is the Windows sentence of
+  R2 and whose last sentence on what the README is meant to become is gone; (3) "What it will do" is merged into the
+  opening, keeping the "Windows only" introduction and the bullets on themes, the preview and the single executable, with
+  the live readings bullet corrected to the metrics table (the Commander Core XT probes, no other motherboard sensors)
+  and the service bullet saying the startup task on Windows is still to come; (4) "Supported devices" says the one
+  screen is driven, keeps the table with `480x320` added in its Screen row, and names the Commander Core XT with
+  `1b1c:0c2a`; (5) "Planned usage" became "Commands" with the sixteen commands, `--version` and `--help`, the six old
+  lines kept, and the `service install` comment corrected; (6) the quick start moved after the new install section
+  unchanged; (7) the credits name the seven modules with the licences their own licence files state: Apache 2.0 for
+  cobra and mousetrap, BSD 3-clause for pflag and the three golang.org/x modules (image, sys, text; the plan said four,
+  go.mod has three), MIT and Apache 2.0 for the YAML module; (8) the license section links `LICENSE`; (9) the install
+  and release sections are new. The Windows sentence says that the theme commands that need no screen work there and
+  names none, because `theme use` has no system gate in the code and was not checked on Windows. Checked: the nine
+  identifiers of R8 each found with `grep -F`; every `](#...)` link of the README resolves to a heading; the diff
+  against the merge base removes only lines of the sections named in R13. Not checked: the render of the README on
+  GitHub
+- 2026-11-15T14:03:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, noted that the pinned versions
+  (`actions/checkout@v5.0.0`, `actions/setup-go@v6.0.0`, `goreleaser/goreleaser-action@v6.3.0`, GoReleaser `v2.8.0`) were
+  not checked against GitHub from the sandbox, and that neither workflow nor GoReleaser was run. The tests read the
+  files only (D10)
