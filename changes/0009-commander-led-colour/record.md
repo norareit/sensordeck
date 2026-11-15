@@ -1,6 +1,6 @@
 ---
 kind: feature
-status: draft
+status: approved
 timestamp: 2026-11-15T00:48:51Z
 ---
 
@@ -22,3 +22,4 @@ timestamp: 2026-11-15T00:48:51Z
   orchestrating session used on the device fit it. The documentation the human asked for is in R20 and R21, and
   every requirement can be tested in the sandbox with the fake controller. Items 1 and 2 of "Beyond the request" are
   declined. The approval that follows is made under that delegation
+- 2026-11-15T00:50:08Z [human] approved the spec. The status is `approved`
