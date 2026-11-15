@@ -1,6 +1,6 @@
 ---
 kind: feature
-status: draft
+status: approved
 timestamp: 2026-11-15T00:29:10Z
 ---
 
@@ -18,5 +18,6 @@ timestamp: 2026-11-15T00:29:10Z
   failure keeps a controller that answers badly from flickering every second, and every requirement can be tested in
   the sandbox with a fake clock and the fake controller. Item 1 of "Beyond the request" is declined. The approval that
   follows is made under that delegation
+- 2026-11-15T00:29:51Z [human] approved the spec. The status is `approved`
 
 ## Amendments
