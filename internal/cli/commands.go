@@ -162,14 +162,18 @@ func readTheme(path string) ([]byte, error) { return readNamedFile("theme file",
 func readNamedFile(description, path string) ([]byte, error) {
 	content, err := os.ReadFile(path)
 	if err != nil {
-		// The inner error, so that the path is not written twice.
-		var pathError *fs.PathError
-		if errors.As(err, &pathError) {
-			err = pathError.Err
-		}
-		return nil, fmt.Errorf("cannot read the %s %s: %w", description, path, err)
+		return nil, fmt.Errorf("cannot read the %s %s: %w", description, path, innerError(err))
 	}
 	return content, nil
+}
+
+// innerError gives the cause of a failure of a file operation, so that the path is not written twice.
+func innerError(err error) error {
+	var pathError *fs.PathError
+	if errors.As(err, &pathError) {
+		return pathError.Err
+	}
+	return err
 }
 
 func (current *session) listenCommand() *cobra.Command {
