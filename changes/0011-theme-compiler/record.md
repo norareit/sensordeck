@@ -42,3 +42,9 @@ timestamp: 2026-11-15T08:52:10Z
   last commit of the work, `go test ./...`, `go vet ./...`, `gofmt -l .`, `GOOS=windows GOARCH=amd64 go build ./...` and
   `GOOS=windows GOARCH=amd64 go vet ./...`, which reported nothing besides the passing packages, and
   `npm run check-changes`, which passed. No review has run yet, so the unit stays `in-progress`
+- 2026-11-15T09:12:59Z [OpenCode, openai/gpt-6.1-sol] as the reviewer, completed a full review of
+  `0011-theme-compiler` at `d8bbd4ad53dfa5547d7047af380e0e4a5386dda2` against merge base
+  `4715c66c319995093eb52c69a8ccbda642ec2f57` with `origin/master`. Returned S1, S2 and P1 in
+  `.reviews/0011-theme-compiler/review-round-1.md`. The five suite commands, the change check, an uncached run of
+  the end-to-end, compiler and CLI tests, and `git diff --check` passed. Physical-device behavior and Windows
+  runtime behavior were not verified. The status stays `in-progress`
