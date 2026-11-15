@@ -11,13 +11,14 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/norareit/sensordeck/internal/screenlist"
 	"github.com/norareit/sensordeck/internal/sensors"
 	"github.com/norareit/sensordeck/internal/smartmonitor"
 )
 
 const (
 	clockLayout      = "2006-01-02 15:04:05"
-	noScreenMessage  = "no supported screen found"
+	noScreenMessage  = screenlist.NoneFound
 	noSensorMessage  = "no sensor could be read"
 	listenSeconds    = "5"
 	rawSeconds       = "1"

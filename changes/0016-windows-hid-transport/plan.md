@@ -144,14 +144,14 @@ What the tree on `feature-0016-windows-hid-transport` holds, and what the plan b
 
 ### 1. The shared texts of the screen discovery (refactoring)
 
-- [ ] Add `internal/screenlist/screenlist_test.go` with the tests of `Line` (the format of the Linux line, `-` for an
+- [x] Add `internal/screenlist/screenlist_test.go` with the tests of `Line` (the format of the Linux line, `-` for an
   empty name and an empty serial, the IDs in four lower-case digits), of `NoneFound`, and of `Several` with two lines,
   whose text is `more than one supported screen is connected, name one with --device:\n<line>\n<line>` (R10, R11)
-- [ ] Add `internal/screenlist/screenlist.go` with `Line`, `NoneFound` and `Several`, no build constraint (R10, R11)
-- [ ] Make `hidraw.Screen.Line` call `screenlist.Line`, `openDiscovered` use `screenlist.NoneFound` and
+- [x] Add `internal/screenlist/screenlist.go` with `Line`, `NoneFound` and `Several`, no build constraint (R10, R11)
+- [x] Make `hidraw.Screen.Line` call `screenlist.Line`, `openDiscovered` use `screenlist.NoneFound` and
   `screenlist.Several`, and `noScreenMessage` of `internal/cli/commands.go` be `screenlist.NoneFound`. Remove
   `orDash` from `hidraw`. The tests of `hidraw` and of the command line pass unchanged (R4)
-- [ ] Run the suite and commit: `feature-0016 Share the texts of the screen discovery`
+- [x] Run the suite and commit: `feature-0016 Share the texts of the screen discovery`
 
 ### 2. The Commander package split into its protocol and a node (refactoring)
 

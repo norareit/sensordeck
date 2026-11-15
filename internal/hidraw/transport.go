@@ -8,10 +8,10 @@ import (
 	"io"
 	"io/fs"
 	"os"
-	"strings"
 	"syscall"
 	"time"
 
+	"github.com/norareit/sensordeck/internal/screenlist"
 	"github.com/norareit/sensordeck/internal/smartmonitor"
 )
 
@@ -62,7 +62,7 @@ func openDiscovered(sysfsRoot, devRoot string) (*os.File, string, error) {
 	}
 	switch len(screens) {
 	case 0:
-		return nil, "", errors.New("no supported screen found")
+		return nil, "", errors.New(screenlist.NoneFound)
 	case 1:
 		file, err := openNode(screens[0].Node)
 		return file, screens[0].Serial, err
@@ -71,8 +71,7 @@ func openDiscovered(sysfsRoot, devRoot string) (*os.File, string, error) {
 	for position, screen := range screens {
 		lines[position] = screen.Line()
 	}
-	return nil, "", errors.New("more than one supported screen is connected, name one with --device:\n" +
-		strings.Join(lines, "\n"))
+	return nil, "", screenlist.Several(lines)
 }
 
 // serialOfNode gives the HID_UNIQ of the entry whose node is the same file as the path, and the empty text when no

@@ -15,6 +15,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/norareit/sensordeck/internal/screenlist"
 	"github.com/norareit/sensordeck/internal/smartmonitor"
 )
 
@@ -32,15 +33,7 @@ type Screen struct {
 
 // Line is the screen as the command devices writes it, and as the error of several screens lists it.
 func (screen Screen) Line() string {
-	return fmt.Sprintf("%s\t%04x:%04x\t%s\t%s", screen.Node, screen.Vendor, screen.Product,
-		orDash(screen.Name), orDash(screen.Serial))
-}
-
-func orDash(text string) string {
-	if text == "" {
-		return "-"
-	}
-	return text
+	return screenlist.Line(screen.Node, screen.Vendor, screen.Product, screen.Name, screen.Serial)
 }
 
 // Entry is one hidraw<N> entry of <sysfs root>/class/hidraw whose device/uevent could be read.
