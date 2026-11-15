@@ -19,5 +19,12 @@ timestamp: 2026-11-15T00:29:10Z
   the sandbox with a fake clock and the fake controller. Item 1 of "Beyond the request" is declined. The approval that
   follows is made under that delegation
 - 2026-11-15T00:29:51Z [human] approved the spec. The status is `approved`
+- 2026-11-15T00:34:03Z [Claude Code, anthropic/claude-opus-5-5] as the planner, wrote the plan against the tree of
+  the unit's branch. The controller is given apart from the other sources and read through a type of `run` that keeps
+  its readings, and the driver does not change. The plan reads the first sentence of R8 by R22 of unit 0004: a round
+  whose reopening fails reads no source, and one whose reopening succeeds goes on with the round, so that
+  `TestRunReopensALostScreenOncePerRound` keeps what it expects. The new period is a method of the config, so that the
+  field holds what the file gives and the existing tests that compare a whole config keep what they expect, as R17
+  asks
 
 ## Amendments
