@@ -56,11 +56,14 @@ func run(test *testing.T, fake *fakescreen.Fake, args ...string) result {
 }
 
 // environmentOf gives the variables that put the executable on the fake screen, and the given ones after them, so that
-// they override what the process inherits.
-func environmentOf(fake *fakescreen.Fake, environment []string) []string {
+// they override what the process inherits. The cache directory is one of the test, so that no run writes into the
+// cache of the user, and a test that runs several processes on one cache gives its own.
+func environmentOf(test *testing.T, fake *fakescreen.Fake, environment []string) []string {
+	test.Helper()
 	return append(append(os.Environ(),
 		"SENSORDECK_SYSFS_ROOT="+fake.SysfsRoot,
-		"SENSORDECK_DEV_ROOT="+fake.DevRoot), environment...)
+		"SENSORDECK_DEV_ROOT="+fake.DevRoot,
+		"XDG_CACHE_HOME="+test.TempDir()), environment...)
 }
 
 // runWith is run with more environment variables, and waits for the end of the executable.
@@ -75,7 +78,7 @@ func runIn(test *testing.T, fake *fakescreen.Fake, directory string, environment
 	context, cancel := context.WithTimeout(context.Background(), runTimeLimit)
 	defer cancel()
 	command := exec.CommandContext(context, executable, args...)
-	command.Env = environmentOf(fake, environment)
+	command.Env = environmentOf(test, fake, environment)
 	command.Dir = directory
 	var stdout, stderr bytes.Buffer
 	command.Stdout, command.Stderr = &stdout, &stderr
@@ -108,7 +111,7 @@ func start(test *testing.T, fake *fakescreen.Fake, environment []string, args ..
 	test.Helper()
 	running := &process{test: test, args: args, done: make(chan error, 1)}
 	running.command = exec.Command(executable, args...)
-	running.command.Env = environmentOf(fake, environment)
+	running.command.Env = environmentOf(test, fake, environment)
 	running.command.Stdout, running.command.Stderr = &running.stdout, &running.stderr
 	if err := running.command.Start(); err != nil {
 		test.Fatalf("starting %v: %v", args, err)

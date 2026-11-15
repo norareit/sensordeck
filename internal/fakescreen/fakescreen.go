@@ -59,6 +59,9 @@ type moveRule struct {
 	fired  bool
 }
 
+// uploadAnswers is the reports of an upload after which the screen answers, counted from its reset report.
+type uploadAnswers struct{ counts []int }
+
 // Screen is one fake screen. It can be taken away and brought back under another hidraw number.
 type Screen struct {
 	fake         *Fake
@@ -72,6 +75,8 @@ type Screen struct {
 	lastArrival time.Time
 	answers     []*answerRule
 	moves       []*moveRule
+	uploads     []uploadAnswers // the uploads armed, one for each reset report that is still to come
+	looked      int             // the count of complete reports receive has looked at for a reset report
 }
 
 // Add makes a screen with the given hidraw number, name and serial.
@@ -129,6 +134,43 @@ func (screen *Screen) MoveAfter(count int, number int) {
 	screen.mutex.Lock()
 	defer screen.mutex.Unlock()
 	screen.moves = append(screen.moves, &moveRule{count: count, number: number})
+}
+
+// AcceptUpload arms the answers of an upload of the theme: at the next reset report that arrives after the call, the
+// screen answers ACK after each report at which smartmonitor.Upload reads, counted from that reset report. The calls
+// queue, one upload each, so that a test can arm the answers before it knows when the upload starts.
+func (screen *Screen) AcceptUpload(theme []byte) {
+	counts := uploadReadCounts(theme)
+	screen.mutex.Lock()
+	defer screen.mutex.Unlock()
+	screen.uploads = append(screen.uploads, uploadAnswers{counts: counts})
+}
+
+// recordingTransport answers ACK to every read and reopens at once, and keeps how many reports were written at each
+// read.
+type recordingTransport struct {
+	written int
+	reads   []int
+}
+
+func (recording *recordingTransport) Write(smartmonitor.Report) error {
+	recording.written++
+	return nil
+}
+
+func (recording *recordingTransport) Read(time.Duration) (smartmonitor.Report, error) {
+	recording.reads = append(recording.reads, recording.written)
+	return smartmonitor.Report{0x06}, nil
+}
+
+func (recording *recordingTransport) Reopen() error { return nil }
+
+// uploadReadCounts gives the count of reports written at each read of the upload of the theme.
+func uploadReadCounts(theme []byte) []int {
+	recording := &recordingTransport{}
+	// The theme is the caller's and a failure of the upload would be a failure of the test, which the answers expose.
+	_ = smartmonitor.Upload(recording, theme, func(time.Duration) {}, func(smartmonitor.Stage, int, int) {})
+	return recording.reads
 }
 
 // Move takes the screen away and brings it back as hidraw<number>.
@@ -239,6 +281,7 @@ func (screen *Screen) receive(master *os.File) {
 			screen.mutex.Lock()
 			screen.received = append(screen.received, buffer[:count]...)
 			screen.lastArrival = time.Now()
+			screen.armUploads()
 			answers, moves := screen.dueRules(len(screen.received) / writtenReportSize)
 			screen.mutex.Unlock()
 			for _, report := range answers {
@@ -252,6 +295,26 @@ func (screen *Screen) receive(master *os.File) {
 			return
 		}
 	}
+}
+
+// armUploads looks at the complete reports that arrived since the last call, and a reset report takes the next armed
+// upload and turns it into answer rules. The caller holds the mutex.
+func (screen *Screen) armUploads() {
+	total := len(screen.received) / writtenReportSize
+	for position := screen.looked + 1; position <= total; position++ {
+		start := (position-1)*writtenReportSize + 1
+		var report smartmonitor.Report
+		copy(report[:], screen.received[start:start+len(report)])
+		if report != smartmonitor.ResetCommand() || len(screen.uploads) == 0 {
+			continue
+		}
+		upload := screen.uploads[0]
+		screen.uploads = screen.uploads[1:]
+		for _, count := range upload.counts {
+			screen.answers = append(screen.answers, &answerRule{count: position - 1 + count, report: smartmonitor.Report{0x06}})
+		}
+	}
+	screen.looked = total
 }
 
 // dueRules marks the rules whose count has been reached as fired and returns what they do. The caller holds the mutex.

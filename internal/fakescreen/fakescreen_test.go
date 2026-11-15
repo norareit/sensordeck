@@ -6,6 +6,9 @@ import (
 	"os"
 	"testing"
 	"time"
+
+	"github.com/norareit/sensordeck/internal/hidraw"
+	"github.com/norareit/sensordeck/internal/smartmonitor"
 )
 
 // writeToNode writes the bytes to the node of the screen, as a transport does.
@@ -58,5 +61,25 @@ func TestReportsLeavesOutAReportCutShort(test *testing.T) {
 	screen.Received() // waits until every byte has arrived
 	if got := screen.Reports(); len(got) != 1 {
 		test.Errorf("reports %d", len(got))
+	}
+}
+
+func TestAcceptUploadAnswersAnUploadThatStartsAfterOtherReports(test *testing.T) {
+	fake := New(test)
+	screen := fake.Add(3, "name", "")
+	theme := make([]byte, 2500)
+	screen.AcceptUpload(theme)
+	transport, err := hidraw.OpenDiscovered(fake.SysfsRoot, fake.DevRoot)
+	if err != nil {
+		test.Fatal(err)
+	}
+	defer transport.Close()
+	for range 3 {
+		if err := transport.Write(smartmonitor.Report{0x03}); err != nil {
+			test.Fatal(err)
+		}
+	}
+	if err := smartmonitor.Upload(transport, theme, func(time.Duration) {}, func(smartmonitor.Stage, int, int) {}); err != nil {
+		test.Fatalf("the upload failed: %v", err)
 	}
 }
