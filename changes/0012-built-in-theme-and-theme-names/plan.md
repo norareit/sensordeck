@@ -240,7 +240,7 @@ with --config: <cause>` as it is.
 
 ### End to end
 
-- [ ] Write `e2e/builtin_theme_test.go`, running the executable with `runWith` and `XDG_CONFIG_HOME` set to a temporary
+- [x] Write `e2e/builtin_theme_test.go`, running the executable with `runWith` and `XDG_CONFIG_HOME` set to a temporary
   directory, on `fakescreen.New(test)` with no screen added (R23):
     - `theme list` with no themes directory, with an installed folder `night`, and with an installed `minimal-dark`,
       against the exact standard output
@@ -294,5 +294,5 @@ with --config: <cause>` as it is.
   `internal/builtinthemes` with their tests
 - [x] `feature-0012 Find a theme by name in theme compile and theme preview`, the lookup with its tests and the help
 - [x] `feature-0012 Add theme list`, with its tests
-- [ ] `feature-0012 Test the built-in theme and the theme names end to end`
+- [x] `feature-0012 Test the built-in theme and the theme names end to end`
 - [ ] `feature-0012 Document the quick start and the theme names`, the README and `docs/theme-folder.md`

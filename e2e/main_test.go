@@ -66,10 +66,17 @@ func environmentOf(fake *fakescreen.Fake, environment []string) []string {
 // runWith is run with more environment variables, and waits for the end of the executable.
 func runWith(test *testing.T, fake *fakescreen.Fake, environment []string, args ...string) result {
 	test.Helper()
+	return runIn(test, fake, "", environment, args...)
+}
+
+// runIn is runWith with the working directory of the executable set, or left as it is when it is empty.
+func runIn(test *testing.T, fake *fakescreen.Fake, directory string, environment []string, args ...string) result {
+	test.Helper()
 	context, cancel := context.WithTimeout(context.Background(), runTimeLimit)
 	defer cancel()
 	command := exec.CommandContext(context, executable, args...)
 	command.Env = environmentOf(fake, environment)
+	command.Dir = directory
 	var stdout, stderr bytes.Buffer
 	command.Stdout, command.Stderr = &stdout, &stderr
 	return finish(test, args, command.Run(), &stdout, &stderr)
