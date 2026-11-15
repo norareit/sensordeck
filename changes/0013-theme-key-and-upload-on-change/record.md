@@ -1,6 +1,6 @@
 ---
 kind: feature
-status: approved
+status: in-progress
 timestamp: 2026-11-15T12:11:23Z
 ---
 
@@ -36,3 +36,4 @@ timestamp: 2026-11-15T12:11:23Z
   spec fits the tree. The plan makes the keeper of the controller take whether a probe is mapped from the running
   mappings, because otherwise a reload that maps a probe under `commander_color` would get no value for it and R18
   would be false. The status stays `approved`
+- 2026-11-15T12:30:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, began the work on the branch `feature-0013-theme-key-and-upload-on-change`. The status is `in-progress`
