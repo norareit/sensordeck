@@ -558,7 +558,7 @@ The command never calls `session.open`, `listScreens` or `newSources`, so it ope
 
 ### The documents
 
-- [ ] Add `docs/theme-format.md`, in the project's own words, with everything of "What is known of the format" of the
+- [x] Add `docs/theme-format.md`, in the project's own words, with everything of "What is known of the format" of the
   spec: how the facts were established (by inspecting the bytes of three vendor theme files and composing previews
   from these rules alone, with no code or text of another project, and none of the files committed), the layout, the
   header, the common head and the tags seen, each record type with each of its fields in a table marked known, guess or
@@ -566,12 +566,12 @@ The command never calls `session.open`, `listScreens` or `newSources`, so it ope
   questions listing each item R20 names, and that the preview of `theme dump` draws numbers left-aligned because the
   device's alignment is not known. It quotes no bytes of a vendor file other than the field values the spec quotes and
   names no vendor theme file (R20)
-- [ ] In `README.md`, name `sensordeck theme dump` in the status line among the commands that work, and add the
+- [x] In `README.md`, name `sensordeck theme dump` in the status line among the commands that work, and add the
   section `## Reading a theme file` after "The Corsair iCUE Commander Core XT": what the command does, the
   `theme.json`, the PNG of each resource and `preview.png` it writes, that the preview shows every number as 42 and the
   date and time as 2026-11-15 09:41:07, draws numbers left-aligned and bars as magenta outlines, that it touches no
   device and works with no screen connected, and a link to `docs/theme-format.md` (R21)
-- [ ] Commit: `feature-0010 Document the theme format and theme dump`
+- [x] Commit: `feature-0010 Document the theme format and theme dump`
 
 ### Before handing over
 

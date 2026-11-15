@@ -26,5 +26,18 @@ timestamp: 2026-11-15T08:25:25Z
   stays `approved`
 - 2026-11-15T08:33:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, began the work on the unit's branch. The status is
   `in-progress`
+- 2026-11-15T09:10:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, built the unit on its branch in
+  seven commits: the reader and the fake theme, the images and the preview, the dump, a refactor that moves the
+  unwrapping of the cause of a file error into `innerError` so that `theme dump` and `readNamedFile` share it (not in
+  the plan, behavior preserving, and committed apart from the feature), the command, the end-to-end tests and the
+  documents. Tests were written before the code for the reader, the images and the command; for `faketheme` and for
+  the dump the code was written first and its tests right after, and the `theme.json` expected in the dump test was
+  taken from the first output after checking it field by field against the bytes of `faketheme.Sample`. No new
+  dependency. None of the items of "Beyond the request" was built. All tasks of `plan.md` are ticked
+- 2026-11-15T09:12:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, ran the five commands of the suite
+  on the final tree of the code and documents (`go test ./...`, `go vet ./...`, `gofmt -l .`, and the Windows build and
+  vet): all succeeded with no output other than the passing packages. Not checked: a run on Windows, which `AGENTS.md`
+  leaves to the human, and a dump of a real vendor theme file, which the sandbox does not have. The status stays
+  `in-progress` until the review
 
 ## Amendments
