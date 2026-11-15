@@ -26,3 +26,8 @@ supersedes: 0004-linux-sensors-and-run
   amendment to the record of `0004-linux-sensors-and-run` itself when it merges this unit. The device check is the
   human's and the unit does not depend on it. The approval that follows is made under that delegation
 - 2026-11-15T22:05:54Z [human] approved the spec. The status is `approved`
+- 2026-11-15T22:14:30Z [Claude Code, anthropic/claude-opus-5-5] as the planner, wrote `plan.md` against the tree
+  of the branch: a tick at each whole second beside the rounds of `feed`, one helper for the clock of round and tick,
+  and `onScreen` on the theme holder for the tick. A throwaway prototype of the schedule, run against the suite and
+  reverted, named the existing tests whose expected reports or counts of waits change, which the plan lists. The
+  status stays `approved`
