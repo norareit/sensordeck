@@ -330,23 +330,23 @@ What the tree on `feature-0016-windows-hid-transport` holds, and what the plan b
 
 ### 8. The documents
 
-- [ ] In `README.md`, replace the paragraph that says Windows is not supported yet with what R28 lists: the screen and
+- [x] In `README.md`, replace the paragraph that says Windows is not supported yet with what R28 lists: the screen and
   the Commander Core XT work on Windows with the commands that open a device, `sensors` and `run`, with no driver and
   no rule; the sensors of the machine are not read on Windows yet, so `sensors` lists only the probes of the Commander
   and `run` sends only them, besides the clock and the theme; `--device` takes a device path as `devices` writes it;
   iCUE or the vendor's software of the screen may hold the device and make the opening fail, and running it at the same
   time is not supported; the service is not available on Windows yet; and the Windows transport has not yet been
   checked on a real Windows machine (R28)
-- [ ] In `README.md`, change the line of the Windows archive under "A release archive" and the first sentence of
+- [x] In `README.md`, change the line of the Windows archive under "A release archive" and the first sentence of
   "Quick start" to say what R28 says works on Windows, in place of the theme commands only, and say in "Quick start"
   that its first step is for Linux only (R29)
-- [ ] In `docs/protocol.md` under "Transport", add how a report is written and read on Windows: the report ID `0x00`
+- [x] In `docs/protocol.md` under "Transport", add how a report is written and read on Windows: the report ID `0x00`
   first, 65 bytes each way, the lengths taken from the caps of the collection. In `docs/commander-core-xt.md`, add under
   "Identity" that on Windows interface 0 is the collection whose path holds the field `mi_00`, with usage page
   `0xFF42`, usage `0x0001` and reports of 385 bytes, under "Reports" that on Windows a write is the full output report of
   385 bytes and a read the full input report of 385 bytes with the report ID first, and under "Assumptions" that
   interface 0 is told apart on Windows by the `mi_00` field and its usage and lengths (R30)
-- [ ] Run the suite and commit: `feature-0016 Document the screen and the Commander on Windows`
+- [x] Run the suite and commit: `feature-0016 Document the screen and the Commander on Windows`
 
 ## Verification
 

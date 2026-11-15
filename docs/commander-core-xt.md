@@ -30,6 +30,10 @@ project. Everything here is therefore what these showed, and what is not shown i
   `/sys/class/hidraw` hold `HID_ID=0003:00001B1C:00000C2A` in their `uevent` file. The `HID_PHYS` line ends in `/input0`
   for interface 0 and in `/input1` for interface 1. The tool of the trace used the node of interface 0 only, and so
   does sensordeck. The node of interface 1 is never opened, because nothing is known of what it does
+* On Windows the HID class driver makes one collection for each top-level collection of each interface, and the path of
+  a collection of interface 0 holds the field `mi_00`. Interface 0 is the first collection, in the order of the paths,
+  of vendor ID `1b1c` and product ID `0c2a` whose path holds that field, with usage page `0xFF42`, usage `0x0001` and
+  reports of 385 bytes in both directions
 
 ## Reports
 
@@ -53,6 +57,10 @@ are `0x00`.
 
 sensordeck reads each answer into a buffer of the 384 bytes of the input report, so that nothing of it is discarded.
 An answer of at least 96 bytes may be valid, and only its first 96 bytes are interpreted.
+
+On Windows a write is the full output report of 385 bytes: the report ID byte `0x00`, the 96 bytes of the command and 288
+bytes `0x00`. The HID API refuses a shorter buffer. A read is the full input report of 385 bytes with the report ID first,
+and the report ID byte is dropped, so that the answer is the same 384 bytes as on Linux.
 
 ## The commands
 
@@ -223,3 +231,6 @@ not send them, and nor does it send a colour write of zero triples or a command 
 * A probe whose status is not `00` has no reading, and is left out without renumbering the others
 * The temperature is a signed 16-bit number. Both readings seen were positive
 * The node of interface 0 is told apart by a `HID_PHYS` that ends in `/input0`, as the kernel's USB HID driver writes it
+* On Windows interface 0 is told apart by the field `mi_00` of the path with its usage page, usage and report lengths. The
+  usage page and usage are those of the report descriptor above, read on Linux, and none of this has been checked on a
+  Windows machine

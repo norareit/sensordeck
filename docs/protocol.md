@@ -29,6 +29,12 @@ An input report is read from the node as 64 bytes without a report ID byte, beca
 reports. The screen is found through the `HID_ID` line of the `uevent` file of its entry under `/sys/class/hidraw`,
 which holds the bus, the vendor ID and the product ID. hidraw needs the kernel's `usbhid` driver bound to the device.
 
+On Windows the transport writes and reads the same reports through the HID API. A report is written as the report ID
+byte `0x00` followed by the 64 bytes, and an input report is read as 65 bytes whose first byte, the report ID, is
+dropped. Both lengths, 65, are those that the caps of the collection give, and a collection whose lengths are others is
+not taken for the screen. The screen is found by its vendor ID and product ID among the HID collections that the system
+lists.
+
 ## Value update
 
 One report sets up to 20 values:

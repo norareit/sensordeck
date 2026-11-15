@@ -9,9 +9,12 @@ XT. `sensordeck theme` works with themes and needs no screen: `use` sets the the
 uploads when it is not on the screen, `compile` turns a theme, by name or folder, into a theme file, `preview` draws a
 theme as a PNG, `dump` reads a theme file and `list` lists the themes. The built-in theme `minimal-dark` is there.
 
-Windows is not supported yet. The Windows executable builds, and the theme commands that need no screen work there.
-The screen, the sensors and the service are still
-to come on Windows: the commands that open a device, and `run`, fail with `windows is not supported yet`.
+On Windows the screen and the Commander Core XT work with the commands that open a device, with `sensors` and with
+`run`, and need no driver and no rule to install. The sensors of the machine are not read on Windows yet, so `sensors`
+lists only the probes of the Commander and `run` sends only them, besides the clock and the theme. `--device` takes a
+device path on Windows, as `devices` writes it. Corsair iCUE, or the software of the screen's vendor, may hold the
+device and make the opening fail, and running either at the same time as sensordeck is not supported. The service is
+not available on Windows yet. The Windows transport has not yet been checked on a real Windows machine.
 
 ![The preview of the built-in theme minimal-dark: tiles for the CPU, the GPU, the memory, the disk, the network and the
 clock, each with the number 42 as a sample value](docs/minimal-dark.png)
@@ -58,7 +61,8 @@ Take the archive for your platform from the
 
 * `sensordeck_<version>_linux_amd64.tar.gz` for Linux on 64-bit x86
 * `sensordeck_<version>_linux_arm64.tar.gz` for Linux on 64-bit ARM
-* `sensordeck_<version>_windows_amd64.zip` for Windows, which runs the theme commands that need no screen only
+* `sensordeck_<version>_windows_amd64.zip` for Windows, where the screen and the Commander Core XT work with the commands that
+  open a device, `sensors` and `run`, with the sensors of the Commander only
 
 Take `sensordeck_<version>_checksums.txt` from the same release, and check the archive you took against it:
 
@@ -99,10 +103,11 @@ CGO_ENABLED=0 go build -trimpath -o sensordeck .
 
 ## Quick start
 
-This is for Linux, because `run` reads no sensors on Windows yet. It takes you from nothing to the built-in theme
-`minimal-dark` on the screen.
+This takes you from nothing to the built-in theme `minimal-dark` on the screen. On Windows `run` sends only the clock
+and the probes of the Commander Core XT, because the sensors of the machine are not read there yet, and the first step is
+for Linux only.
 
-1. Install the udev rule of [Linux: access to the screen](#linux-access-to-the-screen)
+1. On Linux, install the udev rule of [Linux: access to the screen](#linux-access-to-the-screen)
 2. Set the theme: `sensordeck theme use minimal-dark`. It writes the key `theme` into the config file, which it creates
    when there is none, at the path that [Showing sensor values on the screen](#showing-sensor-values-on-the-screen)
    names
