@@ -234,7 +234,7 @@ What the tree on `feature-0018-windows-sensors` holds, and what the plan builds 
 
 ### 5. The mapping of the tree of LibreHardwareMonitor
 
-- [ ] Add `internal/librehardwaremonitor/tree_test.go`, with documents written in the tests in the shape of "What is
+- [x] Add `internal/librehardwaremonitor/tree_test.go`, with documents written in the tests in the shape of "What is
   known", each a root `Sensor` with a computer and hardware below it, covering every case of R39: the AMD CPU with
   `Core (Tctl/Tdie)`, `CCD1 (Tdie)`, `CCD2 (Tdie)`, `CCDs Max (Tdie)`, `CCDs Average (Tdie)`, clocks `Core #1` to
   `Core #4` with one `-`, `Core #1 (Effective)` higher, `Bus Speed` and `Cores (Average)`, giving `cpu.temp`,
@@ -249,9 +249,9 @@ What the tree on `feature-0018-windows-sensors` holds, and what the plan builds 
   in the order of the table; each failure of R17 that the body decides (no JSON, two JSON values, an array, an object
   without `Children`, a `Children` that is no array) with its exact error; and a document with none of the metrics,
   which gives no reading and no error (R19 to R26, R39)
-- [ ] Add `internal/librehardwaremonitor/tree.go` with `Map`, `ErrNotJSON`, `ErrNotTree` and `MaxNumber`, as the
+- [x] Add `internal/librehardwaremonitor/tree.go` with `Map`, `ErrNotJSON`, `ErrNotTree` and `MaxNumber`, as the
   choices above say, importing nothing that does input or output (R19 to R26)
-- [ ] Run the suite and commit: `feature-0018 Map the tree of LibreHardwareMonitor to the metrics`
+- [x] Run the suite and commit: `feature-0018 Map the tree of LibreHardwareMonitor to the metrics`
 
 ### 6. The reading of LibreHardwareMonitor
 
