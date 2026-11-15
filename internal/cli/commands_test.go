@@ -105,7 +105,7 @@ func TestHelpNamesTheCommandsAndTheOptions(test *testing.T) {
 			test.Errorf("%v: status %d", args, status)
 		}
 		help := harness.stdout.String()
-		for _, name := range []string{"devices", "clock", "values", "upload", "listen", "raw", "sensors", "run", "--device", "--trace"} {
+		for _, name := range []string{"devices", "clock", "values", "upload", "listen", "raw", "sensors", "run", "theme", "--device", "--trace"} {
 			if !strings.Contains(help, name) {
 				test.Errorf("%v: the help does not name %s", args, name)
 			}
@@ -204,6 +204,8 @@ func TestWrongArgumentsFailBeforeTheTransportIsOpened(test *testing.T) {
 		{[]string{"values", "1"}, `invalid argument "1": want <tag>=<value>`},
 		{[]string{"upload"}, "accepts 1 arg(s), received 0"},
 		{[]string{"upload", missing}, "cannot read the theme file " + missing + ": no such file or directory"},
+		{[]string{"theme", "dump"}, "accepts 2 arg(s), received 0"},
+		{[]string{"theme", "dump", missing}, "accepts 2 arg(s), received 1"},
 		{[]string{"listen", "extra"}, `unknown command "extra" for "sensordeck listen"`},
 		{[]string{"listen", "--seconds", "0"}, `invalid --seconds "0": want a whole number of 1 or more`},
 		{[]string{"raw"}, "raw needs at least one byte"},
