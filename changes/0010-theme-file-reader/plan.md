@@ -295,6 +295,141 @@ The command never calls `session.open`, `listScreens` or `newSources`, so it ope
 
 ## Tasks
 
+### The images
+
+`internal/themeimage/themeimage.go` and `preview.go`:
+
+```go
+// Expand gives the 8-bit channels of an RGB565 colour as the spec defines them, opaque.
+func Expand(colour themefile.Colour) color.NRGBA
+
+// Resources gives the images of R11 of a record: none for a bar, an unknown record and a background with offset 0.
+func Resources(record themefile.Record) []*image.NRGBA
+
+// Preview gives the 480 x 320 image of R12.
+func Preview(theme themefile.Theme) *image.RGBA
+
+// SampleTime is the date and time of the preview, 2026-11-15 09:41:07, and SampleValue the value of every number.
+var SampleTime = time.Date(2026, 11, 15, 9, 41, 7, 0, time.UTC)
+const SampleValue = "42"
+```
+
+* an RGB565 pixel of a resource is `uint16(low) | uint16(high)<<8`, read as two bytes, low byte first
+* `opaque(pixels, width, height)` gives the image of a background and a startup frame, and `masked(alpha, pixels,
+  width, height)` that of an image frame; `mask(alpha, width, height, colour)` gives a text and a glyph, each pixel the
+  expanded colour with the alpha of the mask, no opacity guess applied
+* a strip of R11 is the glyphs of `Glyphs()` side by side, as wide as the sum of their widths and as high as the glyph
+  height
+* the preview starts as `image.RGBA` filled with opaque black, and each entry is drawn with `draw.Draw(..., draw.Over)`,
+  which clips to the bounds of the preview and nothing else, so that glyphs are clipped to the screen and not to their
+  box. A background with offset 0 is `draw.Draw` of a `image.Uniform` of its expanded colour over its box. A bar is
+  the four one-pixel lines of the inside edge of its box in `#ff00ff`, so a box of width or height 0 draws nothing and
+  one of width or height 1 or 2 is filled. A startup and an unknown record are not drawn
+* a number draws the glyphs of `SampleValue` and a datetime the glyphs of its `FormatText()` with `SampleTime`, both
+  through one function that places a list of glyph masks with their widths from the box's x, each the next at the
+  right edge of the one before, tops at the box's y. In a format, `1` is the year as `%04d`, `2` to `6` the month,
+  day, hour, minute and second as `%02d`, each digit drawn as its digit glyph, a glyph character as its glyph of the
+  other glyphs, and any other byte as nothing with no advance
+
+### The dump
+
+`internal/themedump/themedump.go` and `json.go`:
+
+```go
+type File struct{ Name string; Content []byte }
+
+// Dump gives the files of the dump in this order: theme.json, the PNG files of the records in the order of the
+// entries and of their images, and preview.png; and the warnings of the reader. An error is that of the reader.
+func Dump(file []byte) ([]File, []string, error)
+```
+
+* the PNG files of an entry are named as R14 says, from `themeimage.Resources`, with `slot%02d-<type name>.png`,
+  `slot%02d-<type name>-frame%d.png` counting from 1 and `slot%02d-<type name>-glyphs.png`. An image whose bounds are
+  empty is left out and gets no name
+* each image is encoded with `png.Encode` into a `bytes.Buffer`, which is deterministic (R19)
+* the JSON is written with an `encoding/json` `Encoder` with `SetIndent("", "  ")` and `SetEscapeHTML(false)`, whose
+  `Encode` ends it with a newline (R13). Its records are per-type structs whose field order is the order of R13:
+
+```go
+type head struct {
+	Slot     int    `json:"slot"`
+	Type     byte   `json:"type"`
+	TypeName string `json:"type_name"`
+	Index    byte   `json:"index"`
+	Tag      byte   `json:"tag"`
+	X        uint16 `json:"x"`
+	Y        uint16 `json:"y"`
+	Width    uint16 `json:"width"`
+	Height   uint16 `json:"height"`
+}
+type tail struct {
+	Raw   hexBytes `json:"raw"`
+	Files []string `json:"files"` // never nil, so an empty list is []
+}
+type numberJSON struct {
+	head
+	AlignmentGuess byte      `json:"alignment_guess"`
+	Colour         colourHex `json:"colour"`
+	DecimalsGuess  byte      `json:"decimals_guess"`
+	OpacityGuess   byte      `json:"opacity_guess"`
+	Offset         uint32    `json:"offset"`
+	GlyphHeight    uint16    `json:"glyph_height"`
+	GlyphWidths    []uint16  `json:"glyph_widths"`
+	GlyphOrder     string    `json:"glyph_order"`
+	Bytes46To63    hexBytes  `json:"bytes_46_63_unknown"`
+	tail
+}
+```
+
+  `encoding/json` puts the promoted fields of an embedded struct at its place, so `head` comes first and `tail` last.
+  The other types follow the same shape with the fields of their table in the order of the bytes:
+  background `byte_11_unknown`, `fill_colour_guess`, `offset`, `bytes_18_63_unknown`; startup `offset`,
+  `frame_count`, `duration_ms_guess`, `frame_period_ms_guess`, `bytes_20_63_unknown`; image `offset`, `frame_count`,
+  `byte_16_unknown`, `frame_period_ms_guess`, `bytes_19_63_unknown`; text `offset`, `colour`, `opacity_guess`,
+  `bytes_18_63_unknown`; datetime `byte_11_unknown`, `colour`, `opacity_guess`, `offset`, `glyph_height`,
+  `digit_width`, `other_glyph_widths`, `other_glyph_order`, `format`; bar `bytes_11_63_unknown`. An unknown record has
+  only `slot`, `type`, `type_name` `"unknown"`, `raw` and `files`, as R13 gives the common head for a known type only
+* `format` is a `*string` with `omitempty`, nil when a byte of `FormatText()` is outside `0x20` to `0x7e`, so that an
+  empty format is written as `""` and a non-printable one is left out
+* `hexBytes []byte` and `colourHex themefile.Colour` have `MarshalJSON`, giving lowercase hexadecimal with no
+  separators and the four digits `%04x`
+* `raw` is `record.Encode()`, which the tests of the reader prove equal to the slot's bytes
+* the top level is `{file_size, header{byte_0_unknown, raw}, records, warnings}`, with `records` and `warnings` never
+  nil
+
+### The command
+
+`internal/cli/theme.go`: `session.themeCommand()` gives `theme`, with the one subcommand `dump <file.dat> <out-dir>`
+and `cobra.ExactArgs(2)`, added to the root after `run`:
+
+1. `readTheme(path)`, which gives `cannot read the theme file <path>: <cause>` as it does for `upload` (R17)
+2. `themedump.Dump`; its error is wrapped as `fmt.Errorf("cannot read the theme file %s: %w", path, err)` (R17)
+3. only then `os.MkdirAll(outDir, 0o755)`, its failure as `cannot create the output directory <dir>: <cause>`, and
+   for each file `os.WriteFile(filepath.Join(outDir, name), content, 0o644)`, its failure as `cannot write the file
+   <path>: <cause>`, each with the inner error of a `*fs.PathError` so that the path is named once, as
+   `readNamedFile` does. `os.WriteFile` replaces a file of the same name and leaves other files (R13)
+4. each warning as `warning: <warning>` on standard error, then `wrote <count> files to <out-dir>` on standard output,
+   with `<out-dir>` as given (R16)
+
+The command never calls `session.open`, `listScreens` or `newSources`, so it opens no device and reads no sensor, with
+`--device` or without it (R18). The cobra error path of `run` in `main.go` already writes `sensordeck: ` and exits 1.
+
+## Files
+
+* `internal/faketheme/faketheme.go`, `internal/faketheme/faketheme_test.go`: new
+* `internal/themefile/themefile.go`, `records.go`, `errors.go`, `themefile_test.go`, `records_test.go`: new
+* `internal/themeimage/themeimage.go`, `preview.go`, `themeimage_test.go`, `preview_test.go`: new
+* `internal/themedump/themedump.go`, `json.go`, `themedump_test.go`: new
+* `internal/cli/theme.go`, `internal/cli/theme_test.go`: new
+* `internal/cli/main.go`: the `theme` command added to the root
+* `internal/cli/commands_test.go`: `theme` in the help test and the argument cases
+* `layout_test.go`: the test of the imports of the theme packages
+* `e2e/theme_test.go`: new, with `//go:build linux`
+* `docs/theme-format.md`: new
+* `README.md`: the status line and the section on `theme dump`
+
+## Tasks
+
 ### The fake theme and the reader
 
 - [ ] Add `internal/faketheme/faketheme_test.go` with tests that `New().Bytes()` is 4096 zero bytes, that `Header`

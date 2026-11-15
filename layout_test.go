@@ -121,3 +121,29 @@ func TestNoFileImportsTheArchivedYAMLPackage(test *testing.T) {
 		}
 	}
 }
+
+func TestThePackagesOfThemesDoNoIO(test *testing.T) {
+	const themePrefix = "github.com/norareit/sensordeck/internal/"
+	themePackages := []string{"themefile", "themeimage", "themedump", "faketheme"}
+	forbidden := map[string]bool{"os": true, "os/exec": true, "os/signal": true, "net": true, "syscall": true, "unsafe": true}
+	for _, path := range goFiles(test) {
+		if strings.HasSuffix(path, "_test.go") {
+			continue
+		}
+		for _, name := range themePackages {
+			if !inDirectory(path, "internal/"+name) {
+				continue
+			}
+			for _, imported := range importsOf(test, path) {
+				own := false
+				for _, other := range themePackages {
+					own = own || imported == themePrefix+other
+				}
+				standard := !strings.Contains(strings.Split(imported, "/")[0], ".")
+				if forbidden[imported] || !(standard || own) {
+					test.Errorf("%s imports %s", path, imported)
+				}
+			}
+		}
+	}
+}

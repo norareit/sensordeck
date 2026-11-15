@@ -1,6 +1,6 @@
 ---
 kind: feature
-status: approved
+status: in-progress
 timestamp: 2026-11-15T08:25:25Z
 ---
 
@@ -24,5 +24,7 @@ timestamp: 2026-11-15T08:25:25Z
   branch: a fake theme builder, the reader, the renderer, the dump and the command `theme dump`, each in its own
   package, then the end-to-end tests and the documents, with every requirement R1 to R24 traced to a task. The status
   stays `approved`
+- 2026-11-15T08:33:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, began the work on the unit's branch. The status is
+  `in-progress`
 
 ## Amendments
