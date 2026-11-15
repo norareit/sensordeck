@@ -270,7 +270,7 @@ What the tree on `feature-0016-windows-hid-transport` holds, and what the plan b
 
 ### 5. The Commander on Windows
 
-- [ ] Add `internal/commandercore/hid_test.go`, no build constraint, against `fakehid`: with the collections of
+- [x] Add `internal/commandercore/hid_test.go`, no build constraint, against `fakehid`: with the collections of
   several devices, interfaces, usages and lengths, `find` gives the first of R8 in the order of R6; a collection of
   `1b1c:0c2a` that does not match is never opened for reading and writing; no collection, and only collections of
   interface 1 or of other devices, give `ErrNoController`; one near miss, two near misses, and a near miss beside a
@@ -280,13 +280,13 @@ What the tree on `feature-0016-windows-hid-transport` holds, and what the plan b
   first; the read waits the time limit of the `Source`; a `Source.Read` against a fake that answers the eight steps
   gives the probes and leaves nothing pending and every handle closed; a failed opening gives no probes; `Lighting.Start`
   gives `ErrNoController` with no collection and the error of R34 with a near miss (R8, R17, R20, R25, R32, R34, R31)
-- [ ] Add `internal/commandercore/hid.go` with `HID(seam winhid.Seam) Finder`, the near misses and their error, and
+- [x] Add `internal/commandercore/hid.go` with `HID(seam winhid.Seam) Finder`, the near misses and their error, and
   the node on a `winhid.Device`: `send` writes the command padded to 96 bytes with `WriteReport`, `receive` maps the
   timeout of `ReadReport` to `errNoAnswer`. The length of interface 0 is `1 + reportSize`, with usage page `0xFF42` and
   usage `0x0001` as constants (R8, R17, R25, R34)
-- [ ] Add `internal/commandercore/finder_windows.go` with `Windows() Finder`, which gives `HID(winhid.Windows())`
+- [x] Add `internal/commandercore/finder_windows.go` with `Windows() Finder`, which gives `HID(winhid.Windows())`
   (R25)
-- [ ] Run the suite and commit: `feature-0016 Drive the Commander on Windows`
+- [x] Run the suite and commit: `feature-0016 Drive the Commander on Windows`
 
 ### 6. The command line on Windows
 
