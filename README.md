@@ -4,9 +4,10 @@ Turn a cheap USB "sensor panel" screen into a hardware-monitoring dashboard on *
 
 > **Status: early development.** The screen can be driven on Linux: with the low-level commands (`devices`, `clock`,
 > `values`, `upload`, `listen` and `raw`), with `sensordeck sensors` and with `sensordeck run`, which also reads the temperature probes of a Corsair iCUE
-> Commander Core XT. `sensordeck theme dump` reads a theme file, `sensordeck theme compile` compiles a theme, by name or
-> folder, into one, `sensordeck theme preview` draws a theme as a PNG and `sensordeck theme list` lists the themes, all
-> with no screen. The built-in theme `minimal-dark` is there. Windows and the service are still to come. This README describes what sensordeck is meant to become.
+> Commander Core XT, and which uploads the theme that the config file names when it is not on the screen.
+> `sensordeck theme use` sets that theme. `sensordeck theme dump` reads a theme file, `sensordeck theme compile`
+> compiles a theme, by name or folder, into one, `sensordeck theme preview` draws a theme as a PNG and
+> `sensordeck theme list` lists the themes, all with no screen. The built-in theme `minimal-dark` is there. Windows and the service are still to come. This README describes what sensordeck is meant to become.
 
 ## What it will do
 
@@ -40,27 +41,11 @@ This is for Linux, because `run` reads no sensors on Windows yet. It takes you f
 `minimal-dark` on the screen.
 
 1. Install the udev rule of [Linux: access to the screen](#linux-access-to-the-screen)
-2. Compile the theme: `sensordeck theme compile minimal-dark img.dat`. It writes `img.dat` and `img.tags.yaml`
-3. Put it on the screen: `sensordeck upload img.dat`
-4. Write the config file at the path that [Showing sensor values on the screen](#showing-sensor-values-on-the-screen)
-   names, holding the `tags:` block of `img.tags.yaml`:
-
-   ```yaml
-   tags:
-     cpu.temp: 1
-     cpu.util: 2
-     gpu.mem.total: 3
-     gpu.mem.used: 4
-     gpu.temp: 5
-     gpu.util: 6
-     net.down: 7
-     net.up: 8
-     nvme.1.temp: 9
-     ram.used: 10
-     ram.util: 11
-   ```
-
-5. Start `sensordeck run`
+2. Set the theme: `sensordeck theme use minimal-dark`. It writes the key `theme` into the config file, which it creates
+   when there is none, at the path that [Showing sensor values on the screen](#showing-sensor-values-on-the-screen)
+   names
+3. Start `sensordeck run`. At its first start it uploads the theme to the screen, which takes about 10 seconds and
+   reboots the screen, and then it sends the values. A later start finds the theme on the screen and uploads nothing
 
 The tiles show the CPU temperature and load, the GPU temperature and load, the share of RAM in use and the GiB used, the
 VRAM used and its total in MiB, the temperature of the first NVMe drive, the network rates up and down in KiB/s, and the
@@ -147,10 +132,25 @@ of the places of the hardware in the system, which does not change when the driv
 interfaces such as those of Docker, bridges and VPNs are left out. A KiB is 1024 bytes. The rates are measured between
 two readings, the first of which waits a moment for the second.
 
-`sensordeck run` sends the metrics named in a config file to the screen. The tags are those of the theme on the
-screen, so for a vendor theme only you know which tag shows what. The config file is `sensordeck/config.yaml` in your
-config directory (`$XDG_CONFIG_HOME`, or `~/.config`), and `--config <path>` reads another file. This one is for a vendor
-theme in which tag 1 shows the CPU temperature and tag 2 the CPU speed:
+`sensordeck run` sends the metrics of the theme in a config file to the screen. The config file is
+`sensordeck/config.yaml` in your config directory (`$XDG_CONFIG_HOME`, or `~/.config`), and `--config <path>` reads
+another file. It names the theme with the key `theme`, a theme name or a folder path as `sensordeck theme compile` takes
+it. A folder path that is not absolute is relative to the directory of the config file. `sensordeck theme use` sets the
+key:
+
+```yaml
+interval: 1s
+theme: minimal-dark
+```
+
+`run` compiles the theme, takes the tags that the compiler assigned to the metrics of its number widgets, and uploads the
+theme to the screen when it is not there, as [Writing a theme](#writing-a-theme) says. The key `theme` excludes the key
+`tags`, because the theme decides the tags, and a file that holds both is refused. A theme that fails to compile ends
+`run` before it opens the screen.
+
+The key `tags` stays for a vendor theme that you put on the screen with `sensordeck upload`. Its tags are those of the
+theme on the screen, so only you know which tag shows what. This one is for a vendor theme in which tag 1 shows the CPU
+temperature and tag 2 the CPU speed:
 
 ```yaml
 interval: 1s
@@ -175,6 +175,13 @@ screen keeps its last value.
 
 `sensordeck run` sends the values until Ctrl+C or SIGTERM. It sets the clock of the screen when it starts and once a
 minute, and it keeps running when the screen is unplugged and plugged in again.
+
+`run` reads the config file again when its modification time or its size changes, at the start of a round, so an edit
+or `sensordeck theme use` takes effect within a round, with no restart. A reload applies the theme and the tags. A change
+of `interval`, `commander_interval` or `commander_color` is not applied: `run` writes a line to standard error that
+says a restart applies it, and keeps the value it runs with. A file that cannot be read, is not valid or names a theme
+that does not compile is not applied: `run` writes one line to standard error and goes on with the config it has. An
+upload that has begun is not interrupted by Ctrl+C or SIGTERM: `run` ends after the upload ended.
 
 ## The Corsair iCUE Commander Core XT
 
@@ -278,9 +285,36 @@ tags:
   cpu.temp: 1
 ```
 
-Paste the `tags:` block into the config file of `sensordeck run`, as described under "Showing sensor values on the
-screen", put the theme on the screen with `sensordeck upload img.dat`, and then start `sensordeck run`. The folder
-format, the tags and the limits are described in [docs/theme-folder.md](docs/theme-folder.md).
+That file is for a config file with `tags`. A config file with the key `theme` needs no tags block, because `run` takes
+the tags from the compiler itself.
+
+To use a theme, set it with `sensordeck theme use <name-or-folder>`. The command compiles the theme, which fails with
+the error of the compilation and changes nothing when the theme is not valid, and then sets the key `theme` of the
+config file. It replaces the line of the key, or adds a line at the end of the file, and keeps every other byte of it,
+and it creates the file when there is none. It writes the absolute path for a folder. It refuses a config file that holds
+`tags`, one that is not valid and one whose root is written in the flow style of YAML, and changes none of them. A
+running `sensordeck run` applies the new theme within a round.
+
+`run` uploads the theme only when it is not on the screen. It keeps the SHA-256 of the compiled theme file that each
+screen holds in a state file, by the serial of the screen, and uploads when the hash of the compiled theme differs from
+the one stored for the screen. The upload takes about 10 seconds and reboots the screen, and `run` sends no value and no
+clock until it is done. It compiles the theme in memory and keeps no compiled file. The state file is
+`$XDG_CACHE_HOME/sensordeck/uploaded-themes.json`, or `~/.cache/sensordeck/uploaded-themes.json`, on Linux and
+`%LocalAppData%\sensordeck\uploaded-themes.json` on Windows. The check is made at the start, after a reload that
+changes the theme and after the screen came back, so a restart of `run` or of the machine uploads nothing. A theme whose
+upload failed is tried again after 10 seconds, and then after longer waits, up to 5 minutes.
+
+* Running `sensordeck theme use` again after you edited a theme folder puts the edit on the screen, because writing the
+  config file again makes `run` compile the theme again, and the hash of the new file differs
+* `sensordeck upload` keeps the state file true too. It removes the entry of the screen before it uploads and records the
+  hash of the file it uploaded, so after you uploaded another file by hand, `run` puts its own theme back at its next
+  start or reload
+* A theme that other software, such as the vendor's, put on the screen is not known to `run`. Delete the state file to
+  make the next start upload the theme of the config file. The same holds for a screen with no serial, or one that
+  shares its serial with another: they have one entry, so a different screen in the place of the first one is taken to
+  hold its theme
+
+The folder format, the tags and the limits are described in [docs/theme-folder.md](docs/theme-folder.md).
 
 ## Reading a theme file
 

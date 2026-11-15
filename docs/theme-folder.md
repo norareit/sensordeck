@@ -115,6 +115,10 @@ extension replaced by `.tags.yaml`, or with `.tags.yaml` added when there is non
 It is a block in the shape of the `tags:` section of the config file of `sensordeck run`, to be pasted into it. For a
 theme with no number it is `tags: {}`, and such a theme needs no values from `run`.
 
+The tags file is for a config file with `tags`, which is the way to use a vendor theme. A config file with the key
+`theme`, which names this theme by its name or folder, needs no tags block, because `run` compiles the theme and takes
+its tags itself.
+
 ## How glyphs and colours are made
 
 The device draws numbers, text and dates from pre-rendered glyphs, so the compiler draws them from the fonts, with
