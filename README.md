@@ -14,9 +14,10 @@ On Windows the screen and the Commander Core XT work with the commands that open
 CPU load, the memory and the network, and through `nvidia-smi` and LibreHardwareMonitor for the rest, as
 [Windows: the sensors of the machine](#windows-the-sensors-of-the-machine) says. `--device` takes a
 device path on Windows, as `devices` writes it. Corsair iCUE, or the software of the screen's vendor, may hold the
-device and make the opening fail, and running either at the same time as sensordeck is not supported. The service is
-not available on Windows yet. The Windows transport and the sensors of Windows have not yet been checked on a real
-Windows machine.
+device and make the opening fail, and running either at the same time as sensordeck is not supported. `sensordeck service`
+runs `run` on Windows as a startup task of the Task Scheduler that starts at your logon, as
+[Running as a service](#running-as-a-service) says. The Windows transport, the sensors of Windows and the startup task
+have not yet been checked on a real Windows machine.
 
 ![The preview of the built-in theme minimal-dark: tiles for the CPU, the GPU, the memory, the disk, the network and the
 clock, each with the number 42 as a sample value](docs/minimal-dark.png)
@@ -32,7 +33,7 @@ replacement that works on Linux:
 - Use themes that are plain folders (a `theme.yaml` layout, images and any TTF font). sensordeck compiles a theme into
   the device's format and uploads it. It uploads again only when the theme changes.
 - Let you preview a theme as a PNG on your PC, so you can design without flashing the device each time.
-- Run in the background as a service (systemd on Linux, with a startup task on Windows still to come).
+- Run in the background as a service (a systemd user service on Linux, a startup task of the Task Scheduler on Windows).
 - Ship as a single executable with nothing else to install. Built-in themes are included.
 
 ## Supported devices
@@ -144,9 +145,9 @@ sensordeck theme use minimal-dark # switch themes
 sensordeck theme preview <name-or-folder> <out.png> # render a theme to PNG with sample values
 sensordeck theme compile <name-or-folder> <out.dat> # compile a theme into a theme file and its tags file
 sensordeck theme dump <file.dat> <out-dir>          # describe a theme file as JSON and PNG files
-sensordeck service install        # run `run` as a systemd user service that starts at login
-sensordeck service status         # show whether the service is installed, enabled and active
-sensordeck service uninstall      # stop, disable and remove the service
+sensordeck service install        # run `run` as a systemd user service (Linux) or a startup task (Windows) that starts at login
+sensordeck service status         # show whether the service or the task is installed, enabled and active or running
+sensordeck service uninstall      # stop and remove the service or the task
 sensordeck --version              # print the version
 sensordeck --help                 # list the commands and flags
 ```
@@ -387,8 +388,12 @@ SUBSYSTEM=="hidraw", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="0c2a", MODE="06
 
 ## Running as a service
 
-This is for Linux, where sensordeck runs `run` as a systemd user service. Set the config file first, as the
-[quick start](#quick-start) says, for instance with `sensordeck theme use minimal-dark`.
+sensordeck runs `run` as a systemd user service on Linux and as a startup task of the Task Scheduler on Windows. Set the
+config file first, as the [quick start](#quick-start) says, for instance with `sensordeck theme use minimal-dark`.
+
+### Linux
+
+On Linux sensordeck runs `run` as a systemd user service.
 
 `sensordeck service install` writes the unit file `~/.config/systemd/user/sensordeck.service`, or the file of that name
 in `$XDG_CONFIG_HOME/systemd/user/` when the variable is set, and enables and starts the service at once. It starts at
@@ -426,6 +431,55 @@ after the user logged out, and `loginctl disable-linger` undoes it. Lingering is
 make it. The udev rule of [Linux: access to the screen](#linux-access-to-the-screen) gives access to the screen to the
 user of the active local session, so a service that starts at boot by lingering cannot open the screen until that user
 logs in, and is restarted every 10 seconds until then.
+
+### Windows
+
+On Windows sensordeck runs `run` as a task of the Task Scheduler. None of what follows has been checked on a real
+Windows machine yet. It is written from the documentation of Windows, and a wrong point is to be corrected.
+
+`sensordeck service install` creates the task `sensordeck`, which runs `sensordeck run` at each logon of the user, hidden,
+with no administrator rights, and starts it at once. The task runs as the user who ran `install`, with that user's
+interactive token and the least privilege, with no time limit, and it is not stopped or kept from starting when the
+computer runs on a battery. `install` loads the config file as `run` does at its start, theme included, and writes
+nothing and makes no call when `run` would refuse it, as on Linux, and it opens no screen. The config file is the one
+given with `--config`, or else the default one, and the task names the absolute path of the executable and of the config
+file, so that it does not depend on the environment of the logon. A path that holds `"`, `%` or a control character is
+refused, because it cannot be written safely into the task.
+
+The task is written as the file `%LocalAppData%\sensordeck\startup-task.xml`, which `install` replaces each time and
+hands to `schtasks.exe` with `/Create /XML`. The file is also the mark of an installed task for `status` and `uninstall`.
+The task is named `sensordeck` for the whole machine, so a second user of the same machine cannot install one too.
+
+The log is `%LocalAppData%\sensordeck\run.log`. It holds the lines that `run` writes to standard output and standard
+error, each with the local time in front, since a task has no console to write them to. It is kept to two files of at
+most 1 MiB each, `run.log` and the older `run.log.1`.
+
+Running `sensordeck service install` again stops the running `run`, replaces the task and starts it again. That is how to
+apply a moved or replaced executable, another `--config`, or a change of `interval`, `commander_interval` or
+`commander_color`. `sensordeck theme use` and edits of the config file reach the running `run` within a round, by the
+reload of `run`.
+
+`sensordeck service status` writes four lines: `installed: yes, <task file>`, `enabled:` with `enabled`, `disabled` or
+`unknown`, `active:` with `running`, `stopped` or `unknown`, and `log:` with the path of the log. The task is seen in the
+Task Scheduler too. `enabled` is read from the definition of the task, and `active` from whether a background `run` is
+running, and not from the text of `schtasks`, which Windows translates.
+
+A `run` that the task starts writes the error of a failed start to the log, as when no screen is found, and starts again
+every 10 seconds, with no limit, as the systemd service does on Linux.
+
+`sensordeck service uninstall` stops the running `run` so that the Commander Core XT is back in hardware mode and the
+screen keeps its last values, then deletes the task and removes the task file. It ends `run` with `schtasks /End` when it
+has not stopped within 30 seconds. The same stop is made by `install` before it replaces the task.
+
+`schtasks /End /TN sensordeck`, the Task Manager, logging off and shutting down end `run` with no teardown, so that the
+Commander Core XT may stay in the colour of `commander_color` until `run` starts again. `schtasks /Run /TN sensordeck`
+starts the task again.
+
+The task starts `run` with a console, and `run` detaches from it at once, so a console window may flash at the logon
+before it closes.
+
+Running `sensordeck run`, or another command that writes to the screen, by hand while the task runs is not supported,
+because both write to the screen. Stop the task first with `sensordeck service uninstall`.
 
 ## Writing a theme
 

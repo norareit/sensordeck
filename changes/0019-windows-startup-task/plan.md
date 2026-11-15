@@ -428,13 +428,13 @@ func taskStatusLines(taskFile, enabled, active, log string) []string
 
 ### 7. The documents
 
-- [ ] Rewrite the section "Running as a service" of `README.md` with the part of Linux as it is, under a heading of its
+- [x] Rewrite the section "Running as a service" of `README.md` with the part of Linux as it is, under a heading of its
   own, and a part on Windows that says each point of R28, describes the task as R2 writes it and claims nothing as
   seen on Windows (R28, R30)
-- [ ] Change the introduction, the list of features and the lines of `service` under "Commands" of `README.md`, so that
+- [x] Change the introduction, the list of features and the lines of `service` under "Commands" of `README.md`, so that
   they name the startup task on Windows and no longer say that the service is not available on Windows yet or that the
   task is still to come (R29)
-- [ ] Commit: `feature-0019 Document the startup task on Windows`
+- [x] Commit: `feature-0019 Document the startup task on Windows`
 
 ### 8. The suite
 
