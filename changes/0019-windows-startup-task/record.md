@@ -36,3 +36,18 @@ timestamp: 2026-11-15T23:39:29Z
   written to the log with exit status 1, and the exact texts. The status stays `approved`
 - 2026-11-15T23:49:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, began the work on the branch `feature-0019-windows-startup-task`. No
   review exists yet. The status is `in-progress`
+- 2026-11-15T23:59:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, built the unit in the six commits
+  of the plan after the first and the documents, and ticked each task as it was done. Decisions of the implementation,
+  none of which changes what the spec makes true: the refactoring of the first commit moved the `lockedWriter` to the
+  top of the `RunE` of `run` as the plan says, and a background run does not wrap its standard error in it because the
+  log is locked itself; `runInBackground` makes the retry loop and `holdBackgroundStop` holds the event, detaches and
+  turns a signal of the event into the end of the context; a `Close` of the event of `winbackground` ends its waiting
+  goroutine through an unnamed event, as the plan says. The tests of the Windows calls (`internal/winbackground`) and
+  every check on Windows are not run here and are open for the human, as the spec lists. The tests of the other parts
+  run on Linux with the system set to `windows`
+- 2026-11-15T23:59:30Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, ran the suite on the tree of
+  `d13489f`, whose later commit changes documents only: `go test ./...` passed with `-count=1` for `internal/cli`, `e2e`
+  and the root package, `go vet ./...` and `gofmt -l .` reported nothing, and `GOOS=windows GOARCH=amd64 go build ./...`
+  and `go vet ./...` succeeded and reported nothing. The test of `internal/winbackground` was only compiled and vetted
+  for Windows, not run. No review has been made yet, so the unit stays `in-progress`
+

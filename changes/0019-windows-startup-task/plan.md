@@ -438,4 +438,4 @@ func taskStatusLines(taskFile, enabled, active, log string) []string
 
 ### 8. The suite
 
-- [ ] Run the five commands of the suite in `AGENTS.md` and `npm run check-changes`, all of which succeed (R36)
+- [x] Run the five commands of the suite in `AGENTS.md` and `npm run check-changes`, all of which succeed (R36)
