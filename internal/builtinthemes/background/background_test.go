@@ -16,10 +16,10 @@ func TestMinimalDarkIsOpaqueAndHasTheSizeOfTheScreen(test *testing.T) {
 	if picture.Bounds().Dx() != 480 || picture.Bounds().Dy() != 320 {
 		test.Fatalf("bounds %v", picture.Bounds())
 	}
-	for y := 0; y < 320; y++ {
-		for x := 0; x < 480; x++ {
-			if picture.NRGBAAt(x, y).A != 255 {
-				test.Fatalf("pixel (%d, %d) is not opaque", x, y)
+	for row := 0; row < 320; row++ {
+		for column := 0; column < 480; column++ {
+			if picture.NRGBAAt(column, row).A != 255 {
+				test.Fatalf("pixel (%d, %d) is not opaque", column, row)
 			}
 		}
 	}
@@ -28,7 +28,7 @@ func TestMinimalDarkIsOpaqueAndHasTheSizeOfTheScreen(test *testing.T) {
 func TestMinimalDarkFollowsTheRuleAtChosenPixels(test *testing.T) {
 	cases := []struct {
 		name string
-		x, y int
+		column, row int
 		want color.NRGBA
 	}{
 		{"a corner of the background", 0, 0, ground},
@@ -43,8 +43,8 @@ func TestMinimalDarkFollowsTheRuleAtChosenPixels(test *testing.T) {
 	}
 	picture := MinimalDark()
 	for _, each := range cases {
-		if got := picture.NRGBAAt(each.x, each.y); got != each.want {
-			test.Errorf("%s, (%d, %d): got %v, want %v", each.name, each.x, each.y, got, each.want)
+		if got := picture.NRGBAAt(each.column, each.row); got != each.want {
+			test.Errorf("%s, (%d, %d): got %v, want %v", each.name, each.column, each.row, got, each.want)
 		}
 	}
 }

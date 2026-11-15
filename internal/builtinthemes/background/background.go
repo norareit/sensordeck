@@ -26,13 +26,13 @@ type roundedRectangle struct {
 	left, top, right, bottom, radius int
 }
 
-func (rectangle roundedRectangle) holds(x, y int) bool {
-	if x < rectangle.left || x > rectangle.right || y < rectangle.top || y > rectangle.bottom {
+func (rectangle roundedRectangle) holds(column, row int) bool {
+	if column < rectangle.left || column > rectangle.right || row < rectangle.top || row > rectangle.bottom {
 		return false
 	}
-	centreX := clamp(x, rectangle.left+rectangle.radius, rectangle.right-rectangle.radius)
-	centreY := clamp(y, rectangle.top+rectangle.radius, rectangle.bottom-rectangle.radius)
-	distanceX, distanceY := x-centreX, y-centreY
+	centreX := clamp(column, rectangle.left+rectangle.radius, rectangle.right-rectangle.radius)
+	centreY := clamp(row, rectangle.top+rectangle.radius, rectangle.bottom-rectangle.radius)
+	distanceX, distanceY := column-centreX, row-centreY
 	return distanceX*distanceX+distanceY*distanceY <= rectangle.radius*(rectangle.radius+1)
 }
 
@@ -59,20 +59,20 @@ var panels = []roundedRectangle{
 // MinimalDark draws the background of minimal-dark: 480 x 320 opaque pixels, by the rule of R4 of unit 0012.
 func MinimalDark() *image.NRGBA {
 	picture := image.NewNRGBA(image.Rect(0, 0, width, height))
-	for y := 0; y < height; y++ {
-		for x := 0; x < width; x++ {
-			picture.SetNRGBA(x, y, colourAt(x, y))
+	for row := 0; row < height; row++ {
+		for column := 0; column < width; column++ {
+			picture.SetNRGBA(column, row, colourAt(column, row))
 		}
 	}
 	return picture
 }
 
-func colourAt(x, y int) color.NRGBA {
+func colourAt(column, row int) color.NRGBA {
 	for _, panel := range panels {
-		if panel.shrunk().holds(x, y) {
+		if panel.shrunk().holds(column, row) {
 			return fillColour
 		}
-		if panel.holds(x, y) {
+		if panel.holds(column, row) {
 			return outlineColour
 		}
 	}

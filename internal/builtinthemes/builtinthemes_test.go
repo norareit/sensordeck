@@ -137,11 +137,11 @@ func TestMinimalDarkBackgroundIsWhatTheGeneratorDraws(test *testing.T) {
 		test.Fatalf("bounds %v", decoded.Bounds())
 	}
 	drawn := background.MinimalDark()
-	for y := 0; y < 320; y++ {
-		for x := 0; x < 480; x++ {
-			got := color.NRGBAModel.Convert(decoded.At(x, y)).(color.NRGBA)
-			if want := drawn.NRGBAAt(x, y); got != want {
-				test.Fatalf("pixel (%d, %d) is %v, the generator draws %v; run go generate ./internal/builtinthemes/", x, y, got, want)
+	for row := 0; row < 320; row++ {
+		for column := 0; column < 480; column++ {
+			got := color.NRGBAModel.Convert(decoded.At(column, row)).(color.NRGBA)
+			if want := drawn.NRGBAAt(column, row); got != want {
+				test.Fatalf("pixel (%d, %d) is %v, the generator draws %v; run go generate ./internal/builtinthemes/", column, row, got, want)
 			}
 		}
 	}
