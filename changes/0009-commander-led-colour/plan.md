@@ -530,14 +530,14 @@ puts into the `sourceSet`.
 
 ### The documents
 
-- [ ] In `udev/70-sensordeck.rules`, change the comment of the second rule to say that sensordeck reads the
+- [x] In `udev/70-sensordeck.rules`, change the comment of the second rule to say that sensordeck reads the
   temperature probes of the controller and lights its LEDs, and leave both rules as they are (R19)
-- [ ] In `README.md`, add the section `## The Corsair iCUE Commander Core XT` after "Showing sensor values on the
+- [x] In `README.md`, add the section `## The Corsair iCUE Commander Core XT` after "Showing sensor values on the
   screen" and before "Credits", with every point of R20 in plain words, the two example configs among them, the one of
   `commander_color` with `cpu.temp`, `commander.1.temp` and `commander.2.temp`, and the line of the second rule of
   `udev/70-sensordeck.rules`. In "Showing sensor values on the screen", add to the paragraph on `commander_interval` that
   the period applies when `commander_color` is not given, with a link to the new section. Remove nothing (R17, R20)
-- [ ] In `docs/commander-core-xt.md`, in the project's own words, with everything it says today kept (R21):
+- [x] In `docs/commander-core-xt.md`, in the project's own words, with everything it says today kept (R21):
     - the title becomes `# The temperature probes and the LEDs of the Corsair iCUE Commander Core XT`, and the opening
       paragraph names the LEDs
     - "How it was learned" names the four sources with what each gave: the trace of liquidctl of unit 0005, the trace
@@ -559,9 +559,9 @@ puts into the `sourceSet`.
       not, the bullet on the full output report names the colour write of more than 29 LEDs, and the bullets of R21
       are added: the software-mode timeout, the setup commands not sent, the answer of `0x1A`, modes of `0x20` other
       than 2 and 3, the order of the triples, and whether the endpoint byte of a read or a close matters
-- [ ] Commit: `feature-0009 Document the colour of the controller`
+- [x] Commit: `feature-0009 Document the colour of the controller`
 
 ### Before handing over
 
-- [ ] Run the five commands of the suite and `npm run check-changes`, and check every requirement R1 to R27 against the
+- [x] Run the five commands of the suite and `npm run check-changes`, and check every requirement R1 to R27 against the
   tree, ticking this task only when all pass (R1 to R27)

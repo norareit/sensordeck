@@ -72,7 +72,8 @@ the report ID byte.
 
 sensordeck makes the same eight steps in a reading, so that the controller is out of hardware mode for as short a time
 as it can be: it enters software mode, reads and returns at once. What the controller does in software mode when
-nobody sends it settings is not known.
+nobody sends it settings is known for the LEDs, which are dark, and not for the fans it runs, as "Software mode and the
+LEDs" and "Unknown" say.
 
 ## Channels and endpoints
 
