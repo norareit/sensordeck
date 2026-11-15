@@ -8,6 +8,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -25,21 +26,28 @@ func Path(cacheDirectory string) string {
 	return filepath.Join(cacheDirectory, "sensordeck", "uploaded-themes.json")
 }
 
+// ErrNotAnObject is what every error of Decode wraps.
+var ErrNotAnObject = errors.New("not a JSON object of serials and hashes")
+
 // Decode reads a JSON object whose keys are serials and whose values are hashes. Anything else is an error.
 func Decode(content []byte) (map[string]string, error) {
 	// The decoder reads null into a map with no error, so the first byte is checked here.
 	if trimmed := bytes.TrimSpace(content); len(trimmed) == 0 || trimmed[0] != '{' {
-		return nil, errors.New("not a JSON object of serials and hashes")
+		var anything any
+		if err := json.Unmarshal(content, &anything); err != nil {
+			return nil, fmt.Errorf("%w: %w", ErrNotAnObject, err)
+		}
+		return nil, fmt.Errorf("%w: the content is another kind of value", ErrNotAnObject)
 	}
 	// A null value decodes into a string with no error, so the values are read as pointers.
 	var decoded map[string]*string
 	if err := json.Unmarshal(content, &decoded); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("%w: %w", ErrNotAnObject, err)
 	}
 	entries := make(map[string]string, len(decoded))
 	for serial, hash := range decoded {
 		if hash == nil {
-			return nil, errors.New("the hash of " + strconv.Quote(serial) + " is null")
+			return nil, fmt.Errorf("%w: the hash of %s is null", ErrNotAnObject, strconv.Quote(serial))
 		}
 		entries[serial] = *hash
 	}
