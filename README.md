@@ -9,8 +9,8 @@ XT. `sensordeck theme` works with themes and needs no screen: `use` sets the the
 uploads when it is not on the screen, `compile` turns a theme, by name or folder, into a theme file, `preview` draws a
 theme as a PNG, `dump` reads a theme file and `list` lists the themes. The built-in theme `minimal-dark` is there.
 
-Windows is not supported yet. The Windows executable builds, and the theme commands that need no screen work there
-(`theme list`, `theme preview`, `theme compile` and `theme dump`). The screen, the sensors and the service are still
+Windows is not supported yet. The Windows executable builds, and the theme commands that need no screen work there.
+The screen, the sensors and the service are still
 to come on Windows: the commands that open a device, and `run`, fail with `windows is not supported yet`.
 
 ![The preview of the built-in theme minimal-dark: tiles for the CPU, the GPU, the memory, the disk, the network and the
