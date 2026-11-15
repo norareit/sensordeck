@@ -36,9 +36,9 @@ func (current *session) runCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			started, err := current.loadConfig(path, content)
+			started, err := current.loadConfigFile(path, content)
 			if err != nil {
-				return fmt.Errorf("config file %s: %w", path, err)
+				return err
 			}
 			settings := started.settings
 			// The keeper and the feeder write their lines from two goroutines, and so may the trace.
