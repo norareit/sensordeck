@@ -145,7 +145,7 @@ func TestAnLedCountOfZeroOrThirtyFailsTheSetupWithATeardown(test *testing.T) {
 			if session != nil || err == nil || err.Error() != testCase.want {
 				test.Fatalf("got %v", err)
 			}
-			if want := join(setupWrites(0, 5), teardownWithClose); !reflect.DeepEqual(harness.writes(), want) {
+			if want := join(setupWrites(0, 4), teardownWithClose); !reflect.DeepEqual(harness.writes(), want) {
 				test.Fatalf("got %d writes", len(harness.writes()))
 			}
 		})
@@ -208,9 +208,22 @@ func TestAnAnswerThatIsNotTheTemperaturesFailsTheReading(test *testing.T) {
 	if err == nil || err.Error() != "read of endpoint 0x21 on channel 1: not an answer of the temperatures" {
 		test.Fatalf("got %v", err)
 	}
-	got := harness.writes()
-	if tail := got[len(got)-2:]; !reflect.DeepEqual(tail, teardownWithClose) {
-		test.Fatalf("the writes do not end with the teardown with the close: %d", len(got))
+	want := join(setupWrites(16, 7), commandsOf(join(readOf(channelOne, 0x1A), readOf(channelOne, 0x17),
+		readOf(channelOne, 0x21)[:3])...), teardownWithClose)
+	if got := harness.writes(); !reflect.DeepEqual(got, want) {
+		test.Fatalf("got %d writes, want %d", len(got), len(want))
+	}
+}
+
+func TestAWrongDataTypeOfThePortsFailsTheSetupBeforeTheLastClose(test *testing.T) {
+	harness := newSessionHarness(test)
+	harness.controller.FailCommand(readCommand(channelOne, portsEndpoint), fakecommander.WrongDataType)
+	_, err := harness.lighting.Start(harness.stop)
+	if err == nil || err.Error() != "read of endpoint 0x20 on channel 1: data type 06 00" {
+		test.Fatalf("got %v", err)
+	}
+	if want := join(setupWrites(0, 4), teardownWithClose); !reflect.DeepEqual(harness.writes(), want) {
+		test.Fatalf("got %d writes", len(harness.writes()))
 	}
 }
 

@@ -129,7 +129,7 @@ func (keeper *sessionKeeper) read(stop context.Context) []sensors.Reading {
 		keeper.held = nil
 		if stop.Err() == nil {
 			keeper.lost = true
-			keeper.say("controller lost: %v", err)
+			keeper.say("controller lost: " + err.Error())
 		}
 		keeper.scheduleRetry()
 		return nil
@@ -144,7 +144,7 @@ func (keeper *sessionKeeper) setUp(stop context.Context) {
 	if err != nil {
 		if stop.Err() == nil && !errors.Is(err, errNoController) && !keeper.reported {
 			keeper.reported = true
-			keeper.say("controller setup failed: %v", err)
+			keeper.say("controller setup failed: " + err.Error())
 		}
 		keeper.scheduleRetry()
 		return
@@ -165,6 +165,6 @@ func (keeper *sessionKeeper) scheduleRetry() {
 	keeper.retry = min(2*keeper.retry, longestRetry)
 }
 
-func (keeper *sessionKeeper) say(format string, arguments ...any) {
-	_, _ = fmt.Fprintf(keeper.stderr, format+"\n", arguments...)
+func (keeper *sessionKeeper) say(line string) {
+	_, _ = fmt.Fprintln(keeper.stderr, line)
 }

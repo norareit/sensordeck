@@ -62,13 +62,13 @@ func (session *Session) setUp(stop context.Context, lighting Lighting) error {
 	if _, err := session.send(enterSoftware); err != nil {
 		return err
 	}
-	ports, err := session.readEndpoint(stop, channelOne, portsEndpoint)
+	var count int
+	err := session.readEndpoint(stop, channelOne, portsEndpoint, func(answer []byte) (err error) {
+		count, err = ledCount(answer)
+		return err
+	})
 	if err != nil {
 		return err
-	}
-	count, err := ledCount(ports)
-	if err != nil {
-		return fmt.Errorf("%s: %w", stepName(readCommand(channelOne, portsEndpoint)), err)
 	}
 	if _, err := session.exchange(stop, openCommand(channelZero, ledEndpoint)); err != nil {
 		return err
@@ -80,20 +80,22 @@ func (session *Session) setUp(stop context.Context, lighting Lighting) error {
 // Read makes one reading and gives every available probe. On every error the session has ended with its teardown and
 // the node is closed.
 func (session *Session) Read(stop context.Context) ([]sensors.Reading, error) {
-	var temperatureAnswer []byte
+	var probes []probe
 	for _, endpoint := range []byte{0x1A, 0x17, 0x21} {
-		answer, err := session.readEndpoint(stop, channelOne, endpoint)
-		if err != nil {
+		var check func(answer []byte) error
+		if endpoint == 0x21 {
+			check = func(answer []byte) error {
+				var valid bool
+				if probes, valid = temperatures(answer); !valid {
+					return errors.New("not an answer of the temperatures")
+				}
+				return nil
+			}
+		}
+		if err := session.readEndpoint(stop, channelOne, endpoint, check); err != nil {
 			session.teardown(closesChannelZero(err))
 			return nil, err
 		}
-		temperatureAnswer = answer
-	}
-	probes, ok := temperatures(temperatureAnswer)
-	if !ok {
-		err := fmt.Errorf("%s: not an answer of the temperatures", stepName(readCommand(channelOne, 0x21)))
-		session.teardown(true)
-		return nil, err
 	}
 	return readingsOf(probes, func(string) bool { return true }), nil
 }
@@ -101,22 +103,25 @@ func (session *Session) Read(stop context.Context) ([]sensors.Reading, error) {
 // End makes the teardown with the close of channel 0 and closes the node.
 func (session *Session) End() { session.teardown(true) }
 
-// readEndpoint makes the four exchanges of a read of the endpoint on the channel and gives the answer of the read.
-func (session *Session) readEndpoint(stop context.Context, channel, endpoint byte) ([]byte, error) {
-	var answer []byte
+// readEndpoint makes the four exchanges of a read of the endpoint on the channel. The check of the answer of the read,
+// when there is one, is part of that exchange, so a failed check ends the read before the last close.
+func (session *Session) readEndpoint(stop context.Context, channel, endpoint byte, check func(answer []byte) error) error {
 	for _, command := range [][]byte{
 		closeCommand(channel, endpoint), openCommand(channel, endpoint), readCommand(channel, endpoint),
 		closeCommand(channel, endpoint),
 	} {
-		reply, err := session.exchange(stop, command)
-		if err != nil {
-			return nil, err
+		answer, err := session.exchange(stop, command)
+		if err == nil && check != nil && command[1] == 0x08 {
+			err = check(answer)
+			if err != nil {
+				err = fmt.Errorf("%s: %w", stepName(command), err)
+			}
 		}
-		if command[1] == 0x08 {
-			answer = reply
+		if err != nil {
+			return err
 		}
 	}
-	return answer, nil
+	return nil
 }
 
 // exchange makes one exchange after a check of the stop, and names the step in the error it gives.
