@@ -70,7 +70,7 @@ func (current *session) compileConfigTheme(configPath, value string) (themecompi
 }
 
 // restartKeys gives the keys that changed and that a reload does not apply, in the order interval,
-// commander_interval, commander_color.
+// commander_interval, commander_color, librehardwaremonitor_url.
 func restartKeys(running, reloaded config.Config) []string {
 	var keys []string
 	if running.Interval != reloaded.Interval {
@@ -82,7 +82,18 @@ func restartKeys(running, reloaded config.Config) []string {
 	if !reflect.DeepEqual(running.CommanderColour, reloaded.CommanderColour) {
 		keys = append(keys, "commander_color")
 	}
+	if monitorURLText(running) != monitorURLText(reloaded) {
+		keys = append(keys, "librehardwaremonitor_url")
+	}
 	return keys
+}
+
+// monitorURLText gives the URL of the key as text, and the empty text for a config that has none.
+func monitorURLText(settings config.Config) string {
+	if settings.LibreHardwareMonitorURL == nil {
+		return ""
+	}
+	return settings.LibreHardwareMonitorURL.String()
 }
 
 // fileStamp is what os.Stat gives of the config file, or that it gave an error.

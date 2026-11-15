@@ -216,21 +216,21 @@ What the tree on `feature-0018-windows-sensors` holds, and what the plan builds 
 
 ### 4. The key librehardwaremonitor_url
 
-- [ ] In `internal/config/config_test.go`, add: no key gives the default, whose `String()` is
+- [x] In `internal/config/config_test.go`, add: no key gives the default, whose `String()` is
   `http://localhost:8085/data.json`, and `DefaultMonitorURL().String()` is the constant; valid values with `https`, a
   user and a password, a port, a path and a query; each refused value with the exact error of R13: a number, a mapping,
   null, an unparsable string, a relative URL, `ftp://host/`, `http:///data.json` and `http://:8085/data.json`; and the
   new lists of keys of R14 in the two errors. Add the default URL to the two tests that compare a whole `Config`
   (R12, R13, R14, R38)
-- [ ] In `internal/config/config.go`, read the key into `LibreHardwareMonitorURL` as the choices above say, add
+- [x] In `internal/config/config.go`, read the key into `LibreHardwareMonitorURL` as the choices above say, add
   `DefaultLibreHardwareMonitorURL` and `DefaultMonitorURL`, and name the key in `errNotAMapping` and in the error of an
   unknown key in the order of R14 (R12, R13, R14)
-- [ ] In `internal/cli/runconfig_test.go`, add to `TestRestartKeys` a changed URL and a URL in the case `all` after
+- [x] In `internal/cli/runconfig_test.go`, add to `TestRestartKeys` a changed URL and a URL in the case `all` after
   `commander_color`; in `internal/cli/runreload_test.go`, add a reload that changes only the key, writing
   `config file <path>: librehardwaremonitor_url changed, restart run to apply it` (R15, R38)
-- [ ] In `restartKeys`, add `librehardwaremonitor_url` last, compared as the choices above say, and update its
+- [x] In `restartKeys`, add `librehardwaremonitor_url` last, compared as the choices above say, and update its
   comment (R15)
-- [ ] Run the suite and commit: `feature-0018 Add the key librehardwaremonitor_url`
+- [x] Run the suite and commit: `feature-0018 Add the key librehardwaremonitor_url`
 
 ### 5. The mapping of the tree of LibreHardwareMonitor
 

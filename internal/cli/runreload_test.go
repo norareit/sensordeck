@@ -76,7 +76,7 @@ func TestRunKeepsTheRunningMappingsForAConfigThatIsInvalidOrDeletedWithOneLineEa
 }
 
 func TestRunDoesNotApplyTheKeysThatNeedARestartAndSaysSo(test *testing.T) {
-	harness := runWith(twoMetrics(), 3)
+	harness := runWith(twoMetrics(), 4)
 	path := writeConfig(test, "tags: {cpu.temp: 1}\n")
 	harness.onWait = func(count int) {
 		switch count {
@@ -85,21 +85,23 @@ func TestRunDoesNotApplyTheKeysThatNeedARestartAndSaysSo(test *testing.T) {
 		case 2:
 			rewrite(test, path, "commander_color: \"#ff0000\"\ntags: {cpu.clock: 2}\n", 2)
 		case 3:
+			rewrite(test, path, "librehardwaremonitor_url: http://localhost:9000/data.json\ntags: {cpu.clock: 2}\n", 3)
+		case 4:
 			harness.cancelStop()
 		}
 	}
 	harness.run("run", "--config", path)
 	prefix := "config file " + path + ": "
 	want := prefix + "interval changed, restart run to apply it\n" + prefix + "commander_interval changed, restart run to apply it\n" +
-		prefix + "commander_color changed, restart run to apply it\n"
+		prefix + "commander_color changed, restart run to apply it\n" + prefix + "librehardwaremonitor_url changed, restart run to apply it\n"
 	if harness.stderr.String() != want {
 		test.Errorf("stderr %q", harness.stderr.String())
 	}
-	// the interval of the start stays, so each of the three rounds follows after one second
-	if len(harness.waits) != 3 || harness.waits[1] != time.Second || harness.waits[2] != time.Second {
+	// the interval of the start stays, so each of the four rounds follows after one second
+	if len(harness.waits) != 4 || harness.waits[1] != time.Second || harness.waits[3] != time.Second {
 		test.Errorf("waits %v", harness.waits)
 	}
-	if reports := valueReports(harness); len(reports) != 3 || reports[2] != valueReport(smartmonitor.Value{Tag: 2, Value: 1234}) {
+	if reports := valueReports(harness); len(reports) != 4 || reports[3] != valueReport(smartmonitor.Value{Tag: 2, Value: 1234}) {
 		test.Errorf("%d reports", len(reports))
 	}
 }

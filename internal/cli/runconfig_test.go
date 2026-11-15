@@ -2,6 +2,7 @@ package cli
 
 import (
 	"bytes"
+	"net/url"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -82,6 +83,14 @@ func TestLoadConfigNamesAThemeThatFailsToCompile(test *testing.T) {
 	}
 }
 
+func monitorURL(text string) *url.URL {
+	address, err := url.Parse(text)
+	if err != nil {
+		panic(err)
+	}
+	return address
+}
+
 func TestRestartKeys(test *testing.T) {
 	base := config.Config{Interval: time.Second}
 	colour := &config.Colour{Red: 1}
@@ -96,8 +105,12 @@ func TestRestartKeys(test *testing.T) {
 		{"colour given", base, config.Config{Interval: time.Second, CommanderColour: colour}, []string{"commander_color"}},
 		{"colour removed", config.Config{Interval: time.Second, CommanderColour: colour}, base, []string{"commander_color"}},
 		{"colour the same", config.Config{Interval: time.Second, CommanderColour: colour}, config.Config{Interval: time.Second, CommanderColour: &config.Colour{Red: 1}}, nil},
-		{"all", base, config.Config{Interval: 3 * time.Second, CommanderInterval: time.Minute, CommanderColour: colour},
-			[]string{"interval", "commander_interval", "commander_color"}},
+		{"url given", base, config.Config{Interval: time.Second, LibreHardwareMonitorURL: monitorURL("http://localhost:9000/data.json")}, []string{"librehardwaremonitor_url"}},
+		{"url the same", config.Config{Interval: time.Second, LibreHardwareMonitorURL: monitorURL("http://localhost:9000/data.json")},
+			config.Config{Interval: time.Second, LibreHardwareMonitorURL: monitorURL("http://localhost:9000/data.json")}, nil},
+		{"all", base, config.Config{Interval: 3 * time.Second, CommanderInterval: time.Minute, CommanderColour: colour,
+			LibreHardwareMonitorURL: monitorURL("http://localhost:9000/data.json")},
+			[]string{"interval", "commander_interval", "commander_color", "librehardwaremonitor_url"}},
 	}
 	for _, each := range cases {
 		if got := restartKeys(each.running, each.loaded); !reflect.DeepEqual(got, each.want) {

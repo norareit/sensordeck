@@ -12,7 +12,7 @@ func TestParseTheExample(test *testing.T) {
 	if err != nil {
 		test.Fatal(err)
 	}
-	want := Config{Interval: time.Second, Mappings: []Mapping{{"cpu.temp", 1}, {"cpu.clock", 2}}}
+	want := Config{Interval: time.Second, LibreHardwareMonitorURL: DefaultMonitorURL(), Mappings: []Mapping{{"cpu.temp", 1}, {"cpu.clock", 2}}}
 	if !reflect.DeepEqual(got, want) {
 		test.Errorf("got %+v", got)
 	}
@@ -55,12 +55,16 @@ func TestParseTagSpellings(test *testing.T) {
 
 const colourEmpty = `commander_color: no colour given, write it in quotes such as "#00c8ff", because # starts a comment in YAML`
 
+func monitorURLProblem(text string) string {
+	return `librehardwaremonitor_url: "` + text + `" is not an http URL such as http://localhost:8085/data.json`
+}
+
 func TestParseErrors(test *testing.T) {
 	cases := []struct{ name, content, want string }{
-		{"empty", "", "want a mapping with the keys commander_color, commander_interval, interval, tags and theme"},
-		{"comment", "# nothing\n", "want a mapping with the keys commander_color, commander_interval, interval, tags and theme"},
-		{"list", "- tags\n", "want a mapping with the keys commander_color, commander_interval, interval, tags and theme"},
-		{"unknown key", "colour: red\ntags: {cpu.temp: 1}\n", `unknown key "colour", the keys are commander_color, commander_interval, interval, tags and theme`},
+		{"empty", "", "want a mapping with the keys commander_color, commander_interval, interval, librehardwaremonitor_url, tags and theme"},
+		{"comment", "# nothing\n", "want a mapping with the keys commander_color, commander_interval, interval, librehardwaremonitor_url, tags and theme"},
+		{"list", "- tags\n", "want a mapping with the keys commander_color, commander_interval, interval, librehardwaremonitor_url, tags and theme"},
+		{"unknown key", "colour: red\ntags: {cpu.temp: 1}\n", `unknown key "colour", the keys are commander_color, commander_interval, interval, librehardwaremonitor_url, tags and theme`},
 		{"neither theme nor tags", "interval: 1s\n", "one of theme and tags is needed"},
 		{"theme and tags", "theme: minimal-dark\ntags: {cpu.temp: 1}\n", "theme and tags cannot both be given, the theme gives the tags"},
 		{"theme and tags without value", "theme: minimal-dark\ntags:\n", "theme and tags cannot both be given, the theme gives the tags"},
@@ -111,6 +115,15 @@ func TestParseErrors(test *testing.T) {
 		{"colour without hash", "commander_color: \"00c8ff\"\ntags: {cpu.temp: 1}\n", `commander_color: "00c8ff" is not a colour such as "#00c8ff"`},
 		{"colour not hexadecimal", "commander_color: \"#00c8fg\"\ntags: {cpu.temp: 1}\n", `commander_color: "#00c8fg" is not a colour such as "#00c8ff"`},
 		{"colour mapping", "commander_color: {a: 1}\ntags: {cpu.temp: 1}\n", `commander_color: "" is not a colour such as "#00c8ff"`},
+		{"url number", "librehardwaremonitor_url: 8085\ntags: {cpu.temp: 1}\n", monitorURLProblem("8085")},
+		{"url mapping", "librehardwaremonitor_url: {a: 1}\ntags: {cpu.temp: 1}\n", monitorURLProblem("")},
+		{"url null", "librehardwaremonitor_url:\ntags: {cpu.temp: 1}\n", monitorURLProblem("")},
+		{"url not parsable", "librehardwaremonitor_url: \"http://[::1\"\ntags: {cpu.temp: 1}\n", monitorURLProblem("http://[::1")},
+		{"url relative", "librehardwaremonitor_url: /data.json\ntags: {cpu.temp: 1}\n", monitorURLProblem("/data.json")},
+		{"url without scheme", "librehardwaremonitor_url: localhost:8085/data.json\ntags: {cpu.temp: 1}\n", monitorURLProblem("localhost:8085/data.json")},
+		{"url ftp", "librehardwaremonitor_url: ftp://host/\ntags: {cpu.temp: 1}\n", monitorURLProblem("ftp://host/")},
+		{"url without host", "librehardwaremonitor_url: http:///data.json\ntags: {cpu.temp: 1}\n", monitorURLProblem("http:///data.json")},
+		{"url with a port only", "librehardwaremonitor_url: http://:8085/data.json\ntags: {cpu.temp: 1}\n", monitorURLProblem("http://:8085/data.json")},
 		{"colour and commander interval", "commander_color: \"#00c8ff\"\ncommander_interval: 1m\ntags: {cpu.temp: 1}\n", "commander_interval: cannot be used with commander_color, which reads the controller in every round"},
 	}
 	for _, each := range cases {
@@ -203,8 +216,41 @@ func TestDecodeColour(test *testing.T) {
 
 func TestParseThemeAlone(test *testing.T) {
 	got, err := Parse([]byte("interval: 2s\ntheme: ./my theme\n"))
-	want := Config{Interval: 2 * time.Second, Theme: "./my theme"}
+	want := Config{Interval: 2 * time.Second, Theme: "./my theme", LibreHardwareMonitorURL: DefaultMonitorURL()}
 	if err != nil || !reflect.DeepEqual(got, want) {
 		test.Errorf("got %+v, %v", got, err)
+	}
+}
+
+func TestParseWithoutMonitorURLGivesTheDefault(test *testing.T) {
+	got, err := Parse([]byte("tags: {cpu.temp: 1}\n"))
+	if err != nil || got.LibreHardwareMonitorURL.String() != "http://localhost:8085/data.json" {
+		test.Errorf("got %v, %v", got.LibreHardwareMonitorURL, err)
+	}
+	if DefaultMonitorURL().String() != DefaultLibreHardwareMonitorURL {
+		test.Errorf("the default URL is %s, the constant %s", DefaultMonitorURL(), DefaultLibreHardwareMonitorURL)
+	}
+	if DefaultMonitorURL() == DefaultMonitorURL() {
+		test.Error("the default URL is shared between callers")
+	}
+}
+
+func TestParseMonitorURLs(test *testing.T) {
+	for _, text := range []string{
+		"https://host/data.json",
+		"http://user:secret@192.168.1.5:9000/data.json?a=b",
+		"http://host",
+		"HTTP://Host:8085/x",
+	} {
+		got, err := Parse([]byte("librehardwaremonitor_url: \"" + text + "\"\ntags: {cpu.temp: 1}\n"))
+		if err != nil || got.LibreHardwareMonitorURL.Host == "" {
+			test.Errorf("%s: %v, %v", text, got.LibreHardwareMonitorURL, err)
+		}
+	}
+	got, _ := Parse([]byte("librehardwaremonitor_url: http://user:secret@host:9000/data.json?a=b\ntags: {cpu.temp: 1}\n"))
+	address := got.LibreHardwareMonitorURL
+	password, _ := address.User.Password()
+	if address.User.Username() != "user" || password != "secret" || address.Port() != "9000" || address.Path != "/data.json" || address.RawQuery != "a=b" {
+		test.Errorf("got %v", address)
 	}
 }

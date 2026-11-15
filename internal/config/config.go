@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
+	"net/url"
 	"slices"
 	"strings"
 	"time"
@@ -24,8 +25,16 @@ const (
 	// DefaultCommanderInterval is the shortest time between two readings of the controller when the file does not say.
 	DefaultCommanderInterval = time.Minute
 
+	// DefaultLibreHardwareMonitorURL is where LibreHardwareMonitor serves its tree when its web server is left as it is.
+	DefaultLibreHardwareMonitorURL = "http://localhost:8085/data.json"
+
 	maxTag = 255
 )
+
+// DefaultMonitorURL gives the URL of DefaultLibreHardwareMonitorURL, as a value the caller may keep.
+func DefaultMonitorURL() *url.URL {
+	return &url.URL{Scheme: "http", Host: "localhost:8085", Path: "/data.json"}
+}
 
 // Mapping sends the value of a metric to a tag of the theme on the screen.
 type Mapping struct {
@@ -42,7 +51,9 @@ type Config struct {
 	CommanderInterval time.Duration // zero when the file does not give it
 	CommanderColour   *Colour       // the key commander_color; nil when the file does not give it
 	Theme             string        // the key theme as the file gives it; empty when the file does not give it
-	Mappings          []Mapping     // ordered by tag, ascending; empty with a theme, whose tags the compiler assigns
+	// LibreHardwareMonitorURL is the key librehardwaremonitor_url, never nil after Parse. Only Windows reads it.
+	LibreHardwareMonitorURL *url.URL
+	Mappings                []Mapping // ordered by tag, ascending; empty with a theme, whose tags the compiler assigns
 }
 
 // CommanderPeriod is the shortest time between two readings of the controller in run.
@@ -64,7 +75,7 @@ func Parse(content []byte) (Config, error) {
 	if err != nil {
 		return Config{}, err
 	}
-	var themeNode, tagsNode, intervalNode, commanderIntervalNode, commanderColourNode *yaml.Node
+	var themeNode, tagsNode, intervalNode, commanderIntervalNode, commanderColourNode, monitorURLNode *yaml.Node
 	for position := 0; position+1 < len(root.Content); position += 2 {
 		key, value := root.Content[position], root.Content[position+1]
 		switch key.Value {
@@ -78,8 +89,10 @@ func Parse(content []byte) (Config, error) {
 			commanderIntervalNode = value
 		case "commander_color":
 			commanderColourNode = value
+		case "librehardwaremonitor_url":
+			monitorURLNode = value
 		default:
-			return Config{}, fmt.Errorf("unknown key %q, the keys are commander_color, commander_interval, interval, tags and theme", key.Value)
+			return Config{}, fmt.Errorf("unknown key %q, the keys are commander_color, commander_interval, interval, librehardwaremonitor_url, tags and theme", key.Value)
 		}
 	}
 	theme, mappings, err := parseThemeOrTags(themeNode, tagsNode)
@@ -101,10 +114,15 @@ func Parse(content []byte) (Config, error) {
 	if colour != nil && commanderIntervalNode != nil {
 		return Config{}, errors.New("commander_interval: cannot be used with commander_color, which reads the controller in every round")
 	}
-	return Config{Interval: interval, CommanderInterval: commanderInterval, CommanderColour: colour, Theme: theme, Mappings: mappings}, nil
+	monitorURL, err := parseMonitorURL(monitorURLNode)
+	if err != nil {
+		return Config{}, err
+	}
+	return Config{Interval: interval, CommanderInterval: commanderInterval, CommanderColour: colour, Theme: theme,
+		LibreHardwareMonitorURL: monitorURL, Mappings: mappings}, nil
 }
 
-var errNotAMapping = errors.New("want a mapping with the keys commander_color, commander_interval, interval, tags and theme")
+var errNotAMapping = errors.New("want a mapping with the keys commander_color, commander_interval, interval, librehardwaremonitor_url, tags and theme")
 
 // rootMapping gives the mapping of the file, and refuses a key that is given twice. The parser reports that only when
 // a mapping is decoded into a map.
@@ -252,6 +270,23 @@ func parseCommanderInterval(node *yaml.Node, interval time.Duration) (time.Durat
 		return 0, fmt.Errorf("commander_interval: %s is shorter than the interval %s", text, interval)
 	}
 	return commanderInterval, nil
+}
+
+// parseMonitorURL gives the default when the file does not give the key. The host is the host without the port, so
+// that a URL with only a port is refused.
+func parseMonitorURL(node *yaml.Node) (*url.URL, error) {
+	if node == nil {
+		return DefaultMonitorURL(), nil
+	}
+	notAURL := fmt.Errorf("librehardwaremonitor_url: %q is not an http URL such as %s", node.Value, DefaultLibreHardwareMonitorURL)
+	if node.Kind != yaml.ScalarNode || node.ShortTag() != "!!str" {
+		return nil, notAURL
+	}
+	address, err := url.Parse(node.Value)
+	if err != nil || !address.IsAbs() || (address.Scheme != "http" && address.Scheme != "https") || address.Hostname() == "" {
+		return nil, notAURL
+	}
+	return address, nil
 }
 
 // parseCommanderColour gives nil when the file does not give the key. An unquoted # starts a comment in YAML, so the
