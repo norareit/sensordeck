@@ -336,7 +336,7 @@ func taskStatusLines(taskFile, enabled, active, log string) []string
 
 ### 3. The log
 
-- [ ] Write `internal/cli/runlog_test.go`, against a temporary directory and a fake time: `logPath`; the time in front
+- [x] Write `internal/cli/runlog_test.go`, against a temporary directory and a fake time: `logPath`; the time in front
   of each line in the format of R21; two lines given in one `Write` and one line given in three, each written whole in
   one write of the file, which a fake `open` that records the writes checks; a line that would pass 1 MiB rotating to
   `run.log.1`, replacing one that exists; a log larger than 1 MiB at its opening rotated first; a line larger than
@@ -345,8 +345,8 @@ func taskStatusLines(taskFile, enabled, active, log string) []string
   written once `open` succeeds again; the directory created when it is missing; a log that cannot be opened, with its
   directory a file, giving the error of the table; `Close` writing a pending partial line with a line feed (R20, R21,
   R22)
-- [ ] Write `internal/cli/runlog.go` as the approach says (R20, R21, R22)
-- [ ] Commit: `feature-0019 Add the log of a background run`
+- [x] Write `internal/cli/runlog.go` as the approach says (R20, R21, R22)
+- [x] Commit: `feature-0019 Add the log of a background run`
 
 ### 4. The background run
 
