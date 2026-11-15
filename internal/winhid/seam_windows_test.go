@@ -3,6 +3,7 @@ package winhid
 import (
 	"errors"
 	"io/fs"
+	"runtime"
 	"testing"
 
 	"golang.org/x/sys/windows"
@@ -51,6 +52,27 @@ func TestTheOpeningErrorsMapToTheErrorsOfTheStandardLibrary(test *testing.T) {
 	} {
 		if !errors.Is(openError("p", testCase.code), testCase.want) {
 			test.Errorf("%v is not %v", testCase.code, testCase.want)
+		}
+	}
+}
+
+// growStack makes the stack of the goroutine grow before it lists, so that a pointer given to the system as an integer
+// would go stale if the binding did not keep its objects in place.
+func growStack(depth int) ([]Collection, error) {
+	var padding [4096]byte
+	if depth > 0 {
+		collections, err := growStack(depth - 1)
+		padding[depth%len(padding)]++
+		return collections, err
+	}
+	runtime.GC()
+	return List(Windows())
+}
+
+func TestTheListingSurvivesStackGrowthAndCollections(test *testing.T) {
+	for range 5 {
+		if _, err := growStack(64); err != nil {
+			test.Fatal(err)
 		}
 	}
 }

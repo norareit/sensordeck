@@ -66,8 +66,14 @@ func Windows() Seam { return windowsSeam{} }
 
 // call calls the procedure after finding it, so that a procedure that cannot be found is an error that names it and
 // not the panic of LazyProc.Call.
+//
+// The go:uintptrescapes directive makes the conversion of a pointer to uintptr at a call of this function a
+// recognised system call boundary: the object stays alive and is not moved until the call returned.
+//
 // It gives the result, the last error of the thread, which means something only when the result says the call
 // failed, and the error of finding.
+//
+//go:uintptrescapes
 func call(procedure *windows.LazyProc, arguments ...uintptr) (result uintptr, lastError syscall.Errno, err error) {
 	if err := procedure.Find(); err != nil {
 		return 0, 0, err

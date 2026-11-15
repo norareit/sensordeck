@@ -113,10 +113,20 @@ func TestRunWithAColourGoesOnWhenTheControllerIsRemoved(test *testing.T) {
 	if len(reports) <= mark {
 		test.Fatal("no report arrived after the node was removed")
 	}
-	for _, report := range reports[len(reports)-3:] {
-		if pairs := valuePairs(report); pairs[1] != 42 {
+	// The clock goes out once a second beside the values, and a clock report holds no value pairs.
+	valueReports := 0
+	for _, report := range reports[mark:] {
+		pairs := valuePairs(report)
+		if pairs == nil {
+			continue
+		}
+		valueReports++
+		if pairs[1] != 42 {
 			test.Errorf("a report holds %v", pairs)
 		}
+	}
+	if valueReports == 0 {
+		test.Error("no value report arrived after the node was removed")
 	}
 	outcome, _ := running.stop(syscall.SIGTERM)
 	if !strings.Contains(outcome.stderr, "controller lost: ") {
