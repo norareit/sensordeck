@@ -56,6 +56,11 @@ func (current *session) compileTheme(argument string) (themecompile.Result, erro
 	if isFolderPath(argument) {
 		return compileFolder(argument)
 	}
+	return current.compileNamed(argument)
+}
+
+// compileNamed compiles a theme by its name, looked up among the installed themes and then the built-in ones.
+func (current *session) compileNamed(argument string) (themecompile.Result, error) {
 	directory, err := current.themesDirectory()
 	if err != nil {
 		return themecompile.Result{}, err
