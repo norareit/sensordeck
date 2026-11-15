@@ -73,3 +73,8 @@ timestamp: 2026-11-15T23:04:03Z
   those, so a field of another type still costs that field only and the children of a node that is no sensor are still
   searched. The fixtures of `tree_test.go` use the same representation. The plan's sentence on the decoding is corrected
   to match. The trailing blank line of this record that the review named is removed
+- 2026-11-16T00:25:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, ran the suite of `AGENTS.md` on the
+  tree at the commit that applies C1: `go test -count=1 ./...` reported all packages ok, `go vet ./...` and `gofmt -l .`
+  reported nothing, and `GOOS=windows GOARCH=amd64 go build ./...` and `go vet ./...` reported nothing. Real Windows
+  execution is not checked. The status stays `in-progress`
+
