@@ -28,5 +28,14 @@ timestamp: 2026-11-15T00:29:10Z
   asks
 - 2026-11-15T00:40:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, began the work. The status is
   `in-progress`
+- 2026-11-15T01:10:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, built the unit by the plan, with
+  the tests of each part before its code: the config key and its checks, the sources with the controller apart, the
+  type `periodicSource` and the feeder of `run`, the two end-to-end tests and the two documents. The plan needed no
+  change and the spec none. R8 was read as the plan reads it: a round whose reopening fails reads no source, and the
+  round of a reopening that succeeds reads the controller only when the period has passed. On the tree of this commit
+  `go test -count=1 ./...`, `go vet ./...`, `gofmt -l .`, `GOOS=windows GOARCH=amd64 go build ./...` and
+  `GOOS=windows GOARCH=amd64 go vet ./...` reported nothing but passes, and `npm run check-changes` passed. Not
+  checked: the unit on the real controller and on Windows, which are the human's. No review has run yet. The status
+  stays `in-progress`
 
 ## Amendments

@@ -302,5 +302,5 @@ quiet while `run` runs, and a count of writes taken later can only be larger.
 
 ### Before handing over
 
-- [ ] Run the five commands of the suite and `npm run check-changes`, and check every requirement R1 to R17 against
+- [x] Run the five commands of the suite and `npm run check-changes`, and check every requirement R1 to R17 against
   the tree, ticking this task only when all pass (R1 to R17)
