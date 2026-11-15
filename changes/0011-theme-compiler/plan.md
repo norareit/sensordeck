@@ -504,21 +504,21 @@ Nothing is written before the whole compilation and, for `preview`, the PNG enco
 
 ### Before handing over
 
-- [ ] Run the five commands of the suite and `npm run check-changes`, and check every requirement R1 to R31 against
+- [x] Run the five commands of the suite and `npm run check-changes`, and check every requirement R1 to R31 against
   the tree, ticking the tasks in this plan (R31)
 
 ## Verification
 
-- [ ] `go test ./...`, `go vet ./...`, `gofmt -l .`, `GOOS=windows GOARCH=amd64 go build ./...` and
+- [x] `go test ./...`, `go vet ./...`, `gofmt -l .`, `GOOS=windows GOARCH=amd64 go build ./...` and
   `GOOS=windows GOARCH=amd64 go vet ./...` succeed with no output of a fault
-- [ ] `npm run check-changes` passes
+- [x] `npm run check-changes` passes
 
 ## Commit Points
 
 - [x] `feature-0011 Extract the decoding of a colour from the config`
-- [ ] `feature-0011 Draw the glyphs and convert the pixels of a theme`
-- [ ] `feature-0011 Compile a theme folder into a theme file`
-- [ ] `feature-0011 Test that the theme compiler does no I/O`
-- [ ] `feature-0011 Add the commands theme compile and theme preview`
-- [ ] `feature-0011 Test theme compile and theme preview end to end`
-- [ ] `feature-0011 Document the theme folder and theme compile`
+- [x] `feature-0011 Draw the glyphs and convert the pixels of a theme`
+- [x] `feature-0011 Compile a theme folder into a theme file`
+- [x] `feature-0011 Test that the theme compiler does no I/O`
+- [x] `feature-0011 Add the commands theme compile and theme preview`
+- [x] `feature-0011 Test theme compile and theme preview end to end`
+- [x] `feature-0011 Document the theme folder and theme compile`

@@ -30,3 +30,15 @@ timestamp: 2026-11-15T08:52:10Z
   requirement R1 to R31 has a task. The status stays `approved`
 - 2026-11-15T09:10:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, began the work on the branch
   `feature-0011-theme-compiler`. The status is `in-progress`
+- 2026-11-15T09:30:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, built every task of `plan.md` in
+  its seven commits, tests first for each group. Three points where the build is more specific than the plan, none of
+  them a change of the spec: a key given twice in a widget is named at `widget <n>` without the type, because the
+  type is read in the same pass that finds the repeat; `glyphOf` was added to `glyphs.go` so that the number and the
+  datetime build their glyph sets from one function; the compiler keeps its own small `cause` for the inner error of a
+  `*fs.PathError` instead of importing the one of `internal/cli`. The example `theme.yaml` of the README was compiled and
+  previewed once in a scratch directory outside the repository with a font and PNGs made for it, and compiled without
+  a correction. Nothing was checked on the device or on Windows beyond the cross-build and vet
+- 2026-11-15T09:31:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, ran on `0fe9332`, the tree of the
+  last commit of the work, `go test ./...`, `go vet ./...`, `gofmt -l .`, `GOOS=windows GOARCH=amd64 go build ./...` and
+  `GOOS=windows GOARCH=amd64 go vet ./...`, which reported nothing besides the passing packages, and
+  `npm run check-changes`, which passed. No review has run yet, so the unit stays `in-progress`
