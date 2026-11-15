@@ -78,3 +78,10 @@ timestamp: 2026-11-15T13:32:18Z
   after growing the stack and collecting garbage, which is built with `GOOS=windows go test -c` and not run. C2: the
   parameters of the tests of `internal/screenlist` are named `test`. Suite run on `13342ef`: all five commands pass and
   the change check passes. No finding was declined. The status stays `in-progress`
+- 2026-11-15T22:53:26Z [OpenCode, openai/gpt-6.1-sol] as the reviewer, completed a delta review of unit
+  `0016-windows-hid-transport` at `f811b9d`, compared against `aae8745`, verifying the corrections for S1, C1 and C2.
+  Returned no new findings on spec conformance, plan fidelity or code quality; the complete review is
+  `.reviews/changes/0016-windows-hid-transport/review-round-2-20261115T225326Z.md`. All five suite commands passed,
+  as did five focused removal-test iterations, the no-cgo Windows build, the Windows HID test cross-build and the
+  change check. Windows compiler escape output confirms the binding's pointer arguments now escape. Windows runtime,
+  CI and physical-device behavior could not be verified. The status stays `in-progress`
