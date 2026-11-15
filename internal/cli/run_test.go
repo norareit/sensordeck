@@ -311,3 +311,189 @@ func TestRunWithTraceWritesALineForEveryWriteAndReopening(test *testing.T) {
 		test.Errorf("%d reopening lines", count)
 	}
 }
+
+const controllerTags = "tags:\n  cpu.temp: 1\n  commander.1.temp: 4\n  commander.2.temp: 5\n"
+
+func twoProbes() *fakeSource {
+	return &fakeSource{
+		names:  []string{"commander.1.temp", "commander.2.temp"},
+		values: map[string]float64{"commander.1.temp": 37, "commander.2.temp": 23},
+	}
+}
+
+// runWithController gives a harness with one other source, a controller and a stop after the given number of waits.
+func runWithController(others, controller *fakeSource, stopAfterWaits int) *harness {
+	harness := runWith(others, stopAfterWaits)
+	harness.controller = controller
+	return harness
+}
+
+// valueReports gives the value report of each round, in order.
+func valueReports(harness *harness) []smartmonitor.Report {
+	var reports []smartmonitor.Report
+	for _, report := range harness.transport.writes {
+		if report[0] == 0x02 {
+			reports = append(reports, report)
+		}
+	}
+	return reports
+}
+
+func startOfTheRun() time.Time { return time.Date(2026, 11, 14, 15, 4, 5, 0, time.UTC) }
+
+func TestRunReadsTheControllerOncePerPeriod(test *testing.T) {
+	controller := twoProbes()
+	harness := runWithController(twoMetrics(), controller, 121) // rounds at 0 to 120 seconds
+	var calls []time.Time
+	controller.onRead = func() { calls = append(calls, harness.clock.current) }
+	harness.run("run", "--config", writeConfig(test, controllerTags))
+	start := startOfTheRun()
+	want := []time.Time{start, start.Add(60 * time.Second), start.Add(120 * time.Second)}
+	if !reflect.DeepEqual(calls, want) {
+		test.Errorf("the controller was read at %v", calls)
+	}
+}
+
+func TestRunSendsTheKeptReadingsAndReadsTheOtherSourcesInEveryRound(test *testing.T) {
+	cpu := twoMetrics()
+	controller := twoProbes()
+	harness := runWithController(cpu, controller, 3)
+	calls := 0
+	cpu.onRead = func() {
+		calls++
+		cpu.values["cpu.temp"] = float64(calls)
+	}
+	harness.run("run", "--config", writeConfig(test, controllerTags))
+	reports := valueReports(harness)
+	if len(reports) != 3 || controller.readsAt != 1 {
+		test.Fatalf("%d value reports, %d reads of the controller", len(reports), controller.readsAt)
+	}
+	for round, report := range reports {
+		want := valueReport(smartmonitor.Value{Tag: 1, Value: uint16(round + 1)}, smartmonitor.Value{Tag: 4, Value: 37}, smartmonitor.Value{Tag: 5, Value: 23})
+		if report != want {
+			test.Errorf("round %d: % X", round, report[:12])
+		}
+	}
+}
+
+func TestRunWaitsAFullPeriodAfterAReadingThatGivesNothing(test *testing.T) {
+	controller := &fakeSource{names: []string{"commander.1.temp", "commander.2.temp"}}
+	harness := runWithController(twoMetrics(), controller, 60) // rounds at 0 to 59 seconds
+	harness.run("run", "--config", writeConfig(test, controllerTags))
+	reports := valueReports(harness)
+	if len(reports) != 60 || controller.readsAt != 1 {
+		test.Fatalf("%d value reports, %d reads of the controller", len(reports), controller.readsAt)
+	}
+	for round, report := range reports {
+		if report != valueReport(smartmonitor.Value{Tag: 1, Value: 42}) {
+			test.Errorf("round %d: % X", round, report[:8])
+		}
+	}
+}
+
+func TestRunKeepsTheProbesOfAReadingThatGivesOnlySome(test *testing.T) {
+	controller := twoProbes()
+	delete(controller.values, "commander.2.temp")
+	harness := runWithController(twoMetrics(), controller, 3) // rounds at 0, 1 and 2 seconds
+	controller.onRead = func() {
+		if controller.readsAt == 2 {
+			controller.values["commander.2.temp"] = 23
+		}
+	}
+	harness.run("run", "--config", writeConfig(test, "interval: 1s\ncommander_interval: 2s\n"+controllerTags))
+	reports := valueReports(harness)
+	only := valueReport(smartmonitor.Value{Tag: 1, Value: 42}, smartmonitor.Value{Tag: 4, Value: 37})
+	both := valueReport(smartmonitor.Value{Tag: 1, Value: 42}, smartmonitor.Value{Tag: 4, Value: 37}, smartmonitor.Value{Tag: 5, Value: 23})
+	if len(reports) != 3 || reports[0] != only || reports[1] != only || reports[2] != both {
+		test.Errorf("reports %d", len(reports))
+	}
+}
+
+func TestRunLeavesTheProbesOutAfterAReadingThatGivesNone(test *testing.T) {
+	controller := twoProbes()
+	harness := runWithController(twoMetrics(), controller, 4) // rounds at 0 to 3 seconds
+	controller.onRead = func() {
+		if controller.readsAt == 2 {
+			clear(controller.values)
+		}
+	}
+	harness.run("run", "--config", writeConfig(test, "interval: 1s\ncommander_interval: 2s\n"+controllerTags))
+	reports := valueReports(harness)
+	both := valueReport(smartmonitor.Value{Tag: 1, Value: 42}, smartmonitor.Value{Tag: 4, Value: 37}, smartmonitor.Value{Tag: 5, Value: 23})
+	none := valueReport(smartmonitor.Value{Tag: 1, Value: 42})
+	if len(reports) != 4 || reports[0] != both || reports[1] != both || reports[2] != none || reports[3] != none {
+		test.Errorf("reports %d", len(reports))
+	}
+}
+
+func TestRunReadsTheControllerInEveryRoundWhenThePeriodIsTheInterval(test *testing.T) {
+	controller := twoProbes()
+	harness := runWithController(twoMetrics(), controller, 3)
+	harness.run("run", "--config", writeConfig(test, "interval: 1s\ncommander_interval: 1s\n"+controllerTags))
+	if controller.readsAt != 3 {
+		test.Errorf("the controller was read %d times", controller.readsAt)
+	}
+}
+
+// The period is measured from the start of the round that read the controller, not from the end of the reading.
+func TestRunMeasuresThePeriodFromTheStartOfTheRound(test *testing.T) {
+	controller := twoProbes()
+	harness := runWithController(twoMetrics(), controller, 1000)
+	var calls []time.Time
+	controller.onRead = func() {
+		calls = append(calls, harness.clock.current)
+		harness.clock.sleep(500 * time.Millisecond)
+		if len(calls) == 3 {
+			harness.cancelStop()
+		}
+	}
+	harness.run("run", "--config", writeConfig(test, controllerTags))
+	start := startOfTheRun()
+	want := []time.Time{start, start.Add(60 * time.Second), start.Add(120 * time.Second)}
+	if !reflect.DeepEqual(calls, want) {
+		test.Errorf("the controller was read at %v", calls)
+	}
+}
+
+// The round at 59 seconds ends at 60.6, so the next round starts late and is the first that is a period after the
+// start. The period that follows is measured from 60.6.
+func TestRunMeasuresThePeriodFromTheStartOfALateRound(test *testing.T) {
+	others := twoMetrics()
+	controller := twoProbes()
+	harness := runWithController(others, controller, 1000)
+	otherCalls := 0
+	others.onRead = func() {
+		otherCalls++
+		if otherCalls == 60 {
+			harness.clock.sleep(1600 * time.Millisecond)
+		}
+	}
+	var calls []time.Time
+	controller.onRead = func() {
+		calls = append(calls, harness.clock.current)
+		if len(calls) == 3 {
+			harness.cancelStop()
+		}
+	}
+	harness.run("run", "--config", writeConfig(test, controllerTags))
+	start := startOfTheRun()
+	want := []time.Time{start, start.Add(60600 * time.Millisecond), start.Add(121 * time.Second)}
+	if !reflect.DeepEqual(calls, want) {
+		test.Errorf("the controller was read at %v", calls)
+	}
+}
+
+func TestRunSendsTheKeptReadingsAfterALostScreenWithoutReadingTheController(test *testing.T) {
+	controller := twoProbes()
+	harness := runWithController(twoMetrics(), controller, 3)
+	harness.transport.failWrites = []bool{false, true}
+	harness.transport.reopenResults = []error{errFake, nil}
+	harness.run("run", "--config", writeConfig(test, controllerTags))
+	if got := kinds(test, harness.transport.writes); got != "CCV" {
+		test.Fatalf("writes %s", got)
+	}
+	want := valueReport(smartmonitor.Value{Tag: 1, Value: 42}, smartmonitor.Value{Tag: 4, Value: 37}, smartmonitor.Value{Tag: 5, Value: 23})
+	if harness.transport.writes[2] != want || controller.readsAt != 1 {
+		test.Errorf("last report % X, %d reads of the controller", harness.transport.writes[2][:12], controller.readsAt)
+	}
+}

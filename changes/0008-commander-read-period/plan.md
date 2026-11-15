@@ -206,7 +206,7 @@ quiet while `run` runs, and a count of writes taken later can only be larger.
 
 ### The period in run
 
-- [ ] In `internal/cli/run_test.go`, add `twoProbes`, `controllerTags` and `runWithController` as "The test harness"
+- [x] In `internal/cli/run_test.go`, add `twoProbes`, `controllerTags` and `runWithController` as "The test harness"
   says, and these tests, each recording the moments of the calls of the controller in its `onRead` where it checks
   them (R14):
     - with no `commander_interval` and a stop after 121 waits, so rounds at 0 to 120 seconds: the controller is called
@@ -237,14 +237,14 @@ quiet while `run` runs, and a count of writes taken later can only be larger.
       (R8, R14)
 
   The tests of the controller's calls fail until the next task, since the feeder reads every source in every round
-- [ ] Add `internal/cli/periodic.go` with `periodicSource`, as "The loop of run" says, and change the feeder of
+- [x] Add `internal/cli/periodic.go` with `periodicSource`, as "The loop of run" says, and change the feeder of
   `internal/cli/run.go`: the fields `others` and `controller`, filled in `runCommand` from the `sourceSet` and
   `settings.CommanderPeriod()`, `start := feeding.now()` as the first statement of `round`, and `read(stop, start)`
   that joins the readings of the others and of `controller.readings`. Update the doc comments of `feeder` and `read`
   to say that the controller is read at most once per period and its kept readings are sent in between. The new tests
   and every existing test of `internal/cli` pass, among them `TestRunReopensALostScreenOncePerRound` and the tests of
   the clock unchanged (R4 to R8, R17)
-- [ ] Run the five commands of the suite and commit: `feature-0008 Read the controller at most once per period in
+- [x] Run the five commands of the suite and commit: `feature-0008 Read the controller at most once per period in
   run`
 
 ### The end-to-end tests
