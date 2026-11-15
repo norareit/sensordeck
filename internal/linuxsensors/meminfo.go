@@ -30,11 +30,12 @@ func parseMeminfo(content string, key string) (uint64, bool) {
 	return 0, false
 }
 
-// memory reads ram.used, as the total minus what is available, and ram.total, both in GiB.
+// memory reads ram.used, as the total minus what is available, and ram.total, both in GiB, and ram.util, the share of
+// the total that ram.used is. The three come from one read of the file, so that they agree.
 type memory struct{ procRoot string }
 
 func (source memory) Read(stop context.Context, wanted func(name string) bool) []sensors.Reading {
-	if !wanted(sensors.RAMUsed) && !wanted(sensors.RAMTotal) {
+	if !wanted(sensors.RAMUsed) && !wanted(sensors.RAMTotal) && !wanted(sensors.RAMUtilisation) {
 		return nil
 	}
 	content, err := os.ReadFile(filepath.Join(source.procRoot, "meminfo"))
@@ -45,13 +46,17 @@ func (source memory) Read(stop context.Context, wanted func(name string) bool) [
 	if !haveTotal {
 		return nil
 	}
+	available, haveAvailable := parseMeminfo(string(content), "MemAvailable")
+	used := float64(total) - float64(available)
 	var readings []sensors.Reading
-	if available, haveAvailable := parseMeminfo(string(content), "MemAvailable"); haveAvailable && wanted(sensors.RAMUsed) {
-		used := float64(total) - float64(available)
+	if haveAvailable && wanted(sensors.RAMUsed) {
 		readings = append(readings, sensors.Reading{Name: sensors.RAMUsed, Value: used / kibibytesPerGibibyte})
 	}
 	if wanted(sensors.RAMTotal) {
 		readings = append(readings, sensors.Reading{Name: sensors.RAMTotal, Value: float64(total) / kibibytesPerGibibyte})
+	}
+	if haveAvailable && total != 0 && wanted(sensors.RAMUtilisation) {
+		readings = append(readings, sensors.Reading{Name: sensors.RAMUtilisation, Value: 100 * used / float64(total)})
 	}
 	return readings
 }
