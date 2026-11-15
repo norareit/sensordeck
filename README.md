@@ -7,7 +7,7 @@ Turn a cheap USB "sensor panel" screen into a hardware-monitoring dashboard on *
 > Commander Core XT, and which uploads the theme that the config file names when it is not on the screen.
 > `sensordeck theme use` sets that theme. `sensordeck theme dump` reads a theme file, `sensordeck theme compile`
 > compiles a theme, by name or folder, into one, `sensordeck theme preview` draws a theme as a PNG and
-> `sensordeck theme list` lists the themes, all with no screen. The built-in theme `minimal-dark` is there. Windows and the service are still to come. This README describes what sensordeck is meant to become.
+> `sensordeck theme list` lists the themes, all with no screen. The built-in theme `minimal-dark` is there. On Linux `sensordeck service install`, `status` and `uninstall` run `run` as a systemd user service. Windows is still to come. This README describes what sensordeck is meant to become.
 
 ## What it will do
 
@@ -240,6 +240,48 @@ to its hidraw node:
 ```
 SUBSYSTEM=="hidraw", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="0c2a", MODE="0660", TAG+="uaccess"
 ```
+
+## Running as a service
+
+This is for Linux, where sensordeck runs `run` as a systemd user service. Set the config file first, as the
+[quick start](#quick-start) says, for instance with `sensordeck theme use minimal-dark`.
+
+`sensordeck service install` writes the unit file `~/.config/systemd/user/sensordeck.service`, or the file of that name
+in `$XDG_CONFIG_HOME/systemd/user/` when the variable is set, and enables and starts the service at once. It starts at
+each later login of the user. The unit runs `sensordeck run --config <file>` with the path of the executable that ran
+`install`, symbolic links resolved. The config file is the one given with `--config`, or else the default one, and the
+unit always names it, because the environment of the systemd user instance may not hold the `XDG_CONFIG_HOME` of your
+shell. `install` first loads that file as `run` does at its start, theme included, and writes nothing and makes no
+call when `run` would refuse it. It opens no screen, so it works with the screen unplugged.
+
+Running `sensordeck service install` again overwrites the unit file and restarts the service. That is how to apply a
+moved or replaced executable, or another `--config`. A change of the unit is made in a drop-in with
+`systemctl --user edit sensordeck.service`, which `install` does not overwrite.
+
+`sensordeck service status` writes whether the unit file exists, and whether the service is enabled and active.
+`systemctl --user status sensordeck.service` gives more.
+
+The log is the journal of the user: `journalctl --user -u sensordeck`, with `-f` to follow it. It holds the lines that
+`run` writes to standard output and standard error.
+
+`sensordeck theme use` and edits of the config file reach the running service within a round, by the reload of `run`.
+A change of `interval`, `commander_interval` or `commander_color` needs
+`systemctl --user restart sensordeck.service`.
+
+The service is restarted 10 seconds after it ended with an error, as when no screen was found at its start, and there is
+no limit to the number of restarts. A stop with `systemctl --user stop sensordeck.service` leaves the screen with its
+last values and returns the Commander Core XT to hardware mode.
+
+Running `sensordeck run`, or another command that writes to the screen, by hand while the service runs is not
+supported, because both write to the screen. Stop the service first.
+
+`sensordeck service uninstall` stops and disables the service, removes the unit file and reloads systemd.
+
+A user service runs only while the user has a session. `loginctl enable-linger` makes it start at boot and keep running
+after the user logged out, and `loginctl disable-linger` undoes it. Lingering is your choice, and `install` does not
+make it. The udev rule of [Linux: access to the screen](#linux-access-to-the-screen) gives access to the screen to the
+user of the active local session, so a service that starts at boot by lingering cannot open the screen until that user
+logs in, and is restarted every 10 seconds until then.
 
 ## Writing a theme
 

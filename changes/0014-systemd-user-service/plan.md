@@ -261,18 +261,18 @@ the test.
   holding `daemon-reload` and the failed call alone; `status` before `install`, writing `installed: no` with an empty
   log, and after it, writing the three lines; and `uninstall` after `install`, with its line, the unit file removed and
   the two calls of R13 at the end of the log (R22)
-- [ ] Commit
+- [x] Commit
 
 ### The documents
 
-- [ ] Add to `README.md` a section "Running as a service", after "The Corsair iCUE Commander Core XT" and before
+- [x] Add to `README.md` a section "Running as a service", after "The Corsair iCUE Commander Core XT" and before
   "Writing a theme", which says each point of R19 in the order the spec lists them, with the commands written as the
   spec writes them: `sensordeck service install` and `--config`, `sensordeck service status`,
   `systemctl --user status sensordeck.service`, `journalctl --user -u sensordeck` and `-f`,
   `systemctl --user restart sensordeck.service`, `systemctl --user stop sensordeck.service`,
   `systemctl --user edit sensordeck.service`, `sensordeck service uninstall`, `loginctl enable-linger` and
   `loginctl disable-linger`, and the path of the unit file on Linux; claim nothing as seen on the device (R19, D18)
-- [ ] Change the status line of `README.md` to name `sensordeck service install`, `status` and `uninstall` among what
+- [x] Change the status line of `README.md` to name `sensordeck service install`, `status` and `uninstall` among what
   works on Linux and to say that Windows is still to come, removing that the service is still to come; keep "Planned
   usage" as it is (R20)
 - [ ] Commit
