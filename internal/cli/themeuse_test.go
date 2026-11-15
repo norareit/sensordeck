@@ -194,3 +194,19 @@ func TestThemeUseWritesThroughASymbolicLink(test *testing.T) {
 		test.Errorf("the target holds %q", got)
 	}
 }
+
+func TestThemeUseAddsTheKeyToAnIndentedMapping(test *testing.T) {
+	harness, path := useHarness(test)
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		test.Fatal(err)
+	}
+	if err := os.WriteFile(path, []byte("  interval: 2s\n"), 0o644); err != nil {
+		test.Fatal(err)
+	}
+	if status := harness.run("theme", "use", "minimal-dark"); status != 0 {
+		test.Fatalf("status %d, stderr %q", status, harness.stderr.String())
+	}
+	if got := readText(test, path); got != "  interval: 2s\n  theme: minimal-dark\n" {
+		test.Errorf("the file holds %q", got)
+	}
+}

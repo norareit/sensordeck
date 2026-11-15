@@ -53,7 +53,8 @@ func withThemeLine(content []byte, document *yaml.Node, line string) ([]byte, er
 		}
 		return replaceLine(content, key.Line, strings.Repeat(" ", key.Column-1)+line), nil
 	}
-	return appendLine(content, line), nil
+	// The new key has the indentation of the keys the file has, or the mapping is not the one of the root.
+	return appendLine(content, strings.Repeat(" ", max(root.Column-1, 0))+line), nil
 }
 
 func appendLine(content []byte, line string) []byte {

@@ -33,7 +33,7 @@ var ErrNotAnObject = errors.New("not a JSON object of serials and hashes")
 func Decode(content []byte) (map[string]string, error) {
 	// The decoder reads null into a map with no error, so the first byte is checked here.
 	if trimmed := bytes.TrimSpace(content); len(trimmed) == 0 || trimmed[0] != '{' {
-		var anything any
+		var anything json.RawMessage
 		if err := json.Unmarshal(content, &anything); err != nil {
 			return nil, fmt.Errorf("%w: %w", ErrNotAnObject, err)
 		}

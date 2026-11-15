@@ -11,6 +11,7 @@ func TestSetTheme(test *testing.T) {
 		{"comments only", "# my config\n", "minimal-dark", "# my config\ntheme: minimal-dark\n"},
 		{"replaced", "# c\ninterval: 2s\ntheme: old # note\n# end\n", "new", "# c\ninterval: 2s\ntheme: new\n# end\n"},
 		{"added with other key", "interval: 2s\n# tail\n", "new", "interval: 2s\n# tail\ntheme: new\n"},
+		{"added to an indented mapping", "  interval: 2s\n", "new", "  interval: 2s\n  theme: new\n"},
 		{"added with no final line feed", "interval: 2s", "new", "interval: 2s\ntheme: new\n"},
 		{"carriage return kept", "interval: 2s\r\ntheme: old\r\ncommander_interval: 1m\r\n", "new", "interval: 2s\r\ntheme: new\r\ncommander_interval: 1m\r\n"},
 		{"indented key", "  interval: 2s\n  theme: old\n  commander_interval: 1m\n", "new", "  interval: 2s\n  theme: new\n  commander_interval: 1m\n"},
