@@ -23,3 +23,8 @@ timestamp: 2026-11-15T09:21:42Z
   the unit does not depend on it. Items 1 to 4 of "Beyond the request" are declined: none is needed for the theme or
   the lookup to be correct. The approval that follows is made under that delegation
 - 2026-11-15T09:24:28Z [human] approved the spec. The status is `approved`
+- 2026-11-15T09:27:59Z [Claude Code, anthropic/claude-opus-5-5] as the planner, wrote `plan.md` against the tree of the unit's
+  branch. Before writing it, the `theme.yaml` of R2 was compiled in the sandbox with the current `theme compile` against
+  a background drawn by the rule of R4: it compiles, its dump gives no warning, and its tags file holds the mapping of
+  R6, so the spec fits the tree. Every requirement has a task and every task names the requirements it delivers. None
+  of the items of "Beyond the request" is planned, as decided before the approval. The status stays `approved`
