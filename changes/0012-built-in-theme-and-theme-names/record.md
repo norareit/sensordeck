@@ -37,3 +37,9 @@ timestamp: 2026-11-15T09:21:42Z
   left out, as the standards forbid it. On the final tree, `go test ./...` (which runs `e2e/`), `go vet ./...`,
   `gofmt -l .` (no file), and the Windows build and vet all succeed, and `go generate ./internal/builtinthemes/` leaves
   `background.png` unchanged. Not checked: the screen showing the theme, and anything on Windows, which are the human's
+- 2026-11-15T12:03:07Z [OpenCode, openai/gpt-6.1-sol] as the reviewer, completed a full review of unit
+  `0012-built-in-theme-and-theme-names` at `60c92cb`, against merge base `debe4e9` with `origin/master`.
+  Returned P1, C1 and C2 in `.reviews/0012-built-in-theme-and-theme-names/round-1-20261115T120307Z.md`.
+  The five required suite commands, an uncached `go test -count=1 ./...` including end-to-end tests,
+  `npm run check-changes` and the diff whitespace check pass. Not verified: generation by rerunning the writing
+  command, the physical screen, or Windows runtime behavior. The status stays `in-progress`
