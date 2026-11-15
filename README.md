@@ -122,6 +122,12 @@ tags:
 `interval` is the time between two rounds, of at least 100 milliseconds, and is 1 second without the key. A tag is a
 whole number from 0 to 255.
 
+`commander_interval` is the shortest time between two readings of the Commander Core XT, in the same syntax as
+`interval`, such as `1m` or `30s`. It is at least `interval`, and is 1 minute without the key, or the interval when that
+is longer. Each reading makes the LEDs of the fans on the controller flicker once, which is why it is read less often.
+Between two readings `sensordeck run` sends the values of the last reading. `sensordeck sensors` reads the controller
+once each time it runs.
+
 Values are sent as whole numbers, rounded, so 51.5 is sent as 52. A metric that cannot be read is not sent, so the
 screen keeps its last value.
 

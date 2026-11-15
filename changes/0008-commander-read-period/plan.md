@@ -275,12 +275,12 @@ quiet while `run` runs, and a count of writes taken later can only be larger.
 
 ### The documents
 
-- [ ] In `README.md`, in "Showing sensor values on the screen", after the paragraph on `interval`, add a paragraph
+- [x] In `README.md`, in "Showing sensor values on the screen", after the paragraph on `interval`, add a paragraph
   saying that `commander_interval` is the shortest time between two readings of the Commander Core XT, at least the
   interval and 1 minute without the key (or the interval when it is longer); that each reading makes the LEDs of the
   fans on the controller flicker once, which is why it is read less often; that between two readings `run` sends the
   values of the last reading; and that `sensordeck sensors` reads the controller once each time it runs (R11)
-- [ ] In `docs/commander-core-xt.md`, in the project's own words (R12):
+- [x] In `docs/commander-core-xt.md`, in the project's own words (R12):
     - add a section "Software mode and the LEDs" after "Times" that says that on the device the LEDs of the fans on the
       controller flicker once at each reading, because nothing drives them in software mode, and that the status
       command of the other tool makes them flicker in the same way; that the endpoint `0x21` was opened and read with
@@ -298,7 +298,7 @@ quiet while `run` runs, and a count of writes taken later can only be larger.
       an answer whose byte 2 is not `00` is not valid, byte 2 being the status that the new section describes
 
   Nothing else of the document changes
-- [ ] Commit: `feature-0008 Document the period of the controller`
+- [x] Commit: `feature-0008 Document the period of the controller`
 
 ### Before handing over
 

@@ -65,7 +65,8 @@ nobody sends it settings is not known.
 ## The layout of an answer
 
 Byte 0 is `0x00`. Byte 1 is the second written byte of the command, so `01`, `0D`, `08` or `05`: the answer echoes its
-command. Byte 2 is `0x00`, and is presumably a status. The data of the endpoint starts at byte 3.
+command. Byte 2 is a status: `0x00` in the answers of a sequence that step 1 opened, and `0x03` for commands made without it, as
+"Software mode and the LEDs" describes. The data of the endpoint starts at byte 3.
 
 ### The endpoint `0x17`, the fan speeds
 
@@ -92,23 +93,38 @@ answer of step 6 on its data type.
 The answers of steps 1 and 8, the mode changes, came after about 65 milliseconds, and the others after about 2
 milliseconds. A reading takes about 140 milliseconds. sensordeck waits at most 1 second for an answer.
 
+## Software mode and the LEDs
+
+On the device, the LEDs of the fans on the controller flicker once at each reading. Nothing drives them while the
+controller is in software mode, and the return to hardware mode lights them again. The status command of the other tool
+makes them flicker in the same way.
+
+A reading without software mode was tried: the endpoint `0x21` was opened and read with no step 1 before it. Every answer
+then had byte 2 `0x03` and stale data in the rest, so a reading without software mode is not possible with what is known.
+Byte 2 of an answer is therefore a status, `0x00` in the answers of a sequence that step 1 opened and `0x03` for the
+commands made without it.
+
+To make the LEDs flicker less often, `sensordeck run` reads the controller at most once per period, of 1 minute unless
+the config file says otherwise.
+
 ## Unknown
 
 * The meaning of byte 0 of an answer, which was `0x00`. It is not checked
-* The meaning of byte 2 of an answer, which was `0x00`
+* The meaning of a byte 2 other than `0x00` and `0x03`, the two values seen
 * The meaning of a probe status other than `00`, which was not seen
 * Whether the temperature is signed
 * Which probe sits at which port of the controller
 * Whether the fan steps 2 to 4 are needed before the temperature steps. They are made, because that is the one
   sequence seen to work
-* What the controller does in software mode when nobody sends it fan or lighting settings
+* What the controller does with the fans in software mode when nobody sends it fan or lighting settings. It does not
+  drive the LEDs
 * What bytes 96 to 383 of an answer hold. They are not interpreted
 * Whether the device needs a write of the full output report of 384 bytes. It was given 96 bytes after the report ID,
   as the other tool gave it, and answered them
 
 ## Assumptions
 
-* Byte 2 of an answer is a status, and an answer whose byte 2 is not `00` is not valid
+* An answer whose byte 2 is not `00` is not valid, byte 2 being the status that "Software mode and the LEDs" describes
 * A probe whose status is not `00` has no reading, and is left out without renumbering the others
 * The temperature is a signed 16-bit number. Both readings seen were positive
 * The node of interface 0 is told apart by a `HID_PHYS` that ends in `/input0`, as the kernel's USB HID driver writes it
