@@ -170,12 +170,12 @@ showed which tests these are, and they are listed in the tasks below.
 - [x] `gofmt -l .` prints no file name (R12)
 - [x] `GOOS=windows GOARCH=amd64 go build ./...` succeeds and reports nothing (R12)
 - [x] `GOOS=windows GOARCH=amd64 go vet ./...` succeeds and reports nothing (R12)
-- [ ] `npm run check-changes` succeeds once the work is committed
+- [x] `npm run check-changes` succeeds once the work is committed
 
 ## Commit Points
 
 - [x] `bugfix-0017 Write the plan of sending the clock of run every second`: `plan.md` and the entry of `record.md`
-- [ ] `bugfix-0017 Send the clock of run once a second`: the new tests, the schedule, `onScreen` and the updated
+- [x] `bugfix-0017 Send the clock of run once a second`: the new tests, the schedule, `onScreen` and the updated
   existing tests, with the suite passing
-- [ ] `bugfix-0017 Say that run sends the clock once a second`: `README.md`, `docs/protocol.md` and the comment of
+- [x] `bugfix-0017 Say that run sends the clock once a second`: `README.md`, `docs/protocol.md` and the comment of
   `e2e/commands_test.go`
