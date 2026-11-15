@@ -306,3 +306,41 @@ func TestThemeCompileGivesTheSameBytesForACopyOfTheFolder(test *testing.T) {
 		test.Error("the copies compile differently")
 	}
 }
+
+func TestThemeCompileNamesAFolderWithoutThemeYaml(test *testing.T) {
+	folder := test.TempDir()
+	for _, command := range []string{"compile", "preview"} {
+		directory := test.TempDir()
+		newHarness().expectFailure(test, filepath.Join(folder, "theme.yaml")+": cannot read the file: no such file or directory",
+			"theme", command, folder, filepath.Join(directory, "out"))
+		if entries, _ := os.ReadDir(directory); len(entries) != 0 {
+			test.Errorf("%s: wrote %d files", command, len(entries))
+		}
+	}
+}
+
+func TestThemeCompileNamesInvalidYaml(test *testing.T) {
+	folder := writeThemeFolder(test, "name: [a\n")
+	directory := test.TempDir()
+	harness := newHarness()
+	if status := harness.run("theme", "compile", folder, filepath.Join(directory, "out.dat")); status != 1 ||
+		!strings.HasPrefix(harness.stderr.String(), "sensordeck: "+filepath.Join(folder, "theme.yaml")+": yaml: ") {
+		test.Errorf("status %d, stderr %q", status, harness.stderr.String())
+	}
+	if entries, _ := os.ReadDir(directory); len(entries) != 0 {
+		test.Errorf("wrote %d files", len(entries))
+	}
+}
+
+func TestThemeFolderRefusesAnImageLinkedOutOfTheFolder(test *testing.T) {
+	outside := filepath.Join(test.TempDir(), "outside.png")
+	if err := os.WriteFile(outside, pngBytes(test, 4, 4), 0o644); err != nil {
+		test.Fatal(err)
+	}
+	folder := writeThemeFolder(test, "name: cli\nbackground: \"#000000\"\nwidgets:\n  - {type: image, file: link.png, x: 0, y: 0}\n")
+	if err := os.Symlink(outside, filepath.Join(folder, "link.png")); err != nil {
+		test.Skip("no symbolic links here: ", err)
+	}
+	newHarness().expectFailure(test, filepath.Join(folder, "theme.yaml")+": widget 1 (image): cannot read link.png: path escapes from parent",
+		"theme", "compile", folder, filepath.Join(test.TempDir(), "out.dat"))
+}

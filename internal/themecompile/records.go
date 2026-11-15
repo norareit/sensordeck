@@ -29,7 +29,9 @@ func (area box) head(recordType, index, tag byte) themefile.Head {
 }
 
 func checkBox(place string, area box) error {
-	if area.x+area.width > screenWidth || area.y+area.height > screenHeight {
+	// Each size is compared with the space left after its coordinate, never added to it, so that no coordinate can
+	// overflow the sum.
+	if area.x > screenWidth || area.width > screenWidth-area.x || area.y > screenHeight || area.height > screenHeight-area.y {
 		return problem(place, "the box at %d,%d of %d x %d is not within the screen of %d x %d",
 			area.x, area.y, area.width, area.height, screenWidth, screenHeight)
 	}

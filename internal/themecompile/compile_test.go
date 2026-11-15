@@ -182,3 +182,36 @@ func TestSameFolderGivesSameBytes(test *testing.T) {
 		test.Error("two compilations differ")
 	}
 }
+
+func TestMaximumCoordinatesAreOutsideTheScreen(test *testing.T) {
+	const largest = "9223372036854775807"
+	files := map[string][]byte{"h.png": hugePNG(test), "i.png": solidPNG(test, 4, 4)}
+	for _, widget := range []string{
+		"{type: text, font: body, text: a, x: " + largest + ", y: " + largest + "}",
+		"{type: text, font: body, text: a, x: " + largest + ", y: 0}",
+		"{type: text, font: body, text: a, x: 0, y: " + largest + "}",
+		"{type: number, font: body, metric: cpu.temp, x: " + largest + ", y: " + largest + "}",
+		"{type: image, file: i.png, x: " + largest + ", y: 0}",
+		"{type: image, file: h.png, x: " + largest + ", y: " + largest + "}",
+	} {
+		got := compileError(test, solidTheme+"widgets:\n  - "+widget+"\n", files)
+		if !strings.Contains(got, "is not within the screen of 480 x 320") || strings.Contains(got, "cannot decode") {
+			test.Errorf("%s: got %q", widget, got)
+		}
+	}
+}
+
+func TestTheFileOfTheThemeCannotBeReadOrParsed(test *testing.T) {
+	_, err := Compile(fstest.MapFS{"other.txt": {Data: []byte("x")}})
+	if err == nil || err.Error() != "cannot read the file: file does not exist" {
+		test.Errorf("no theme.yaml: got %v", err)
+	}
+	_, err = Compile(fstest.MapFS{"theme.yaml": {Data: []byte("name: [a\n")}})
+	if err == nil || !strings.HasPrefix(err.Error(), "yaml: ") {
+		test.Errorf("invalid YAML: got %v", err)
+	}
+}
+
+func TestATextWithAnAccentedLetterCompiles(test *testing.T) {
+	compileFiles(test, solidTheme+"widgets:\n  - {type: text, font: body, text: café, x: 0, y: 0}\n", nil)
+}
