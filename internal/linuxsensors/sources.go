@@ -21,5 +21,6 @@ func Sources(sysfsRoot, procRoot string) []sensors.Source {
 		memory{procRoot: procRoot},
 		memoryModules(sysfsRoot),
 		drives(sysfsRoot),
+		&network{sysfsRoot: sysfsRoot, procRoot: procRoot, wait: time.Sleep, now: time.Now},
 	}
 }

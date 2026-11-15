@@ -21,11 +21,13 @@ func TestSourcesGiveTheMetricsInTheOrderOfTheTable(test *testing.T) {
 	tree.CPUFrequency(0, "2000000\n")
 	tree.Meminfo(hostMeminfo)
 	tree.Stat("cpu  1 1 1 1 1 1 1 1 0 0\n")
+	tree.NetInterface("enp6s0", cardDevice)
+	tree.NetDev(netDev(netDevLine("enp6s0", 0, 0)))
 	test.Setenv("PATH", fakesensors.NvidiaSMI(test, "echo '"+fullLine+"'\n"))
 	got := sensors.ReadAll(context.Background(), Sources(tree.SysfsRoot, tree.ProcRoot), everything)
 	want := []string{
 		"cpu.temp", "cpu.ccd1.temp", "cpu.clock", "gpu.temp", "gpu.util", "gpu.mem.used", "gpu.mem.total",
-		"ram.used", "ram.total", "ram.1.temp", "nvme.1.temp",
+		"ram.used", "ram.total", "ram.util", "ram.1.temp", "nvme.1.temp", "net.up", "net.down",
 	}
 	if !reflect.DeepEqual(names(got), want) {
 		test.Errorf("got %v", names(got))

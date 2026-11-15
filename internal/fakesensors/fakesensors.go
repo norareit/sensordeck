@@ -1,6 +1,6 @@
 //go:build linux
 
-// Package fakesensors is test support: hwmon, cpufreq and proc trees in a temporary directory, and a fake nvidia-smi.
+// Package fakesensors is test support: hwmon, cpufreq, network and proc trees in a temporary directory, and a fake nvidia-smi.
 // It is shared by the tests of the Linux sources and the end-to-end tests.
 package fakesensors
 
@@ -77,6 +77,35 @@ func (tree *Tree) Stat(content string) {
 func (tree *Tree) Meminfo(content string) {
 	tree.test.Helper()
 	tree.write(filepath.Join(tree.ProcRoot, "meminfo"), content)
+}
+
+// NetDev writes <ProcRoot>/net/dev as given. It writes a temporary file in the same directory and renames it into
+// place, so that a reader never sees a file half written.
+func (tree *Tree) NetDev(content string) {
+	tree.test.Helper()
+	directory := filepath.Join(tree.ProcRoot, "net")
+	tree.mkdir(directory)
+	temporary := filepath.Join(directory, "dev.tmp")
+	tree.write(temporary, content)
+	if err := os.Rename(temporary, filepath.Join(directory, "dev")); err != nil {
+		tree.test.Fatalf("fake sensors: %v", err)
+	}
+}
+
+// NetInterface makes <SysfsRoot>/class/net/<name>. With device not empty, <entry>/device is a link to
+// <SysfsRoot>/devices/<device>, which it makes, as Hwmon does.
+func (tree *Tree) NetInterface(name, device string) {
+	tree.test.Helper()
+	entry := filepath.Join(tree.SysfsRoot, "class", "net", name)
+	tree.mkdir(entry)
+	if device == "" {
+		return
+	}
+	target := filepath.Join(tree.SysfsRoot, "devices", device)
+	tree.mkdir(target)
+	if err := os.Symlink(target, filepath.Join(entry, "device")); err != nil {
+		tree.test.Fatalf("fake sensors: %v", err)
+	}
 }
 
 // NvidiaSMI makes a new temporary directory with an executable nvidia-smi, "#!/bin/sh\n" and the script, and gives
