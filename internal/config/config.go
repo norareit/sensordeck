@@ -41,7 +41,8 @@ type Config struct {
 	Interval          time.Duration
 	CommanderInterval time.Duration // zero when the file does not give it
 	CommanderColour   *Colour       // the key commander_color; nil when the file does not give it
-	Mappings          []Mapping     // ordered by tag, ascending
+	Theme             string        // the key theme as the file gives it; empty when the file does not give it
+	Mappings          []Mapping     // ordered by tag, ascending; empty with a theme, whose tags the compiler assigns
 }
 
 // CommanderPeriod is the shortest time between two readings of the controller in run.
@@ -63,10 +64,12 @@ func Parse(content []byte) (Config, error) {
 	if err != nil {
 		return Config{}, err
 	}
-	var tagsNode, intervalNode, commanderIntervalNode, commanderColourNode *yaml.Node
+	var themeNode, tagsNode, intervalNode, commanderIntervalNode, commanderColourNode *yaml.Node
 	for position := 0; position+1 < len(root.Content); position += 2 {
 		key, value := root.Content[position], root.Content[position+1]
 		switch key.Value {
+		case "theme":
+			themeNode = value
 		case "tags":
 			tagsNode = value
 		case "interval":
@@ -76,10 +79,10 @@ func Parse(content []byte) (Config, error) {
 		case "commander_color":
 			commanderColourNode = value
 		default:
-			return Config{}, fmt.Errorf("unknown key %q, the keys are commander_color, commander_interval, interval and tags", key.Value)
+			return Config{}, fmt.Errorf("unknown key %q, the keys are commander_color, commander_interval, interval, tags and theme", key.Value)
 		}
 	}
-	mappings, err := parseTags(tagsNode)
+	theme, mappings, err := parseThemeOrTags(themeNode, tagsNode)
 	if err != nil {
 		return Config{}, err
 	}
@@ -98,10 +101,10 @@ func Parse(content []byte) (Config, error) {
 	if colour != nil && commanderIntervalNode != nil {
 		return Config{}, errors.New("commander_interval: cannot be used with commander_color, which reads the controller in every round")
 	}
-	return Config{Interval: interval, CommanderInterval: commanderInterval, CommanderColour: colour, Mappings: mappings}, nil
+	return Config{Interval: interval, CommanderInterval: commanderInterval, CommanderColour: colour, Theme: theme, Mappings: mappings}, nil
 }
 
-var errNotAMapping = errors.New("want a mapping with the keys commander_color, commander_interval, interval and tags")
+var errNotAMapping = errors.New("want a mapping with the keys commander_color, commander_interval, interval, tags and theme")
 
 // rootMapping gives the mapping of the file, and refuses a key that is given twice. The parser reports that only when
 // a mapping is decoded into a map.
@@ -119,6 +122,37 @@ func rootMapping(document *yaml.Node) (*yaml.Node, error) {
 func refuseRepeatedKeys(mapping *yaml.Node) error {
 	var ignored map[string]yaml.Node
 	return mapping.Decode(&ignored)
+}
+
+// parseThemeOrTags takes the key theme or the key tags, which exclude each other. A key counts as given when it is
+// present, whatever its value.
+func parseThemeOrTags(themeNode, tagsNode *yaml.Node) (string, []Mapping, error) {
+	switch {
+	case themeNode != nil && tagsNode != nil:
+		return "", nil, errors.New("theme and tags cannot both be given, the theme gives the tags")
+	case themeNode == nil && tagsNode == nil:
+		return "", nil, errors.New("one of theme and tags is needed")
+	case themeNode != nil:
+		theme, err := parseTheme(themeNode)
+		return theme, nil, err
+	}
+	mappings, err := parseTags(tagsNode)
+	return "", mappings, err
+}
+
+var errEmptyTheme = errors.New("theme: the theme name or folder path is empty")
+
+func parseTheme(node *yaml.Node) (string, error) {
+	if node.Kind == yaml.ScalarNode && node.ShortTag() == "!!null" {
+		return "", errEmptyTheme
+	}
+	if node.Kind != yaml.ScalarNode || node.ShortTag() != "!!str" {
+		return "", errors.New("theme: want a theme name or folder path as a string")
+	}
+	if node.Value == "" {
+		return "", errEmptyTheme
+	}
+	return node.Value, nil
 }
 
 const tagsProblem = "tags: want a mapping from metric name to tag, with at least one entry"

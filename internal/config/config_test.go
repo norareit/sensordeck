@@ -57,11 +57,18 @@ const colourEmpty = `commander_color: no colour given, write it in quotes such a
 
 func TestParseErrors(test *testing.T) {
 	cases := []struct{ name, content, want string }{
-		{"empty", "", "want a mapping with the keys commander_color, commander_interval, interval and tags"},
-		{"comment", "# nothing\n", "want a mapping with the keys commander_color, commander_interval, interval and tags"},
-		{"list", "- tags\n", "want a mapping with the keys commander_color, commander_interval, interval and tags"},
-		{"unknown key", "colour: red\ntags: {cpu.temp: 1}\n", `unknown key "colour", the keys are commander_color, commander_interval, interval and tags`},
-		{"no tags", "interval: 1s\n", "tags: want a mapping from metric name to tag, with at least one entry"},
+		{"empty", "", "want a mapping with the keys commander_color, commander_interval, interval, tags and theme"},
+		{"comment", "# nothing\n", "want a mapping with the keys commander_color, commander_interval, interval, tags and theme"},
+		{"list", "- tags\n", "want a mapping with the keys commander_color, commander_interval, interval, tags and theme"},
+		{"unknown key", "colour: red\ntags: {cpu.temp: 1}\n", `unknown key "colour", the keys are commander_color, commander_interval, interval, tags and theme`},
+		{"neither theme nor tags", "interval: 1s\n", "one of theme and tags is needed"},
+		{"theme and tags", "theme: minimal-dark\ntags: {cpu.temp: 1}\n", "theme and tags cannot both be given, the theme gives the tags"},
+		{"theme and tags without value", "theme: minimal-dark\ntags:\n", "theme and tags cannot both be given, the theme gives the tags"},
+		{"theme number", "theme: 2024\n", "theme: want a theme name or folder path as a string"},
+		{"theme list", "theme: [a]\n", "theme: want a theme name or folder path as a string"},
+		{"theme mapping", "theme: {a: 1}\n", "theme: want a theme name or folder path as a string"},
+		{"theme empty", "theme: \"\"\n", "theme: the theme name or folder path is empty"},
+		{"theme without value", "theme:\n", "theme: the theme name or folder path is empty"},
 		{"tags without value", "tags:\n", "tags: want a mapping from metric name to tag, with at least one entry"},
 		{"empty tags", "tags: {}\n", "tags: want a mapping from metric name to tag, with at least one entry"},
 		{"list tags", "tags: [1]\n", "tags: want a mapping from metric name to tag, with at least one entry"},
@@ -191,5 +198,13 @@ func TestDecodeColour(test *testing.T) {
 		if _, ok := DecodeColour(text); ok {
 			test.Errorf("%q: want false", text)
 		}
+	}
+}
+
+func TestParseThemeAlone(test *testing.T) {
+	got, err := Parse([]byte("interval: 2s\ntheme: ./my theme\n"))
+	want := Config{Interval: 2 * time.Second, Theme: "./my theme"}
+	if err != nil || !reflect.DeepEqual(got, want) {
+		test.Errorf("got %+v, %v", got, err)
 	}
 }
