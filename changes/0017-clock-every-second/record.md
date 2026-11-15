@@ -45,3 +45,9 @@ supersedes: 0004-linux-sensors-and-run
   against the tree without the schedule and `onScreen`, which was checked by stashing `run.go` and `themeholder.go`
 - 2026-11-15T22:50:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, ran the five commands of the suite on the final tree: `go test ./...` passed with no failing package, `go vet ./...`, the build and the vet for Windows reported nothing, and `gofmt -l .` printed no file name. The end-to-end suite also passed four times in a row with `-count=4`. The check on the device, that the seconds on the screen change every second, is not done, and is the human's. The status stays `in-progress`
 - 2026-11-15T22:55:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, made one commit, `13c87b6`, for the work that the plan splits over its last two commit points, because the documents and the code were done together, and ran `npm run check-changes` on it, which reported nothing. The status stays `in-progress`
+- 2026-11-15T22:23:29Z [OpenCode, openai/gpt-6.1-sol] as the reviewer, completed a full review of
+  `0017-clock-every-second` at `38849817278d54e226ed82b6bf036987f66ed43f` against its merge base with
+  `origin/master`. Returned P1; the full findings and verification are in
+  `.reviews/0017-clock-every-second/review-round-1.md`. The five suite commands, the change check and a fresh run of
+  the CLI and end-to-end tests passed. The physical-screen behavior, historical test order and historical repeated
+  test runs could not be independently verified; Windows execution was not performed. The status stays `in-progress`
