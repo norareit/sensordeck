@@ -1,6 +1,6 @@
 ---
 kind: feature
-status: in-progress
+status: implemented
 timestamp: 2026-11-15T23:04:03Z
 ---
 
@@ -38,9 +38,9 @@ timestamp: 2026-11-15T23:04:03Z
   `golang.org/x/sys/windows` binds with a panic, by recovering that panic alone as the failure of the call; and the
   proxy test of R40 also checks that the transport has no proxy, because Go never proxies a loopback address. The
   status stays `approved`
-- 2026-11-15T23:30:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, began the work. The status is
+- 2026-11-15T23:16:30Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, began the work. The status is
   `in-progress`
-- 2026-11-15T23:55:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, built tasks 1 to 10 of the plan in
+- 2026-11-15T23:26:31Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, built tasks 1 to 10 of the plan in
   ten commits, from `e3655fb` to `96e60df`, with the tests of each written with its code and all tasks ticked. Details the
   plan left open and that the code settled: `internal/nvidiasmi/source_test.go` holds its own copy of `names` besides
   `everything` and `read`, because its tests use it; the assertions of `procstat_test.go` and `netdev_test.go` that the
@@ -49,7 +49,7 @@ timestamp: 2026-11-15T23:04:03Z
   the module are found by their `SensorId` alone, and their `Type` decides in the reading of the value, so a
   `temperature/0` whose type is not `Temperature` gives no value and keeps its number; the dial error of a refused
   connection names the address and port, as Go gives it, and is the text of the error of the client of R17
-- 2026-11-15T23:56:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, ran the suite of `AGENTS.md` on the
+- 2026-11-15T23:26:31Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, ran the suite of `AGENTS.md` on the
   tree at `96e60df`, which holds the code and the README: `go test ./...` reported all packages ok, including `e2e` and
   `internal/cli`, `go vet ./...` reported nothing, `gofmt -l .` printed no file name, `GOOS=windows GOARCH=amd64 go build
   ./...` and `GOOS=windows GOARCH=amd64 go vet ./...` reported nothing, and `GOOS=darwin GOARCH=arm64 go build ./...`
@@ -66,14 +66,14 @@ timestamp: 2026-11-15T23:04:03Z
   `go test -count=1 ./...` including end-to-end tests, the Darwin cross-build, compilation of the Windows seam tests,
   and `npm run check-changes`, all successfully. Could not verify real Windows execution, the GitHub Windows job,
   physical hardware or a real LibreHardwareMonitor server. The status stays `in-progress`
-- 2026-11-16T00:20:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, accepted finding C1 of
+- 2026-11-15T23:30:36Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, accepted finding C1 of
   `.reviews/0018-windows-sensors/review-round-1.md`, accepted by the definition of the orchestrator for this round and not
   decided by the human. `internal/librehardwaremonitor/tree.go` no longer uses `any`: the body is decoded into a
   `json.RawMessage`, each node into a map of `json.RawMessage` fields, and the strings and the children are decoded from
   those, so a field of another type still costs that field only and the children of a node that is no sensor are still
   searched. The fixtures of `tree_test.go` use the same representation. The plan's sentence on the decoding is corrected
   to match. The trailing blank line of this record that the review named is removed
-- 2026-11-16T00:25:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, ran the suite of `AGENTS.md` on the
+- 2026-11-15T23:30:36Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, ran the suite of `AGENTS.md` on the
   tree at the commit that applies C1: `go test -count=1 ./...` reported all packages ok, `go vet ./...` and `gofmt -l .`
   reported nothing, and `GOOS=windows GOARCH=amd64 go build ./...` and `go vet ./...` reported nothing. Real Windows
   execution is not checked. The status stays `in-progress`
@@ -84,3 +84,10 @@ timestamp: 2026-11-15T23:04:03Z
   `go test -count=1 ./...` including the end-to-end tests, `go vet ./...`, `gofmt -l .`, the Windows amd64 build and vet,
   and `npm run check-changes`, all successfully. Could not verify real Windows execution, the GitHub Windows job,
   physical hardware or a real LibreHardwareMonitor server. The status stays `in-progress`
+- 2026-11-15T23:33:17Z [Claude Code, anthropic/claude-opus-5-5] under the delegation in `AGENTS.md`, decided the findings: those of
+  round 1 were corrected, C1 of round 2 was corrected, and round 3 returned none, so no blocking finding is open. The
+  timestamps of five entries of the implementer, which did not match their commits, were corrected to the times of the
+  commits that added them. Every task of `plan.md` is ticked, and the five commands of the suite passed on the
+  branch. On the Linux host, `sensors` of the executable built from the branch still listed every metric it listed
+  before the move of the shared code, the two probes of the Commander included. Everything on Windows is the human's
+  to check and follows the merge. The status is `implemented`
