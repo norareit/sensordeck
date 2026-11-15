@@ -4,20 +4,27 @@ package main
 import (
 	"fmt"
 	"image/png"
+	"io"
 	"os"
 
 	"github.com/norareit/sensordeck/internal/builtinthemes/background"
 )
 
 func main() {
-	if len(os.Args) != 2 {
-		fmt.Fprintln(os.Stderr, "generate: the output path is the one argument")
-		os.Exit(1)
+	os.Exit(run(os.Args[1:], os.Stderr))
+}
+
+// run gives the exit status of the command for its arguments, and writes its error to stderr.
+func run(arguments []string, stderr io.Writer) int {
+	if len(arguments) != 1 {
+		_, _ = fmt.Fprintln(stderr, "generate: the output path is the one argument")
+		return 1
 	}
-	if err := write(os.Args[1]); err != nil {
-		fmt.Fprintln(os.Stderr, "generate:", err)
-		os.Exit(1)
+	if err := write(arguments[0]); err != nil {
+		_, _ = fmt.Fprintln(stderr, "generate:", err)
+		return 1
 	}
+	return 0
 }
 
 func write(path string) error {

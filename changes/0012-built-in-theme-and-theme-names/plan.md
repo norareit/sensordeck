@@ -170,6 +170,9 @@ with --config: <cause>` as it is.
   for radius 9, and at (9, 9) it is 162 (R4, R22)
 - [x] Write `internal/builtinthemes/background/background.go` as the approach says, until the test passes (R4, D7)
 - [x] Write `internal/builtinthemes/background/generate/main.go` (R5)
+- [x] Add `internal/builtinthemes/background/generate/main_test.go`, and make `main` call a `run(arguments, stderr)` that
+  gives the exit status, so that the writing of the PNG, a path that cannot be written and the arguments are tested
+  (added after the review of round 1, finding C2)
 
 ### The theme and its package
 
