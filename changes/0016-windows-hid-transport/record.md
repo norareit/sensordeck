@@ -1,6 +1,6 @@
 ---
 kind: feature
-status: in-progress
+status: implemented
 timestamp: 2026-11-15T13:32:18Z
 ---
 
@@ -47,9 +47,9 @@ timestamp: 2026-11-15T13:32:18Z
   `layout_test.go` treats the Commander package as Linux-only as a whole and forbids the command line's Windows files
   to import it, which the split changes; and the keeper already writes a setup error that is not `errNoController`
   once, so R34 needs no change of it. The status stays `approved`
-- 2026-11-15T22:45:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, began the work on the plan, task 1 first. The status is
+- 2026-11-15T22:37:27Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, began the work on the plan, task 1 first. The status is
   `in-progress`
-- 2026-11-15T23:40:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, built the unit in the eight
+- 2026-11-15T22:46:20Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, built the unit in the eight
   commits of the plan after its own, `1ae1fa8` to `ce51e0a`, and ticked every box of `plan.md`. Two choices of the plan
   were left open and went as `## Changes while building` of `plan.md` says: the time limit as an argument of `complete`
   with no field for being in time, and the near misses of `Screens` given only when there is no screen. The commit
@@ -69,7 +69,7 @@ timestamp: 2026-11-15T13:32:18Z
   failed in the removal end-to-end assertion; the focused test failed twice in five runs. Linux vet, formatting,
   Windows build and vet, the no-cgo Windows build, the Darwin build, FreeBSD CLI vet and the change check passed.
   Windows runtime, CI and physical-device behavior could not be verified. The status stays `in-progress`
-- 2026-11-15T23:59:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, took the findings of
+- 2026-11-15T22:51:52Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, took the findings of
   `review-round-1-20261115T224905Z.md`, accepted by the definition of the orchestrator and not decided by the human.
   S1: the assertion of `TestRunWithAColourGoesOnWhenTheControllerIsRemoved` now looks only at value reports after the
   removal, requires at least one, and ignores clock reports, which hold no pairs; it passed six runs of its own in a
@@ -85,3 +85,10 @@ timestamp: 2026-11-15T13:32:18Z
   as did five focused removal-test iterations, the no-cgo Windows build, the Windows HID test cross-build and the
   change check. Windows compiler escape output confirms the binding's pointer arguments now escape. Windows runtime,
   CI and physical-device behavior could not be verified. The status stays `in-progress`
+- 2026-11-15T22:55:22Z [Claude Code, anthropic/claude-opus-5-5] under the delegation in `AGENTS.md`, decided the findings: S1, the
+  blocking one, and C1 and C2 of round 1 were corrected, and round 2 returned none, so no blocking finding is open. The
+  timestamps of three entries of the implementer, which did not match their commits, were corrected to the times of
+  the commits that added them. Every task of `plan.md` is ticked, and the five commands of the suite passed on the
+  branch. On the Linux host, the executable built from the branch still found the screen with `devices` and read both
+  probes of the Commander with `sensors`, so the split of the Commander package changed nothing there. Everything on
+  Windows is the human's to check and follows the merge. The status is `implemented`
