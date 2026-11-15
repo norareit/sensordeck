@@ -51,3 +51,13 @@ timestamp: 2026-11-15T00:48:51Z
   suite, `npm run check-changes`, a fresh `go test -count=1 ./...`, and race checks of `internal/cli`,
   `internal/commandercore` and `internal/fakecommander`; all passed. The physical device and Windows runtime could not
   be checked. The status stays `in-progress`
+- 2026-11-15T07:30:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, accepted S1 of
+  `review-round-1.md` by the definition of the orchestrator, and not as a decision of the human. The payload check of a
+  read is part of its exchange by R6, R7 and R9, so `readEndpoint` now runs it before the last close. The setup that fails
+  at the LED count writes four exchanges and then the teardown, and the same holds for a wrong data type and for a
+  reading whose temperatures are malformed. The zero and thirty test is corrected to four writes, and two tests assert the
+  exact writes of the wrong data type of `0x20` and of the malformed temperatures
+- 2026-11-15T07:31:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, accepted C1 by the definition of the
+  orchestrator, and not as a decision of the human. `say` of the keeper takes a finished line, and its two callers format
+  the text. Verified on `18269d8`: the five commands of the suite report nothing and succeed, and `go test -race` of
+  `internal/cli` and `internal/commandercore` passes. The status stays `in-progress`
