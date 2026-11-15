@@ -24,3 +24,9 @@ timestamp: 2026-11-15T12:11:23Z
   after a completed one, through the same code as `run`. R8 now says what a failed record after a completed upload
   does, R30, R32, R33, D17, a non-goal and item 1 were changed to match. Items 2 to 4 are declined and stay in the
   list. D8 and D15 stand as written. The status stays `draft`
+- 2026-11-15T12:14:53Z [Claude Code, anthropic/claude-opus-5-5] read the spec under the delegation in `AGENTS.md`: it reuses the
+  upload and the reconnect of `run`, decides each open question of the request with a reason, and every requirement
+  can be tested in the sandbox with the fake screen. Item 1 of "Beyond the request" was taken, because without it a
+  manual upload would leave the state file false, and the spec was amended for it; items 2 to 4 are declined. D8 and
+  D15 stand as written. The device check is the human's and the unit does not depend on it. The approval that follows
+  is made under that delegation
