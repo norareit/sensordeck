@@ -55,10 +55,10 @@ func compareWithImage(want image.Image) string {
 		return fmt.Sprintf("is %v and the preview is %v", got.Bounds(), want.Bounds())
 	}
 	bounds := want.Bounds()
-	for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
-		for x := bounds.Min.X; x < bounds.Max.X; x++ {
-			if color.RGBAModel.Convert(got.At(x, y)) != color.RGBAModel.Convert(want.At(x, y)) {
-				return fmt.Sprintf("differs from the preview at pixel (%d, %d)", x, y)
+	for row := bounds.Min.Y; row < bounds.Max.Y; row++ {
+		for column := bounds.Min.X; column < bounds.Max.X; column++ {
+			if color.RGBAModel.Convert(got.At(column, row)) != color.RGBAModel.Convert(want.At(column, row)) {
+				return fmt.Sprintf("differs from the preview at pixel (%d, %d)", column, row)
 			}
 		}
 	}

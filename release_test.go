@@ -24,15 +24,18 @@ var (
 	wantedPlatforms = []string{"linux/amd64", "linux/arm64", "windows/amd64"}
 )
 
-func parseYAML(test *testing.T, path string, into any) {
+// parseYAML parses the file into a value of the type the caller names.
+func parseYAML[Document goreleaserConfig | workflow](test *testing.T, path string) Document {
 	test.Helper()
+	var document Document
 	content, err := os.ReadFile(path)
 	if err != nil {
 		test.Fatal(err)
 	}
-	if err := yaml.Unmarshal(content, into); err != nil {
+	if err := yaml.Unmarshal(content, &document); err != nil {
 		test.Fatalf("%s: %v", path, err)
 	}
+	return document
 }
 
 type goreleaserConfig struct {
@@ -72,8 +75,7 @@ type goreleaserConfig struct {
 }
 
 func TestTheGoreleaserConfigurationBuildsTheArchivesOfTheSpec(test *testing.T) {
-	var config goreleaserConfig
-	parseYAML(test, goreleaserPath, &config)
+	config := parseYAML[goreleaserConfig](test, goreleaserPath)
 	if config.Version != 2 {
 		test.Errorf("version %d", config.Version)
 	}
@@ -152,15 +154,19 @@ type workflowStep struct {
 
 type workflowJob struct {
 	Uses        string            `yaml:"uses"`
-	Needs       any               `yaml:"needs"`
+	Needs       string            `yaml:"needs"`
 	RunsOn      string            `yaml:"runs-on"`
 	Permissions map[string]string `yaml:"permissions"`
 	Steps       []workflowStep    `yaml:"steps"`
 }
 
+// pushTrigger holds the keys of the push trigger, each kept as it is so that a key the spec does not name is seen.
+type pushTrigger map[string]yaml.Node
+
 type workflow struct {
-	On          map[string]any `yaml:"on"`
-	Permissions map[string]any `yaml:"permissions"`
+	// On keeps each trigger as a node, because a trigger may be empty and the keys of push are checked on their own.
+	On          map[string]yaml.Node `yaml:"on"`
+	Permissions map[string]string    `yaml:"permissions"`
 	Jobs        map[string]workflowJob
 }
 
@@ -173,7 +179,7 @@ func checkExactActions(test *testing.T, path string, job workflowJob) {
 	}
 }
 
-func triggerNames(triggers map[string]any) []string {
+func triggerNames(triggers map[string]yaml.Node) []string {
 	var names []string
 	for name := range triggers {
 		names = append(names, name)
@@ -183,14 +189,22 @@ func triggerNames(triggers map[string]any) []string {
 }
 
 func TestTheReleaseWorkflowRunsTheSuiteBeforeGoreleaser(test *testing.T) {
-	var release workflow
-	parseYAML(test, releasePath, &release)
+	release := parseYAML[workflow](test, releasePath)
 	if !reflect.DeepEqual(triggerNames(release.On), []string{"push"}) {
 		test.Errorf("triggers %v", triggerNames(release.On))
 	}
-	push, _ := release.On["push"].(map[string]any)
-	if len(push) != 1 || !reflect.DeepEqual(push["tags"], []any{"v*"}) {
-		test.Errorf("push %v", push)
+	var push pushTrigger
+	pushNode := release.On["push"]
+	if err := pushNode.Decode(&push); err != nil {
+		test.Fatal(err)
+	}
+	tags := push["tags"]
+	var tagPatterns []string
+	if err := tags.Decode(&tagPatterns); err != nil {
+		test.Fatal(err)
+	}
+	if len(push) != 1 || !reflect.DeepEqual(tagPatterns, []string{"v*"}) {
+		test.Errorf("push keys %d, tags %v", len(push), tagPatterns)
 	}
 	if release.Permissions == nil || len(release.Permissions) != 0 {
 		test.Errorf("top-level permissions %v", release.Permissions)
@@ -214,7 +228,7 @@ func TestTheReleaseWorkflowRunsTheSuiteBeforeGoreleaser(test *testing.T) {
 	if !reflect.DeepEqual(suite.Permissions, map[string]string{"contents": "read"}) {
 		test.Errorf("suite permissions %v", suite.Permissions)
 	}
-	if !reflect.DeepEqual(releasing.Needs, suiteName) {
+	if releasing.Needs != suiteName {
 		test.Errorf("needs %v, want %q", releasing.Needs, suiteName)
 	}
 	if !reflect.DeepEqual(releasing.Permissions, map[string]string{"contents": "write"}) {
@@ -238,12 +252,11 @@ func TestTheReleaseWorkflowRunsTheSuiteBeforeGoreleaser(test *testing.T) {
 }
 
 func TestTheCIWorkflowRunsTheSuite(test *testing.T) {
-	var ci workflow
-	parseYAML(test, ciPath, &ci)
+	ci := parseYAML[workflow](test, ciPath)
 	if want := []string{"pull_request", "push", "workflow_call"}; !reflect.DeepEqual(triggerNames(ci.On), want) {
 		test.Errorf("triggers %v", triggerNames(ci.On))
 	}
-	if !reflect.DeepEqual(ci.Permissions, map[string]any{"contents": "read"}) {
+	if !reflect.DeepEqual(ci.Permissions, map[string]string{"contents": "read"}) {
 		test.Errorf("permissions %v", ci.Permissions)
 	}
 	if len(ci.Jobs) != 1 {
