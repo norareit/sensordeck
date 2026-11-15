@@ -1,5 +1,3 @@
-//go:build linux
-
 // Package commandercore reads the temperature probes of a Corsair iCUE Commander Core XT over its hidraw node. What
 // the controller expects on the wire is described in docs/commander-core-xt.md.
 package commandercore
@@ -10,11 +8,15 @@ import (
 )
 
 const (
+	vendor  = 0x1B1C
+	product = 0x0C2A
+)
+
+const (
 	// answerSize is what the driver interprets of an answer, and reportSize the input report of the report descriptor
 	// of interface 0, which a read takes whole.
 	answerSize = 96
 	reportSize = 384
-	writeSize  = 1 + answerSize
 	// maxProbes is the largest count whose entries fit into an answer: 6 + 3·30 = 96.
 	maxProbes = (answerSize - 6) / 3
 
@@ -138,13 +140,6 @@ var temperatureDataType = []byte{0x10, 0x00}
 type probe struct {
 	available bool
 	celsius   float64
-}
-
-// encode gives the 97 bytes of a write: the report ID byte 0x00, the command, and zeros.
-func encode(command []byte) []byte {
-	written := make([]byte, writeSize)
-	copy(written[1:], command)
-	return written
 }
 
 // invalidity names what is wrong with an answer of the command, or gives the empty text for one that is valid: at

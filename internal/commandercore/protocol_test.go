@@ -1,5 +1,3 @@
-//go:build linux
-
 package commandercore
 
 import (
@@ -16,18 +14,6 @@ func answerOf(head ...byte) []byte {
 // reportOf is the answer of answerOf as a full input report of 384 bytes, with 0xFF after the first 96 bytes.
 func reportOf(head ...byte) []byte {
 	return append(answerOf(head...), bytes.Repeat([]byte{0xFF}, reportSize-answerSize)...)
-}
-
-func TestEncodeGivesTheReportIDTheCommandAndZeros(test *testing.T) {
-	for position, command := range steps {
-		written := encode(command)
-		if len(written) != 97 || written[0] != 0x00 || !bytes.Equal(written[1:1+len(command)], command) {
-			test.Fatalf("step %d: % x", position+1, written)
-		}
-		if !bytes.Equal(written[1+len(command):], make([]byte, 96-len(command))) {
-			test.Fatalf("step %d: the bytes after the command are not zero", position+1)
-		}
-	}
 }
 
 func TestTheStepsAreTheEightCommandsOfTheTrace(test *testing.T) {

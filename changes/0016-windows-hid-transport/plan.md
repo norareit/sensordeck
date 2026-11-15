@@ -155,26 +155,26 @@ What the tree on `feature-0016-windows-hid-transport` holds, and what the plan b
 
 ### 2. The Commander package split into its protocol and a node (refactoring)
 
-- [ ] In `internal/commandercore`, add the interface `node`, `errNoAnswer` and `Finder` as the choices above say, and
+- [x] In `internal/commandercore`, add the interface `node`, `errNoAnswer` and `Finder` as the choices above say, and
   change `exchange`, `runSequence`, `runSteps` and `Session` to take a `node` in place of the `*os.File`.
   `teardown` closes the node. `Source.Read` calls `finder.find` and `finder.open` and gives no probes on either error;
   `Lighting.Start` gives the error of `find` as it is, `ErrNoController` included, and the error of `open` as it is
   (R24)
-- [ ] Move `findNode` into `hidraw_linux.go` (renamed from `discover.go`), with `hidrawNode` and `Hidraw`, which keep
+- [x] Move `findNode` into `hidraw_linux.go` (renamed from `discover.go`), with `hidrawNode` and `Hidraw`, which keep
   every byte and every text of Linux as the choice above says. Move `vendor` and `product` into `protocol.go`. Remove
   the build constraint from `protocol.go`, `source.go` and `session.go` (R24, D10)
-- [ ] In the tests limited to Linux, build `Source` and `Lighting` with `Finder: Hidraw(sysfsRoot, devRoot)`, and in
+- [x] In the tests limited to Linux, build `Source` and `Lighting` with `Finder: Hidraw(sysfsRoot, devRoot)`, and in
   `TestAStopDoneAtTheStartOfTheSequenceWritesNothing` pass `hidrawNode{file: file}`. Rename `discover_test.go` to
   `hidraw_linux_test.go`. Remove the build constraint of `protocol_test.go`, which uses nothing of Linux. Nothing else
   of the tests changes (R24, R37)
-- [ ] Move `commanderSession` and the making of `controller` and `startSession` out of `sources_linux.go` into
+- [x] Move `commanderSession` and the making of `controller` and `startSession` out of `sources_linux.go` into
   `commanderSources(finder commandercore.Finder) sourceSet` in `internal/cli/sources.go`, and make `newSources` of
   Linux call it with `commandercore.Hidraw(sysfsRoot, devRoot)` and add the Linux sources (R24)
-- [ ] In `layout_test.go`, take `internal/commandercore` out of the list of `TestLinuxCodeIsLimitedToLinux` and add a
+- [x] In `layout_test.go`, take `internal/commandercore` out of the list of `TestLinuxCodeIsLimitedToLinux` and add a
   test that every file of the module that imports `internal/hidraw` or `internal/linuxsensors` is excluded from a
   Windows build. In `TestOnlyLinuxFilesOfTheCommandsNameTheLinuxCode`, drop the Commander package from the forbidden
   imports (R3, R24)
-- [ ] Run the suite, check that the end-to-end tests pass unchanged, and commit:
+- [x] Run the suite, check that the end-to-end tests pass unchanged, and commit:
   `feature-0016 Split the Commander package into its protocol and a node`
 
 ### 3. The fake of the seam and the pure parts of the Windows layer

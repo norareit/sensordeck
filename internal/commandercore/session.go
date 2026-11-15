@@ -1,15 +1,11 @@
-//go:build linux
-
 package commandercore
 
 import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
 	"time"
 
-	"github.com/norareit/sensordeck/internal/hidraw"
 	"github.com/norareit/sensordeck/internal/sensors"
 )
 
@@ -21,33 +17,33 @@ var errStopped = errors.New("stopped")
 
 // Lighting makes the sessions that light the LEDs of the controller in one colour.
 type Lighting struct {
-	SysfsRoot, DevRoot string
-	TimeLimit          time.Duration
-	Red, Green, Blue   byte
+	Finder           Finder
+	TimeLimit        time.Duration
+	Red, Green, Blue byte
 }
 
 // Session is a held session: the node open, the controller in software mode, the LEDs lit.
 type Session struct {
-	file      *os.File
+	opened    node
 	timeLimit time.Duration
 }
 
 // Start makes a setup and gives the session it starts. On every error the setup has ended, with its teardown once the
 // first command was written, and the node is closed.
 func (lighting Lighting) Start(stop context.Context) (*Session, error) {
-	node, found := findNode(lighting.SysfsRoot, lighting.DevRoot)
-	if !found {
-		return nil, ErrNoController
-	}
-	file, err := hidraw.OpenNode(node)
+	path, err := lighting.Finder.find()
 	if err != nil {
-		return nil, fmt.Errorf("cannot open %s: %w", node, err)
+		return nil, err
+	}
+	opened, err := lighting.Finder.open(path)
+	if err != nil {
+		return nil, err
 	}
 	if stop.Err() != nil {
-		_ = file.Close()
+		_ = opened.close()
 		return nil, errStopped
 	}
-	session := &Session{file: file, timeLimit: lighting.TimeLimit}
+	session := &Session{opened: opened, timeLimit: lighting.TimeLimit}
 	if err := session.setUp(stop, lighting); err != nil {
 		session.teardown(closesChannelZero(err))
 		return nil, err
@@ -133,7 +129,7 @@ func (session *Session) exchange(stop context.Context, command []byte) ([]byte, 
 }
 
 func (session *Session) send(command []byte) ([]byte, error) {
-	answer, err := exchange(session.file, command, session.timeLimit)
+	answer, err := exchange(session.opened, command, session.timeLimit)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", stepName(command), err)
 	}
@@ -151,8 +147,8 @@ func closesChannelZero(err error) bool {
 // closes the node. The results of the two exchanges are not used.
 func (session *Session) teardown(closeChannel bool) {
 	if closeChannel {
-		_, _ = exchange(session.file, closeCommand(channelZero, ledEndpoint), session.timeLimit)
+		_, _ = exchange(session.opened, closeCommand(channelZero, ledEndpoint), session.timeLimit)
 	}
-	_, _ = exchange(session.file, returnHardware, session.timeLimit)
-	_ = session.file.Close()
+	_, _ = exchange(session.opened, returnHardware, session.timeLimit)
+	_ = session.opened.close()
 }

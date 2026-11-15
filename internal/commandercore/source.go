@@ -1,15 +1,11 @@
-//go:build linux
-
 package commandercore
 
 import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
 	"time"
 
-	"github.com/norareit/sensordeck/internal/hidraw"
 	"github.com/norareit/sensordeck/internal/sensors"
 )
 
@@ -21,8 +17,8 @@ const ReplyTimeLimit = time.Second
 // Source reads the probes of the controller, opening its node anew for every reading, so that nothing is carried from
 // one reading to the next and a replug under another hidraw number needs nothing.
 type Source struct {
-	SysfsRoot, DevRoot string
-	TimeLimit          time.Duration
+	Finder    Finder
+	TimeLimit time.Duration
 }
 
 // Read gives the wanted probes that the controller reports. A missing controller, a node that cannot be opened and
@@ -31,16 +27,16 @@ func (source Source) Read(stop context.Context, wanted func(name string) bool) [
 	if !wantsAProbe(wanted) || stop.Err() != nil {
 		return nil
 	}
-	node, found := findNode(source.SysfsRoot, source.DevRoot)
-	if !found {
-		return nil
-	}
-	file, err := hidraw.OpenNode(node)
+	path, err := source.Finder.find()
 	if err != nil {
 		return nil
 	}
-	defer file.Close()
-	return readingsOf(runSequence(stop, file, source.TimeLimit), wanted)
+	opened, err := source.Finder.open(path)
+	if err != nil {
+		return nil
+	}
+	defer opened.close()
+	return readingsOf(runSequence(stop, opened, source.TimeLimit), wanted)
 }
 
 // wantsAProbe asks for every name that an answer can hold. A name beyond maxProbes can never be given, so none that is
@@ -68,26 +64,26 @@ func readingsOf(probes []probe, wanted func(name string) bool) []sensors.Reading
 // runSequence runs the steps and then returns the controller to hardware mode. Once step 1 is written step 8 is owed
 // whatever happens, because what the controller does in software mode with nobody sending it settings is not known.
 // A failure of step 8 changes nothing of the probes the steps gave.
-func runSequence(stop context.Context, file *os.File, timeLimit time.Duration) []probe {
+func runSequence(stop context.Context, opened node, timeLimit time.Duration) []probe {
 	// Discovery and opening come before this point, and a stop can arrive during them. Nothing is written then, because
 	// step 8 is owed only once step 1 has been attempted.
 	if stop.Err() != nil {
 		return nil
 	}
-	probes := runSteps(stop, file, timeLimit)
-	_, _ = exchange(file, steps[returnToHardwareMode], timeLimit)
+	probes := runSteps(stop, opened, timeLimit)
+	_, _ = exchange(opened, steps[returnToHardwareMode], timeLimit)
 	return probes
 }
 
 // runSteps runs steps 1 to 7 and gives the probes of a valid step 6, or none. It ends at the first failure, and when
 // stop is done before a step after the first. A read in progress is not ended by stop, it ends at the time limit.
-func runSteps(stop context.Context, file *os.File, timeLimit time.Duration) []probe {
+func runSteps(stop context.Context, opened node, timeLimit time.Duration) []probe {
 	var probes []probe
 	for position, command := range steps[:returnToHardwareMode] {
 		if position != enterSoftwareMode && stop.Err() != nil {
 			return probes
 		}
-		answer, err := exchange(file, command, timeLimit)
+		answer, err := exchange(opened, command, timeLimit)
 		if err != nil {
 			return probes
 		}
@@ -111,29 +107,20 @@ type exchangeError struct {
 
 func (failure *exchangeError) Error() string { return failure.problem }
 
-// exchange writes the command as one write and reads one answer within the time limit, into a buffer of the whole
-// input report, so that hidraw discards nothing of it. It gives the first 96 bytes of a valid answer, and an
-// exchangeError that says what failed when the write failed or was short, no answer came, or the answer is not valid.
-func exchange(file *os.File, command []byte, timeLimit time.Duration) ([]byte, error) {
-	written, err := file.Write(encode(command))
-	if err != nil {
-		return nil, &exchangeError{problem: fmt.Sprintf("write failed: %v", err)}
+// exchange writes the command as one write and reads one answer within the time limit. It gives the first 96 bytes of
+// a valid answer, and an exchangeError that says what failed when the write failed or was short, no answer came, or
+// the answer is not valid.
+func exchange(opened node, command []byte, timeLimit time.Duration) ([]byte, error) {
+	if err := opened.send(command); err != nil {
+		return nil, &exchangeError{problem: err.Error()}
 	}
-	if written < writeSize {
-		return nil, &exchangeError{problem: fmt.Sprintf("short write of %d bytes", written)}
-	}
-	if err := file.SetReadDeadline(time.Now().Add(timeLimit)); err != nil {
-		return nil, &exchangeError{problem: fmt.Sprintf("read failed: %v", err)}
-	}
-	answer := make([]byte, reportSize)
-	count, err := file.Read(answer)
-	if errors.Is(err, os.ErrDeadlineExceeded) {
+	answer, err := opened.receive(timeLimit)
+	if errors.Is(err, errNoAnswer) {
 		return nil, &exchangeError{problem: fmt.Sprintf("no answer within %s", timeLimit)}
 	}
 	if err != nil {
-		return nil, &exchangeError{problem: fmt.Sprintf("read failed: %v", err)}
+		return nil, &exchangeError{problem: err.Error()}
 	}
-	answer = answer[:count]
 	if problem := invalidity(command, answer); problem != "" {
 		return nil, &exchangeError{answered: true, problem: problem}
 	}

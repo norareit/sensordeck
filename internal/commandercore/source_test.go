@@ -23,6 +23,7 @@ type harness struct {
 	stop     context.Context
 	cancel   context.CancelFunc
 	wantedBy func(string) bool
+	devRoot  string
 }
 
 func newHarness(test *testing.T) *harness {
@@ -33,10 +34,11 @@ func newHarness(test *testing.T) *harness {
 	test.Cleanup(cancel)
 	return &harness{
 		fake:     fakecommander.New(test, sysfsRoot, devRoot),
-		source:   Source{SysfsRoot: sysfsRoot, DevRoot: devRoot, TimeLimit: testTimeLimit},
+		source:   Source{Finder: Hidraw(sysfsRoot, devRoot), TimeLimit: testTimeLimit},
 		stop:     stop,
 		cancel:   cancel,
 		wantedBy: func(name string) bool { return strings.HasPrefix(name, "commander.") },
+		devRoot:  devRoot,
 	}
 }
 
@@ -246,13 +248,13 @@ func TestNothingWantedOpensNoNode(test *testing.T) {
 func TestAStopDoneAtTheStartOfTheSequenceWritesNothing(test *testing.T) {
 	harness := newHarness(test)
 	controller := harness.fake.Add(9, 10)
-	file, err := hidraw.OpenNode(filepath.Join(harness.source.DevRoot, "hidraw9"))
+	file, err := hidraw.OpenNode(filepath.Join(harness.devRoot, "hidraw9"))
 	if err != nil {
 		test.Fatal(err)
 	}
 	defer file.Close()
 	harness.cancel()
-	if got := runSequence(harness.stop, file, testTimeLimit); got != nil {
+	if got := runSequence(harness.stop, hidrawNode{file: file}, testTimeLimit); got != nil {
 		test.Fatalf("got %v", got)
 	}
 	if writes := controller.Writes(); len(writes) != 0 {

@@ -3,6 +3,7 @@
 package commandercore
 
 import (
+	"bytes"
 	"os"
 	"path/filepath"
 	"testing"
@@ -69,5 +70,17 @@ func TestFindNodeGivesTheLowestNumber(test *testing.T) {
 	writeEntry(test, root, "hidraw3", controllerUevent("0"))
 	if node, found := findNode(root, "/dev"); !found || node != "/dev/hidraw3" {
 		test.Fatalf("got %q, %v", node, found)
+	}
+}
+
+func TestEncodeGivesTheReportIDTheCommandAndZeros(test *testing.T) {
+	for position, command := range steps {
+		written := encode(command)
+		if len(written) != 97 || written[0] != 0x00 || !bytes.Equal(written[1:1+len(command)], command) {
+			test.Fatalf("step %d: % x", position+1, written)
+		}
+		if !bytes.Equal(written[1+len(command):], make([]byte, 96-len(command))) {
+			test.Fatalf("step %d: the bytes after the command are not zero", position+1)
+		}
 	}
 }

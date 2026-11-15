@@ -31,7 +31,7 @@ func newSessionHarness(test *testing.T) *sessionHarness {
 	fake := fakecommander.New(test, sysfsRoot, devRoot)
 	return &sessionHarness{
 		test: test, fake: fake, controller: fake.Add(9, 10), stop: stop, cancel: cancel,
-		lighting: Lighting{SysfsRoot: sysfsRoot, DevRoot: devRoot, TimeLimit: testTimeLimit, Red: 0xFF},
+		lighting: Lighting{Finder: Hidraw(sysfsRoot, devRoot), TimeLimit: testTimeLimit, Red: 0xFF},
 	}
 }
 
@@ -312,7 +312,7 @@ func TestAStopBeforeTheSetupWritesNothing(test *testing.T) {
 
 func TestNoControllerGivesErrNoControllerAndWritesNothing(test *testing.T) {
 	root := test.TempDir()
-	lighting := Lighting{SysfsRoot: filepath.Join(root, "sys"), DevRoot: filepath.Join(root, "dev"), TimeLimit: testTimeLimit}
+	lighting := Lighting{Finder: Hidraw(filepath.Join(root, "sys"), filepath.Join(root, "dev")), TimeLimit: testTimeLimit}
 	if _, err := lighting.Start(context.Background()); !errors.Is(err, ErrNoController) {
 		test.Fatalf("got %v", err)
 	}
