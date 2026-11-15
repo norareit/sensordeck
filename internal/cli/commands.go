@@ -259,7 +259,7 @@ func (current *session) sensorsCommand() *cobra.Command {
 				return err
 			}
 			stop, cancel := current.env.notifyStop(context.Background())
-			readings := sensors.ReadAll(stop, sources, func(string) bool { return true })
+			readings := sensors.ReadAll(stop, sources.all(), func(string) bool { return true })
 			interrupted := stop.Err() != nil
 			cancel()
 			if interrupted {

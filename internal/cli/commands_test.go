@@ -22,7 +22,8 @@ type harness struct {
 	opened         []string // the device asked for by each opening
 	screens        []string
 	openErr        error
-	sources        []sensors.Source
+	sources        []sensors.Source // the sources other than the controller
+	controller     sensors.Source
 	sourcesErr     error
 	configDir      string // what userConfigDir gives
 	configDirErr   error
@@ -35,7 +36,7 @@ type harness struct {
 func newHarness() *harness {
 	clock := &fakeClock{current: time.Date(2026, 11, 14, 15, 4, 5, 0, time.UTC)}
 	stopped, cancelStop := context.WithCancel(context.Background())
-	return &harness{clock: clock, transport: &fakeTransport{clock: clock}, stopped: stopped, cancelStop: cancelStop}
+	return &harness{clock: clock, transport: &fakeTransport{clock: clock}, controller: &fakeSource{}, stopped: stopped, cancelStop: cancelStop}
 }
 
 func (harness *harness) run(args ...string) int {
@@ -58,11 +59,11 @@ func (harness *harness) run(args ...string) int {
 			return harness.transport, nil
 		},
 		userConfigDir: func() (string, error) { return harness.configDir, harness.configDirErr },
-		newSources: func(sysfsRoot, devRoot, procRoot string) ([]sensors.Source, error) {
+		newSources: func(sysfsRoot, devRoot, procRoot string) (sourceSet, error) {
 			if sysfsRoot != "/sysroot" || devRoot != "/devroot" || procRoot != "/procroot" {
-				return nil, errors.New("the roots were not passed on")
+				return sourceSet{}, errors.New("the roots were not passed on")
 			}
-			return harness.sources, harness.sourcesErr
+			return sourceSet{others: harness.sources, controller: harness.controller}, harness.sourcesErr
 		},
 		notifyStop: func(parent context.Context) (context.Context, context.CancelFunc) {
 			return harness.stopped, func() {}

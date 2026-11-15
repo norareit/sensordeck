@@ -2,8 +2,6 @@
 
 package cli
 
-import "github.com/norareit/sensordeck/internal/sensors"
-
-func newSources(sysfsRoot, devRoot, procRoot string) ([]sensors.Source, error) {
-	return nil, unsupported()
+func newSources(sysfsRoot, devRoot, procRoot string) (sourceSet, error) {
+	return sourceSet{}, unsupported()
 }

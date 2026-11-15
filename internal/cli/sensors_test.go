@@ -110,3 +110,20 @@ func TestSensorsGivesTheSourcesAStopThatIsNotDone(test *testing.T) {
 		test.Errorf("stops %v", source.stops)
 	}
 }
+
+func TestSensorsReadsTheControllerOnceAfterTheOthers(test *testing.T) {
+	harness := newHarness()
+	harness.sources = []sensors.Source{&fakeSource{names: []string{"cpu.temp"}, values: map[string]float64{"cpu.temp": 51}}}
+	controller := &fakeSource{names: []string{"commander.1.temp"}, values: map[string]float64{"commander.1.temp": 37.3}}
+	harness.controller = controller
+	if status := harness.run("sensors"); status != 0 {
+		test.Fatalf("status %d, stderr %q", status, harness.stderr.String())
+	}
+	want := "cpu.temp\t51.0\t°C\ncommander.1.temp\t37.3\t°C\n"
+	if got := harness.stdout.String(); got != want {
+		test.Errorf("stdout %q", got)
+	}
+	if controller.readsAt != 1 {
+		test.Errorf("the controller got %d calls", controller.readsAt)
+	}
+}

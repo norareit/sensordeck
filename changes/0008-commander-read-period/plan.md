@@ -192,16 +192,16 @@ quiet while `run` runs, and a count of writes taken later can only be larger.
 
 ### The sources apart
 
-- [ ] In `internal/cli/sensors_test.go`, add a test that `sensors` with a harness whose `sources` give `cpu.temp` and
+- [x] In `internal/cli/sensors_test.go`, add a test that `sensors` with a harness whose `sources` give `cpu.temp` and
   whose `controller` is a `fakeSource` giving `commander.1.temp` of 37.3 prints the line of `cpu.temp` and then that
   of `commander.1.temp`, and that the controller got exactly one call (R10). It fails to compile until the next task
-- [ ] Add `internal/cli/sources.go` with `sourceSet` and `all`, as "The sources" says. Change the type of `newSources`
+- [x] Add `internal/cli/sources.go` with `sourceSet` and `all`, as "The sources" says. Change the type of `newSources`
   in `internal/cli/main.go` to `func(sysfsRoot, devRoot, procRoot string) (sourceSet, error)`, make
   `sources_linux.go` and `sources_other.go` give a `sourceSet`, make `sensors` in `internal/cli/commands.go` read
   `sources.all()`, and make the harness in `internal/cli/commands_test.go` give `sourceSet{others: harness.sources,
   controller: harness.controller}` with `controller: &fakeSource{}` set in `newHarness`. In `run.go`, the feeder takes
   `sources.all()` in this task, so that `run` behaves as before. The new test and every existing test pass (R10, R17)
-- [ ] Run the five commands of the suite in `AGENTS.md`, the two Windows ones among them, and commit:
+- [x] Run the five commands of the suite in `AGENTS.md`, the two Windows ones among them, and commit:
   `feature-0008 Give the sources with the controller apart`
 
 ### The period in run

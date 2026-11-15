@@ -12,7 +12,6 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/norareit/sensordeck/internal/sensors"
 	"github.com/norareit/sensordeck/internal/smartmonitor"
 )
 
@@ -34,7 +33,7 @@ type environment struct {
 	listScreens    func(sysfsRoot, devRoot string) ([]string, error)
 	openTransport  func(sysfsRoot, devRoot, device string) (transport, error)
 	userConfigDir  func() (string, error)
-	newSources     func(sysfsRoot, devRoot, procRoot string) ([]sensors.Source, error)
+	newSources     func(sysfsRoot, devRoot, procRoot string) (sourceSet, error)
 	// notifyStop gives a context that ends at SIGINT or SIGTERM. Only run and the reading of sensors call it, so that
 	// the other commands keep the default handling of Ctrl+C.
 	notifyStop func(parent context.Context) (context.Context, context.CancelFunc)

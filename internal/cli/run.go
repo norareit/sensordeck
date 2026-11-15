@@ -50,7 +50,7 @@ func (current *session) runCommand() *cobra.Command {
 			current.say(fmt.Sprintf("running: %d metrics every %s", len(settings.Mappings), settings.Interval))
 			feeding := &feeder{
 				transport: opened,
-				sources:   sources,
+				sources:   sources.all(),
 				config:    settings,
 				now:       current.env.now,
 				wait:      current.env.wait,
