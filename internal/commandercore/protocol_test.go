@@ -57,7 +57,7 @@ func TestValid(test *testing.T) {
 		{"a wrong echo", answerOf(0x00, 0x08, 0x00), false},
 		{"byte 2 not zero", answerOf(0x00, 0x0D, 0x01), false},
 	} {
-		if got := valid(command, testCase.answer); got != testCase.want {
+		if got := invalidity(command, testCase.answer) == ""; got != testCase.want {
 			test.Errorf("%s: got %v", testCase.name, got)
 		}
 	}
@@ -76,7 +76,7 @@ func TestTemperaturesOfTheTrace(test *testing.T) {
 
 func TestTemperaturesOfTheTraceInAFullReportIgnoreTheBytesAfterTheAnswer(test *testing.T) {
 	answer := reportOf(0x00, 0x08, 0x00, 0x10, 0x00, 0x02, 0x00, 0x75, 0x01, 0x00, 0xE3, 0x00)
-	if !valid(steps[readTemperatures], answer) {
+	if invalidity(steps[readTemperatures], answer) != "" {
 		test.Fatal("the answer is not valid")
 	}
 	probes, ok := temperatures(answer)
@@ -123,5 +123,22 @@ func TestTemperaturesAreSigned(test *testing.T) {
 	probes, ok := temperatures(answer)
 	if !ok || len(probes) != 1 || probes[0] != (probe{available: true, celsius: -10}) {
 		test.Fatalf("got %+v, %v", probes, ok)
+	}
+}
+
+func TestInvalidityNamesWhatIsWrong(test *testing.T) {
+	command := []byte{0x08, 0x08, 0x01}
+	good := make([]byte, answerSize)
+	good[1] = 0x08
+	cases := map[string][]byte{
+		"answer of 95 bytes": good[:95],
+		"echo 07":            append([]byte{0, 0x07}, good[2:]...),
+		"status 03":          append([]byte{0, 0x08, 0x03}, good[3:]...),
+		"":                   good,
+	}
+	for want, answer := range cases {
+		if got := invalidity(command, answer); got != want {
+			test.Errorf("got %q, want %q", got, want)
+		}
 	}
 }

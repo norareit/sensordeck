@@ -420,7 +420,7 @@ puts into the `sourceSet`.
 
 ### The session of the controller
 
-- [ ] In `internal/commandercore/source.go`, make `exchange` give an `exchangeError` in place of false, as "The session
+- [x] In `internal/commandercore/source.go`, make `exchange` give an `exchangeError` in place of false, as "The session
   of the controller" says, and make `runSteps` and `runSequence` treat an error as they treated false. Behaviour does
   not change, and every test of the package passes as it is. Run the five commands and commit: `feature-0009 Give the
   exchanges of the controller an error that says what failed`

@@ -4,7 +4,10 @@
 // the controller expects on the wire is described in docs/commander-core-xt.md.
 package commandercore
 
-import "bytes"
+import (
+	"bytes"
+	"fmt"
+)
 
 const (
 	// answerSize is what the driver interprets of an answer, and reportSize the input report of the report descriptor
@@ -56,10 +59,18 @@ func encode(command []byte) []byte {
 	return written
 }
 
-// valid tells whether the answer is one of the command: at least 96 bytes, the second byte of the command echoed in
-// byte 1, and byte 2, taken as a status, zero.
-func valid(command, answer []byte) bool {
-	return len(answer) >= answerSize && answer[1] == command[1] && answer[2] == 0x00
+// invalidity names what is wrong with an answer of the command, or gives the empty text for one that is valid: at
+// least 96 bytes, the second byte of the command echoed in byte 1, and byte 2, taken as a status, zero.
+func invalidity(command, answer []byte) string {
+	switch {
+	case len(answer) < answerSize:
+		return fmt.Sprintf("answer of %d bytes", len(answer))
+	case answer[1] != command[1]:
+		return fmt.Sprintf("echo %02x", answer[1])
+	case answer[2] != 0x00:
+		return fmt.Sprintf("status %02x", answer[2])
+	}
+	return ""
 }
 
 // temperatures reads the probes of an answer of the temperature endpoint that is valid. It gives false when the data

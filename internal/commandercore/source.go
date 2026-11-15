@@ -4,6 +4,8 @@ package commandercore
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"os"
 	"time"
 
@@ -73,7 +75,7 @@ func runSequence(stop context.Context, file *os.File, timeLimit time.Duration) [
 		return nil
 	}
 	probes := runSteps(stop, file, timeLimit)
-	exchange(file, steps[returnToHardwareMode], timeLimit)
+	_, _ = exchange(file, steps[returnToHardwareMode], timeLimit)
 	return probes
 }
 
@@ -85,8 +87,8 @@ func runSteps(stop context.Context, file *os.File, timeLimit time.Duration) []pr
 		if position != enterSoftwareMode && stop.Err() != nil {
 			return probes
 		}
-		answer, ok := exchange(file, command, timeLimit)
-		if !ok {
+		answer, err := exchange(file, command, timeLimit)
+		if err != nil {
 			return probes
 		}
 		if position == readTemperatures {
@@ -100,25 +102,40 @@ func runSteps(stop context.Context, file *os.File, timeLimit time.Duration) []pr
 	return probes
 }
 
+// exchangeError is a failed exchange. answered tells whether an answer came, which decides whether a teardown closes
+// channel 0.
+type exchangeError struct {
+	answered bool
+	problem  string
+}
+
+func (failure *exchangeError) Error() string { return failure.problem }
+
 // exchange writes the command as one write and reads one answer within the time limit, into a buffer of the whole
-// input report, so that hidraw discards nothing of it. It gives the first 96 bytes of a valid answer, and false when
-// the write failed or was short, no answer came, or the answer is not valid.
-func exchange(file *os.File, command []byte, timeLimit time.Duration) ([]byte, bool) {
+// input report, so that hidraw discards nothing of it. It gives the first 96 bytes of a valid answer, and an
+// exchangeError that says what failed when the write failed or was short, no answer came, or the answer is not valid.
+func exchange(file *os.File, command []byte, timeLimit time.Duration) ([]byte, error) {
 	written, err := file.Write(encode(command))
-	if err != nil || written < writeSize {
-		return nil, false
+	if err != nil {
+		return nil, &exchangeError{problem: fmt.Sprintf("write failed: %v", err)}
+	}
+	if written < writeSize {
+		return nil, &exchangeError{problem: fmt.Sprintf("short write of %d bytes", written)}
 	}
 	if err := file.SetReadDeadline(time.Now().Add(timeLimit)); err != nil {
-		return nil, false
+		return nil, &exchangeError{problem: fmt.Sprintf("read failed: %v", err)}
 	}
 	answer := make([]byte, reportSize)
 	count, err := file.Read(answer)
+	if errors.Is(err, os.ErrDeadlineExceeded) {
+		return nil, &exchangeError{problem: fmt.Sprintf("no answer within %s", timeLimit)}
+	}
 	if err != nil {
-		return nil, false
+		return nil, &exchangeError{problem: fmt.Sprintf("read failed: %v", err)}
 	}
 	answer = answer[:count]
-	if !valid(command, answer) {
-		return nil, false
+	if problem := invalidity(command, answer); problem != "" {
+		return nil, &exchangeError{answered: true, problem: problem}
 	}
-	return answer[:answerSize], true
+	return answer[:answerSize], nil
 }
