@@ -1,6 +1,6 @@
 ---
 kind: feature
-status: approved
+status: in-progress
 timestamp: 2026-11-15T00:48:51Z
 ---
 
@@ -28,3 +28,5 @@ timestamp: 2026-11-15T00:48:51Z
   reads the rounds in which `run` calls `Reopen` of R16 as the plan of unit 0008 read the same words of its R8: the
   rounds whose reopening fails, which R22 of unit 0004 makes instead of the round, while the round of a reopening that
   succeeds goes on with the round. The status stays `approved`
+- 2026-11-15T01:05:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, began the work. The status is
+  `in-progress`

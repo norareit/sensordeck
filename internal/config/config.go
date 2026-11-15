@@ -2,6 +2,7 @@
 package config
 
 import (
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"math/big"
@@ -32,10 +33,14 @@ type Mapping struct {
 	Tag  uint8
 }
 
+// Colour is a colour of the LEDs, as the key commander_color gives it.
+type Colour struct{ Red, Green, Blue uint8 }
+
 // Config is what the file holds.
 type Config struct {
 	Interval          time.Duration
 	CommanderInterval time.Duration // zero when the file does not give it
+	CommanderColour   *Colour       // the key commander_color; nil when the file does not give it
 	Mappings          []Mapping     // ordered by tag, ascending
 }
 
@@ -58,7 +63,7 @@ func Parse(content []byte) (Config, error) {
 	if err != nil {
 		return Config{}, err
 	}
-	var tagsNode, intervalNode, commanderIntervalNode *yaml.Node
+	var tagsNode, intervalNode, commanderIntervalNode, commanderColourNode *yaml.Node
 	for position := 0; position+1 < len(root.Content); position += 2 {
 		key, value := root.Content[position], root.Content[position+1]
 		switch key.Value {
@@ -68,8 +73,10 @@ func Parse(content []byte) (Config, error) {
 			intervalNode = value
 		case "commander_interval":
 			commanderIntervalNode = value
+		case "commander_color":
+			commanderColourNode = value
 		default:
-			return Config{}, fmt.Errorf("unknown key %q, the keys are commander_interval, interval and tags", key.Value)
+			return Config{}, fmt.Errorf("unknown key %q, the keys are commander_color, commander_interval, interval and tags", key.Value)
 		}
 	}
 	mappings, err := parseTags(tagsNode)
@@ -84,10 +91,17 @@ func Parse(content []byte) (Config, error) {
 	if err != nil {
 		return Config{}, err
 	}
-	return Config{Interval: interval, CommanderInterval: commanderInterval, Mappings: mappings}, nil
+	colour, err := parseCommanderColour(commanderColourNode)
+	if err != nil {
+		return Config{}, err
+	}
+	if colour != nil && commanderIntervalNode != nil {
+		return Config{}, errors.New("commander_interval: cannot be used with commander_color, which reads the controller in every round")
+	}
+	return Config{Interval: interval, CommanderInterval: commanderInterval, CommanderColour: colour, Mappings: mappings}, nil
 }
 
-var errNotAMapping = errors.New("want a mapping with the keys commander_interval, interval and tags")
+var errNotAMapping = errors.New("want a mapping with the keys commander_color, commander_interval, interval and tags")
 
 // rootMapping gives the mapping of the file, and refuses a key that is given twice. The parser reports that only when
 // a mapping is decoded into a map.
@@ -204,4 +218,29 @@ func parseCommanderInterval(node *yaml.Node, interval time.Duration) (time.Durat
 		return 0, fmt.Errorf("commander_interval: %s is shorter than the interval %s", text, interval)
 	}
 	return commanderInterval, nil
+}
+
+// parseCommanderColour gives nil when the file does not give the key. An unquoted # starts a comment in YAML, so the
+// likeliest mistake arrives as an empty value and gets a text of its own.
+func parseCommanderColour(node *yaml.Node) (*Colour, error) {
+	if node == nil {
+		return nil, nil
+	}
+	text := ""
+	if node.Kind == yaml.ScalarNode {
+		text = node.Value
+	}
+	if node.Kind == yaml.ScalarNode && (node.ShortTag() == "!!null" || text == "") {
+		return nil, errors.New(`commander_color: no colour given, write it in quotes such as "#00c8ff", because # starts a comment in YAML`)
+	}
+	notAColour := fmt.Errorf(`commander_color: %q is not a colour such as "#00c8ff"`, text)
+	digits, found := strings.CutPrefix(text, "#")
+	if !found || len(digits) != 6 {
+		return nil, notAColour
+	}
+	components, err := hex.DecodeString(digits)
+	if err != nil {
+		return nil, notAColour
+	}
+	return &Colour{Red: components[0], Green: components[1], Blue: components[2]}, nil
 }

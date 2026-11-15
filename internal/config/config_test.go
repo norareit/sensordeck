@@ -53,12 +53,14 @@ func TestParseTagSpellings(test *testing.T) {
 	}
 }
 
+const colourEmpty = `commander_color: no colour given, write it in quotes such as "#00c8ff", because # starts a comment in YAML`
+
 func TestParseErrors(test *testing.T) {
 	cases := []struct{ name, content, want string }{
-		{"empty", "", "want a mapping with the keys commander_interval, interval and tags"},
-		{"comment", "# nothing\n", "want a mapping with the keys commander_interval, interval and tags"},
-		{"list", "- tags\n", "want a mapping with the keys commander_interval, interval and tags"},
-		{"unknown key", "colour: red\ntags: {cpu.temp: 1}\n", `unknown key "colour", the keys are commander_interval, interval and tags`},
+		{"empty", "", "want a mapping with the keys commander_color, commander_interval, interval and tags"},
+		{"comment", "# nothing\n", "want a mapping with the keys commander_color, commander_interval, interval and tags"},
+		{"list", "- tags\n", "want a mapping with the keys commander_color, commander_interval, interval and tags"},
+		{"unknown key", "colour: red\ntags: {cpu.temp: 1}\n", `unknown key "colour", the keys are commander_color, commander_interval, interval and tags`},
 		{"no tags", "interval: 1s\n", "tags: want a mapping from metric name to tag, with at least one entry"},
 		{"tags without value", "tags:\n", "tags: want a mapping from metric name to tag, with at least one entry"},
 		{"empty tags", "tags: {}\n", "tags: want a mapping from metric name to tag, with at least one entry"},
@@ -95,6 +97,14 @@ func TestParseErrors(test *testing.T) {
 		{"commander interval word", "commander_interval: soon\ntags: {cpu.temp: 1}\n", `commander_interval: "soon" is not a duration such as 1m or 30s`},
 		{"commander interval mapping", "commander_interval: {a: 1}\ntags: {cpu.temp: 1}\n", `commander_interval: "" is not a duration such as 1m or 30s`},
 		{"commander interval negative", "commander_interval: -1m\ntags: {cpu.temp: 1}\n", "commander_interval: -1m is shorter than the interval 1s"},
+		{"unquoted colour", "commander_color: #00c8ff\ntags: {cpu.temp: 1}\n", colourEmpty},
+		{"empty colour", "commander_color: \"\"\ntags: {cpu.temp: 1}\n", colourEmpty},
+		{"null colour", "commander_color: null\ntags: {cpu.temp: 1}\n", colourEmpty},
+		{"short colour", "commander_color: \"#00c8f\"\ntags: {cpu.temp: 1}\n", `commander_color: "#00c8f" is not a colour such as "#00c8ff"`},
+		{"colour without hash", "commander_color: \"00c8ff\"\ntags: {cpu.temp: 1}\n", `commander_color: "00c8ff" is not a colour such as "#00c8ff"`},
+		{"colour not hexadecimal", "commander_color: \"#00c8fg\"\ntags: {cpu.temp: 1}\n", `commander_color: "#00c8fg" is not a colour such as "#00c8ff"`},
+		{"colour mapping", "commander_color: {a: 1}\ntags: {cpu.temp: 1}\n", `commander_color: "" is not a colour such as "#00c8ff"`},
+		{"colour and commander interval", "commander_color: \"#00c8ff\"\ncommander_interval: 1m\ntags: {cpu.temp: 1}\n", "commander_interval: cannot be used with commander_color, which reads the controller in every round"},
 	}
 	for _, each := range cases {
 		_, err := Parse([]byte(each.content))
@@ -150,5 +160,22 @@ func TestParseCommanderIntervalEqualToInterval(test *testing.T) {
 	settings, err := Parse([]byte("interval: 500ms\ncommander_interval: 500ms\ntags: {cpu.temp: 1}\n"))
 	if err != nil || settings.CommanderPeriod() != 500*time.Millisecond {
 		test.Errorf("got %+v, %v", settings, err)
+	}
+}
+
+func TestParseColour(test *testing.T) {
+	for _, spelling := range []string{"#00c8ff", "#00C8FF"} {
+		got, err := Parse([]byte("commander_color: \"" + spelling + "\"\ntags: {cpu.temp: 1}\n"))
+		want := &Colour{Red: 0, Green: 200, Blue: 255}
+		if err != nil || !reflect.DeepEqual(got.CommanderColour, want) {
+			test.Errorf("%s: %+v, %v", spelling, got.CommanderColour, err)
+		}
+	}
+}
+
+func TestParseWithoutColour(test *testing.T) {
+	got, err := Parse([]byte("tags: {cpu.temp: 1}\n"))
+	if err != nil || got.CommanderColour != nil {
+		test.Errorf("%+v, %v", got.CommanderColour, err)
 	}
 }
