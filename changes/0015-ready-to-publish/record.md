@@ -34,3 +34,10 @@ timestamp: 2026-11-15T13:06:35Z
   and releases nothing; the first runs of the workflows are the human's. The approval that follows is made under that
   delegation
 - 2026-11-15T13:10:23Z [human] approved the spec. The status is `approved`
+- 2026-11-15T13:15:04Z [Claude Code, anthropic/claude-opus-5-5] as the planner, wrote the plan against the tree of the unit's
+  branch, in five commits: the version, the notices file, the preview image, the release configuration with the two
+  workflows, and the README. Found in the tree: a Linux build leaves `github.com/inconshreveable/mousetrap` out of
+  the module cache, so the CI workflow runs `go mod download` before the suite; `go list -m all` lists modules that
+  are not in `go.mod`, so the module list is taken from `go.mod`; and cobra gives `--version` the new shorthand
+  `-v`, which changes no existing flag. The sandbox cannot reach GitHub, so the pinned versions of the actions and of
+  GoReleaser are releases known to exist and were not checked against GitHub. The status stays `approved`
