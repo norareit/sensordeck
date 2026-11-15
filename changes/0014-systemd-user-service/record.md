@@ -27,3 +27,11 @@ timestamp: 2026-11-15T12:44:19Z
   machine is the human's check and the unit does not depend on it. The approval that follows is made under that
   delegation
 - 2026-11-15T12:46:17Z [human] approved the spec. The status is `approved`
+- 2026-11-15T12:52:10Z [Claude Code, anthropic/claude-opus-5-5] as the planner, wrote the plan against the tree of the
+  branch. The spec fits the tree: `run` gives the errors of R7 through `readNamedFile` and `loadConfig`, and
+  `os.UserConfigDir()` gives an absolute directory. The plan moves the prefix that `run` puts on an error of the load
+  into one function that `install` shares, in a commit that keeps the behaviour of `run`; puts the calls, the path of
+  the executable and the name of the system behind three fields of the environment; and decides the texts of the
+  commands. It decides one case the spec leaves unnamed: a check of the presence of the unit file that fails other than
+  by its absence fails `status` and `uninstall` with exit status 1 and makes no call. No item of "Beyond the request" is
+  built
