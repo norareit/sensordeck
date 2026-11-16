@@ -21,6 +21,14 @@ supersedes: 0009-commander-led-colour
   naming iCUE after each rewrite; a fake that stays dark with iCUE's configuration. The unit supersedes unit 0009,
   whose R6 and R10 it changes. No code of OpenLinkHub, liquidctl, OpenRGB or iCUE was read. The status is `draft`
 - 2026-11-16T23:08:20Z [human] approved the spec. The status is `approved`
+- 2026-11-16T23:12:16Z [Claude Code, anthropic/claude-opus-5-5] as the planner, wrote the plan against the tree of
+  `bugfix-0025-commander-led-port-configuration`. The fix needs a plan, since it takes the fake controller, the
+  protocol, the setup, the lines of `run`, end-to-end tests and two documents. In six commits: the fake learns `0x1E`,
+  `08 15 01`, a lighting configuration and a failure of status `03`; the protocol builds the wanted configuration and
+  the configuration write; the setup reads `0x1E` and rewrites it when it differs, and `Lighting.Start` gives what it
+  did with the configuration beside the session and the error; the keeper writes the lines of R8 from a notice of its
+  own; the end-to-end tests; the documents. Every requirement has a task, and every task traces to a requirement. The
+  status stays `approved`
 
 ## Amendments
 - 2026-11-16T23:08:20Z [Claude Code, anthropic/claude-opus-5-5] read the spec under the delegation in `AGENTS.md`: its facts are those
