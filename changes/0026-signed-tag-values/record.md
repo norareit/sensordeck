@@ -57,3 +57,7 @@ supersedes: 0004-linux-sensors-and-run
   corrected to its commit. Items 1 to 3 of "Beyond the request" are declined: item 1 belongs to the coming unit on the
   options of number widgets, and the other two are not needed for a correct range. The device check is the human's
   and the unit does not depend on it. The approval that follows is made under that delegation
+- 2026-11-16T23:55:39Z [Claude Code, anthropic/claude-opus-5-5] under the delegation in `AGENTS.md`, decided the proposed decline of
+  C1 of round 1: declined, and an exception to the separation of refactoring and behaviour is recorded for that commit.
+  Splitting it would rewrite commits that later ones build on for no change in the tree, the record states the
+  departure, and the tests that check the extracted code pass on the final tree. C1 does not block
