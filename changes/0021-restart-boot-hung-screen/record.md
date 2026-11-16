@@ -29,3 +29,12 @@ supersedes: 0020-recover-hung-screen
   of `0020-recover-hung-screen` itself when it merges this unit. The device check is the human's and the unit does
   not depend on it. The approval that follows is made under that delegation
 - 2026-11-16T14:52:51Z [human] approved the spec. The status is `approved`
+- 2026-11-16T14:58:25Z [Claude Code, anthropic/claude-opus-5-5] as the planner, wrote `plan.md` against the tree of the branch:
+  the udev rule and its test; the restart as a function of `internal/hidraw` behind seams for usbfs, the hidraw node,
+  the clock and the wait, with the real ioctl `USBDEVFS_CONTROL` in a file of its own; the interface of the command
+  line renamed from `screenPower` to `screenRestarter`; the one-shot commands; the feeder of `run`; and the two
+  documents, in five tasks and four commits, with tasks 3 and 4 sharing one. The plan reads R8 together with R15: the
+  time of the last restart that sent a request is kept across hangs, so a hang that begins less than a minute after a
+  restart makes its first restart only once the minute has passed, and the line `restarting the screen to recover it`
+  is written with the first restart the hang makes rather than at a round that makes none. The one-shot commands keep
+  the default handling of Ctrl+C, which ends the restart with the process, as R5 asks. The status stays `approved`
