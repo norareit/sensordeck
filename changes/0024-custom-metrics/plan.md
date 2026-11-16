@@ -221,11 +221,11 @@ What the tree on `feature-0024-custom-metrics` holds, and what the plan builds o
 
 ### 4. The theme compiler takes a custom metric
 
-- [ ] In `internal/themecompile/document_test.go`, make the case "metric misspelt" use `cpu..temp` and add a case
+- [x] In `internal/themecompile/document_test.go`, make the case "metric misspelt" use `cpu..temp` and add a case
   `CPU.temp`, both refused with the existing text, and add a test that a theme naming `water.temp` compiles and that
   `Result.Tags` gives it a tag (R9, R29, R34)
-- [ ] In `readNumberKeys`, check the metric with `sensors.IsWellFormedName` (R9)
-- [ ] Run the suite and commit: `feature-0024 Let the theme compiler take a well-formed metric name`
+- [x] In `readNumberKeys`, check the metric with `sensors.IsWellFormedName` (R9)
+- [x] Run the suite and commit: `feature-0024 Let the theme compiler take a well-formed metric name`
 
 ### 5. The key metrics
 

@@ -215,3 +215,16 @@ func TestTheFileOfTheThemeCannotBeReadOrParsed(test *testing.T) {
 func TestATextWithAnAccentedLetterCompiles(test *testing.T) {
 	compileFiles(test, solidTheme+"widgets:\n  - {type: text, font: body, text: café, x: 0, y: 0}\n", nil)
 }
+
+func TestACustomMetricGetsATag(test *testing.T) {
+	folder := roundTripFolder(test)
+	theme := strings.Replace(string(folder["theme.yaml"].Data), "metric: cpu.temp", "metric: water.temp", 1)
+	folder["theme.yaml"] = &fstest.MapFile{Data: []byte(theme)}
+	result, err := Compile(folder)
+	if err != nil {
+		test.Fatal(err)
+	}
+	if tagOf(result.Tags, "water.temp") == 0 {
+		test.Fatalf("tags = %v", result.Tags)
+	}
+}

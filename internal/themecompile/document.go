@@ -347,7 +347,7 @@ func readNumberKeys(widget *widgetSpec, values map[string]*yaml.Node, place stri
 	if widget.metric, err = readString(node, place, "metric", true); err != nil {
 		return err
 	}
-	if !sensors.IsName(widget.metric) {
+	if !sensors.IsWellFormedName(widget.metric) {
 		return problem(join(place, "metric"), "%q is not a metric name", widget.metric)
 	}
 	if digits, found := values["digits"]; found {
