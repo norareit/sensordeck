@@ -1,4 +1,4 @@
-// Command generate writes the background of minimal-dark as a PNG to the path of its one argument.
+// Command generate writes the background the two built-in themes share as a PNG to the path of its one argument.
 package main
 
 import (

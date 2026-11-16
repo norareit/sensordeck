@@ -9,6 +9,7 @@ import (
 )
 
 //go:generate go run ./background/generate themes/minimal-dark/background.png
+//go:generate go run ./background/generate themes/minimal-dark-probes/background.png
 
 //go:embed themes
 var themes embed.FS

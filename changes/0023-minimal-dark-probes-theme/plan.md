@@ -53,14 +53,14 @@ tree, and it gave exactly the tags file of the record.
 
 ## Tasks
 
-- [ ] In `internal/builtinthemes/builtinthemes_test.go`, add a constant `minimalDarkProbesYAML` holding the
+- [x] In `internal/builtinthemes/builtinthemes_test.go`, add a constant `minimalDarkProbesYAML` holding the
   `theme.yaml` of the record verbatim, and a constant `minimalDarkProbesTags` holding its tags file verbatim. Add one
   table of the built-in themes, each row with the name, the expected `theme.yaml`, the metric names in the order of
   their tags, and the expected tags file; the rows are `minimal-dark` with the existing constants and names, and
   `minimal-dark-probes` with the new ones and the names `commander.1.temp`, `commander.2.temp`, `cpu.temp`, `cpu.util`,
   `gpu.mem.used`, `gpu.temp`, `gpu.util`, `net.down`, `net.up`, `nvme.2.temp`, `ram.used`, `ram.util`. Replace the
   helper `minimalDark` by one that takes the name and fails the test when `Folder` does not find it (R8)
-- [ ] Rewrite the tests of that file to go through the table, each row a subtest named by the theme: `Names()` is
+- [x] Rewrite the tests of that file to go through the table, each row a subtest named by the theme: `Names()` is
   exactly the names of the table in their order, which is `minimal-dark`, `minimal-dark-probes`; each folder holds
   exactly `background.png` and `theme.yaml`, both regular; each `theme.yaml` equals the row's text; each
   `background.png` is 480 x 320 and equals `background.MinimalDark()` at every pixel, with the failure message naming
@@ -69,18 +69,18 @@ tree, and it gave exactly the tags file of the record.
   from `TestTheBuiltInThemesAreMinimalDarkAlone` to one that says the built-in themes are the rows of the table. Keep
   `TestFolderIsFoundForADirectoryOfTheThemesAlone` as it is. Run `go test ./internal/builtinthemes/` and see the tests
   of `minimal-dark-probes` fail because the theme is missing (R1, R2, R3, R4, R5, R8)
-- [ ] Add a second line `//go:generate go run ./background/generate themes/minimal-dark-probes/background.png` below
+- [x] Add a second line `//go:generate go run ./background/generate themes/minimal-dark-probes/background.png` below
   the existing one in `internal/builtinthemes/builtinthemes.go`. Create the folder
   `internal/builtinthemes/themes/minimal-dark-probes/`, write its `theme.yaml` as the text of the record, and run
   `go generate ./internal/builtinthemes/`, which writes both PNGs. Check with `git status` that the PNG of
   `minimal-dark` is unchanged or, if its bytes differ, that `go test ./internal/builtinthemes/` still passes and restore
   it with `git checkout` so that `minimal-dark` stays byte for byte as it was (R1, R2, R3, R4)
-- [ ] Change the package comment of `internal/builtinthemes/background/background.go` to say that it draws the
+- [x] Change the package comment of `internal/builtinthemes/background/background.go` to say that it draws the
   background the two built-in themes share, and the comment of `MinimalDark` to say that it draws that background, by
   the rule of R4 of unit 0012. Change the command comment of `internal/builtinthemes/background/generate/main.go` to say
   that it writes the background the two built-in themes share as a PNG to the path of its one argument. Run
   `go test ./internal/builtinthemes/...`, which passes (R4, R8)
-- [ ] Commit point: `task-0023 Add the built-in theme minimal-dark-probes`
+- [x] Commit point: `task-0023 Add the built-in theme minimal-dark-probes`
 - [ ] In `docs_test.go`, replace the constants `previewImagePath` and `previewCommand` by a table of the preview images
   with the rows `minimal-dark` with `docs/minimal-dark.png` and `minimal-dark-probes` with
   `docs/minimal-dark-probes.png`. The test runs one subtest per row, compiles the built-in theme of the row, and

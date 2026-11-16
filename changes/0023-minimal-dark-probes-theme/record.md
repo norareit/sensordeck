@@ -1,6 +1,6 @@
 ---
 kind: task
-status: approved
+status: in-progress
 timestamp: 2026-11-16T20:16:20Z
 ---
 
@@ -190,6 +190,8 @@ The five commands of the suite in `AGENTS.md` succeed.
   unit's branch, with the record's statements numbered R1 to R15 in the plan so that each task can name them. Compiled
   the record's theme from a copy of the folder outside the tree, which gave exactly the tags file of the record. The
   status stays `approved`
+- 2026-11-16T20:25:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, began the work. The status is
+  `in-progress`
 
 ## Amendments
 - 2026-11-16T20:17:25Z [Claude Code, anthropic/claude-opus-5-5] read the record under the delegation in `AGENTS.md`: the theme is the

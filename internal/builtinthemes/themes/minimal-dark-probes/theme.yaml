@@ -1,0 +1,50 @@
+name: Minimal Dark with probes
+author: sensordeck
+license: MIT
+background: background.png
+fonts:
+  label: {builtin: go-medium, size: 15, color: "#7f8ea3"}
+  unit:  {builtin: go-medium, size: 15, color: "#4f5d70"}
+  big:   {builtin: go-bold, size: 46, color: "#e6edf3"}
+  small: {builtin: go-medium, size: 17, color: "#c9d4df"}
+  clock: {builtin: go-bold, size: 24, color: "#e6edf3"}
+  date:  {builtin: go-medium, size: 17, color: "#7f8ea3"}
+widgets:
+  - {type: text, font: label, text: CPU, x: 20, y: 18}
+  - {type: text, font: unit, text: "°C", x: 136, y: 18}
+  - {type: number, font: big, metric: cpu.temp, x: 20, y: 44}
+  - {type: text, font: label, text: LOAD, x: 20, y: 102}
+  - {type: number, font: small, metric: cpu.util, x: 70, y: 101}
+  - {type: text, font: unit, text: "%", x: 140, y: 102}
+  - {type: text, font: label, text: GPU, x: 176, y: 18}
+  - {type: text, font: unit, text: "°C", x: 292, y: 18}
+  - {type: number, font: big, metric: gpu.temp, x: 176, y: 44}
+  - {type: text, font: label, text: LOAD, x: 176, y: 102}
+  - {type: number, font: small, metric: gpu.util, x: 226, y: 101}
+  - {type: text, font: unit, text: "%", x: 296, y: 102}
+  - {type: text, font: label, text: RAM, x: 332, y: 18}
+  - {type: text, font: unit, text: "%", x: 452, y: 18}
+  - {type: number, font: big, metric: ram.util, x: 332, y: 44}
+  - {type: text, font: label, text: USED, x: 332, y: 102}
+  - {type: number, font: small, metric: ram.used, x: 382, y: 101}
+  - {type: text, font: unit, text: GiB, x: 436, y: 102}
+  - {type: text, font: label, text: VRAM, x: 20, y: 150}
+  - {type: text, font: unit, text: MiB, x: 128, y: 150}
+  - {type: number, font: big, metric: gpu.mem.used, digits: 5, x: 20, y: 176}
+  - {type: text, font: label, text: DISK, x: 20, y: 234}
+  - {type: number, font: small, metric: nvme.2.temp, x: 76, y: 233}
+  - {type: text, font: unit, text: "°C", x: 136, y: 234}
+  - {type: text, font: label, text: GPU CABLE, x: 176, y: 150}
+  - {type: text, font: unit, text: "°C", x: 292, y: 150}
+  - {type: number, font: big, metric: commander.1.temp, x: 176, y: 176}
+  - {type: text, font: label, text: INTAKE, x: 176, y: 234}
+  - {type: number, font: small, metric: commander.2.temp, x: 240, y: 233}
+  - {type: text, font: unit, text: "°C", x: 292, y: 234}
+  - {type: text, font: label, text: NETWORK, x: 332, y: 150}
+  - {type: text, font: unit, text: KiB/s, x: 424, y: 150}
+  - {type: text, font: label, text: UP, x: 332, y: 186}
+  - {type: number, font: small, metric: net.up, digits: 5, x: 396, y: 185}
+  - {type: text, font: label, text: DOWN, x: 332, y: 222}
+  - {type: number, font: small, metric: net.down, digits: 5, x: 396, y: 221}
+  - {type: datetime, font: clock, format: "HH:mm:ss", x: 20, y: 279}
+  - {type: datetime, font: date, format: "YYYY-MM-DD", x: 364, y: 283}

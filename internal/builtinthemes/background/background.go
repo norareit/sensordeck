@@ -1,4 +1,4 @@
-// Package background draws the background of the built-in theme minimal-dark. It does no I/O.
+// Package background draws the background the two built-in themes share. It does no I/O.
 package background
 
 import (
@@ -56,7 +56,7 @@ var panels = []roundedRectangle{
 	{8, 272, 471, 311, panelRadius},
 }
 
-// MinimalDark draws the background of minimal-dark: 480 x 320 opaque pixels, by the rule of R4 of unit 0012.
+// MinimalDark draws the background the built-in themes share: 480 x 320 opaque pixels, by the rule of R4 of unit 0012.
 func MinimalDark() *image.NRGBA {
 	picture := image.NewNRGBA(image.Rect(0, 0, width, height))
 	for row := 0; row < height; row++ {
