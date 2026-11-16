@@ -1,6 +1,6 @@
 ---
 kind: feature
-status: draft
+status: approved
 timestamp: 2026-11-16T20:28:31Z
 ---
 
@@ -25,6 +25,7 @@ timestamp: 2026-11-16T20:28:31Z
   of R23 with the number of chips found, not an error of the config. The README gives a command that lists the chips
   with their device paths in that order and tells a card from a processor's graphics by its PCI address, and the tests
   cover the key. The status stays `draft`
+- 2026-11-16T20:31:31Z [human] approved the spec. The status is `approved`
 
 ## Amendments
 - 2026-11-16T20:31:31Z [Claude Code, anthropic/claude-opus-5-5] read the spec under the delegation in `AGENTS.md`: the three sources
