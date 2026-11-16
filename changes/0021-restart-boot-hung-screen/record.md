@@ -47,3 +47,6 @@ supersedes: 0020-recover-hung-screen
   `restartAfterHang`, as the plan has it, and its constructor sets it on the harness. No end-to-end test was added, by
   D10. The restart against a real screen and the real ioctl `USBDEVFS_CONTROL` were not run: only the number of the
   ioctl is tested, on amd64, and the device check is the human's, by D13
+- 2026-11-16T15:50:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, ran the five commands of the suite and
+  `npm run check-changes` on `4983afb`: `go test ./...` passes, `go vet ./...` and `gofmt -l .` report nothing, and the
+  two Windows commands succeed and report nothing. The status stays `in-progress` until the review of the unit
