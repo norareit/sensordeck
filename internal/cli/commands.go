@@ -39,8 +39,8 @@ type session struct {
 func (current *session) elapsed() time.Duration { return current.env.now().Sub(current.start) }
 
 // open opens the transport, traced when asked, and closes it when the returned function is called.
-func (current *session) open() (transport, screenPower, func(), error) {
-	opened, power, err := current.env.openTransport(current.env.sysfsRoot, current.env.devRoot, current.options.device)
+func (current *session) open() (transport, screenRestarter, func(), error) {
+	opened, restarter, err := current.env.openTransport(current.env.sysfsRoot, current.env.devRoot, current.options.device)
 	if err != nil {
 		return nil, nil, nil, err
 	}
@@ -48,7 +48,7 @@ func (current *session) open() (transport, screenPower, func(), error) {
 	if current.options.trace {
 		used = &tracingTransport{inner: opened, out: current.env.stderr, elapsed: current.elapsed}
 	}
-	return used, power, func() { _ = opened.Close() }, nil
+	return used, restarter, func() { _ = opened.Close() }, nil
 }
 
 func (current *session) say(line string) {
@@ -91,13 +91,13 @@ func (current *session) clockCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			opened, power, closeTransport, err := current.open()
+			opened, restarter, closeTransport, err := current.open()
 			if err != nil {
 				return err
 			}
 			defer closeTransport()
 			if err := opened.Write(report); err != nil {
-				return hangError(err, power)
+				return restartAfterHang(err, restarter)
 			}
 			current.say("clock sent: " + moment.Format(clockLayout))
 			return nil
@@ -115,14 +115,14 @@ func (current *session) valuesCommand() *cobra.Command {
 				return err
 			}
 			reports := smartmonitor.EncodeValues(values)
-			opened, power, closeTransport, err := current.open()
+			opened, restarter, closeTransport, err := current.open()
 			if err != nil {
 				return err
 			}
 			defer closeTransport()
 			for _, report := range reports {
 				if err := opened.Write(report); err != nil {
-					return hangError(err, power)
+					return restartAfterHang(err, restarter)
 				}
 			}
 			current.say(fmt.Sprintf("values sent: %d, reports written: %d", len(values), len(reports)))
@@ -145,7 +145,7 @@ func (current *session) uploadCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			opened, power, closeTransport, err := current.open()
+			opened, restarter, closeTransport, err := current.open()
 			if err != nil {
 				return err
 			}
@@ -160,7 +160,7 @@ func (current *session) uploadCommand() *cobra.Command {
 				current.say(stage.String())
 			}
 			if err := state.upload(opened, opened.Serial(), theme, current.env.sleep, progress); err != nil {
-				return hangError(err, power)
+				return restartAfterHang(err, restarter)
 			}
 			current.say(fmt.Sprintf("upload complete: %d bytes in %d data blocks", len(theme), blocks))
 			return nil
@@ -225,13 +225,13 @@ func (current *session) rawCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			opened, power, closeTransport, err := current.open()
+			opened, restarter, closeTransport, err := current.open()
 			if err != nil {
 				return err
 			}
 			defer closeTransport()
 			if err := opened.Write(report); err != nil {
-				return hangError(err, power)
+				return restartAfterHang(err, restarter)
 			}
 			return current.receive(opened, duration)
 		},

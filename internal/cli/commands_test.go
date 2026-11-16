@@ -39,7 +39,7 @@ type harness struct {
 	stopped           context.Context // ends when cancelStop is called, which is what a signal does in the real command
 	cancelStop        context.CancelFunc
 	waits             []time.Duration
-	power             screenPower     // what openTransport gives, noScreenPower{} when nil
+	restarter         screenRestarter // what openTransport gives, noScreenRestarter{} when nil
 	onWait            func(count int) // called after each wait has moved the clock, with the count of waits so far
 	system            string          // what the system is, linux unless a test sets it
 	executablePath    string          // what executable gives
@@ -102,15 +102,15 @@ func (harness *harness) run(args ...string) int {
 		listScreens: func(sysfsRoot, devRoot string) ([]string, []string, error) {
 			return harness.screens, harness.nearMisses, nil
 		},
-		openTransport: func(sysfsRoot, devRoot, device string) (transport, screenPower, error) {
+		openTransport: func(sysfsRoot, devRoot, device string) (transport, screenRestarter, error) {
 			harness.opened = append(harness.opened, device)
 			if harness.openErr != nil {
 				return nil, nil, harness.openErr
 			}
-			if harness.power == nil {
-				return harness.transport, noScreenPower{}, nil
+			if harness.restarter == nil {
+				return harness.transport, noScreenRestarter{}, nil
 			}
-			return harness.transport, harness.power, nil
+			return harness.transport, harness.restarter, nil
 		},
 		userConfigDir: func() (string, error) {
 			harness.configDirCalls++

@@ -20,7 +20,7 @@ func listScreens(sysfsRoot, devRoot string) ([]string, []string, error) {
 	return lines, winhid.NearMissLines(nearMisses), nil
 }
 
-func openTransport(sysfsRoot, devRoot, device string) (transport, screenPower, error) {
+func openTransport(sysfsRoot, devRoot, device string) (transport, screenRestarter, error) {
 	var opened *winhid.Transport
 	var err error
 	if device != "" {
@@ -32,5 +32,5 @@ func openTransport(sysfsRoot, devRoot, device string) (transport, screenPower, e
 		// Return a nil interface and not the nil pointer, so that the check of the error is the only check.
 		return nil, nil, err
 	}
-	return opened, noScreenPower{}, nil
+	return opened, noScreenRestarter{}, nil
 }

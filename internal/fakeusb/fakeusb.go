@@ -23,15 +23,13 @@ const (
 type Device struct {
 	Node string // <dev root>/hidraw<n>
 
-	powerDirectory string
-	usbDevice      string
-	sysfsRoot      string
-	hidrawName     string
-	test           testing.TB
+	usbDevice  string
+	sysfsRoot  string
+	hidrawName string
+	test       testing.TB
 }
 
-// New builds the tree under the roots with busnum 1 and devnum 5 as the kernel writes them, power/control at auto,
-// power/autosuspend_delay_ms at 2000 and power/runtime_status at active, and makes the node.
+// New builds the tree under the roots with busnum 1 and devnum 5 as the kernel writes them, and makes the node.
 func New(test testing.TB, sysfsRoot, devRoot string, number int) *Device {
 	test.Helper()
 	name := "hidraw" + strconv.Itoa(number)
@@ -40,15 +38,14 @@ func New(test testing.TB, sysfsRoot, devRoot string, number int) *Device {
 	hidDevice := filepath.Join(usbInterface, "0003:0483:0065.0001")
 	entry := filepath.Join(hidDevice, "hidraw", name)
 	device := &Device{
-		Node:           filepath.Join(devRoot, name),
-		powerDirectory: filepath.Join(usbDevice, "power"),
-		usbDevice:      usbDevice,
-		sysfsRoot:      sysfsRoot,
-		hidrawName:     name,
-		test:           test,
+		Node:       filepath.Join(devRoot, name),
+		usbDevice:  usbDevice,
+		sysfsRoot:  sysfsRoot,
+		hidrawName: name,
+		test:       test,
 	}
 
-	for _, directory := range []string{entry, device.powerDirectory, filepath.Join(sysfsRoot, "class", "hidraw"), devRoot} {
+	for _, directory := range []string{entry, filepath.Join(sysfsRoot, "class", "hidraw"), devRoot} {
 		device.must(os.MkdirAll(directory, 0o755))
 	}
 	device.must(os.WriteFile(filepath.Join(hidDevice, "uevent"), []byte(hidUevent), 0o644))
@@ -59,22 +56,7 @@ func New(test testing.TB, sysfsRoot, devRoot string, number int) *Device {
 	device.must(os.WriteFile(filepath.Join(usbDevice, "busnum"), []byte("1\n"), 0o644))
 	device.must(os.WriteFile(filepath.Join(usbDevice, "devnum"), []byte("5\n"), 0o644))
 	device.must(os.WriteFile(device.Node, nil, 0o644))
-	device.Set("control", "auto\n")
-	device.Set("autosuspend_delay_ms", "2000\n")
-	device.Set("runtime_status", "active\n")
 	return device
-}
-
-// Set writes a file of power/ of the USB device, as the kernel would hold it.
-func (device *Device) Set(name, content string) {
-	device.test.Helper()
-	device.must(os.WriteFile(filepath.Join(device.powerDirectory, name), []byte(content), 0o644))
-}
-
-// Remove deletes a file of power/ of the USB device.
-func (device *Device) Remove(name string) {
-	device.test.Helper()
-	device.must(os.Remove(filepath.Join(device.powerDirectory, name)))
 }
 
 // SetDevnum rewrites devnum of the USB device with the content, as the kernel holds it after the device enumerated

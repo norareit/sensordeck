@@ -188,7 +188,7 @@ flags `notRestartedSaid`, `stillHungSaid` and `cannotRestartSaid`.
 
 The tree does not build between the first step of this task and the end of task 4, which share one commit.
 
-- [ ] In `internal/cli/hang_test.go` (all systems), replace `timeoutPower` by a `fakeRestarter` with a function
+- [x] In `internal/cli/hang_test.go` (all systems), replace `timeoutPower` by a `fakeRestarter` with a function
   `timedOutBy`, the outcomes the test sets (one for each restart, the last repeated), the `fakeTransport` and the
   `fakeClock` of the harness, a duration that each restart moves the clock by, and the times at which each restart
   began. Its `restart`, except for `restartNotPossible`, closes the transport and moves the clock, and for
@@ -198,27 +198,27 @@ The tree does not build between the first step of this task and the end of task 
   ` and did not restart. Unplugging the screen once recovers it`; with `restartNotPossible` and an error,
   ` and sensordeck cannot restart it: ` and the error and the rest of the line of R13; `errors.Is` finds the error of
   the write in each; an error that is no timeout, and `nil`, are given back as they are with no restart made (R17)
-- [ ] In `internal/cli/hang_linux_test.go` (build tag `linux`), replace the tests of unit 0020 by tests of `clock` with
+- [x] In `internal/cli/hang_linux_test.go` (build tag `linux`), replace the tests of unit 0020 by tests of `clock` with
   the harness, its writes failing with `timeoutError` and a `fakeRestarter` whose `timedOutBy` is `hidraw.TimedOut`:
   status 1 and the whole of standard error for each of the three texts of R17, one restart made, and one write tried,
   not a second. Keep `TestAnotherFailureOfAWriteIsGivenAsItIs` with no restart made (R17, R26)
-- [ ] Rewrite `internal/cli/hang.go` with the names of "Names fixed by this plan". `screenPower`, `hangRecovery`,
+- [x] Rewrite `internal/cli/hang.go` with the names of "Names fixed by this plan". `screenPower`, `hangRecovery`,
   `noScreenPower`, `hungPrefix`, `hungByItself`, `hungNoRecover` and `hungSuspending` are removed (R13, R16, R17)
-- [ ] Change `environment.openTransport` to give a `screenRestarter`. In `device_linux.go` give `linuxRestarter` in
+- [x] Change `environment.openTransport` to give a `screenRestarter`. In `device_linux.go` give `linuxRestarter` in
   place of `linuxPower`; in `device_windows.go` and `device_other.go` give `noScreenRestarter{}` (R3, R6, non-goal
   Windows)
-- [ ] Change `session.open`, `run.go` and `background.go` to pass the restarter where they passed the power, and the
+- [x] Change `session.open`, `run.go` and `background.go` to pass the restarter where they passed the power, and the
   harness of `commands_test.go` to have a field `restarter screenRestarter` in place of `power`, `noScreenRestarter{}`
   when nil
-- [ ] In `commands.go`, have `clock`, `values`, `raw` and `upload` call `restartAfterHang` with `context.Background()`
+- [x] In `commands.go`, have `clock`, `values`, `raw` and `upload` call `restartAfterHang` with `context.Background()`
   inside it where they called `hangError`. `devices` and `listen` do not change (R17, D9)
-- [ ] Rename `internal/hidraw/power.go` to `usb.go` and `power_test.go` to `usb_test.go` with `git mv`, remove
+- [x] Rename `internal/hidraw/power.go` to `usb.go` and `power_test.go` to `usb_test.go` with `git mv`, remove
   `Recovery`, `Suspended`, `readPowerFile` and their tests `TestRecovery` and `TestSuspended`, and rename the helper
   `screenWithPower` to `usbScreen`. Remove `Set`, `Remove` and the power files from `fakeusb` (R16)
 
 ### 4. The restart in `run`
 
-- [ ] Rewrite `internal/cli/runhang_linux_test.go` (build tag `linux`) with the harness of `run_test.go`, `failWrites`
+- [x] Rewrite `internal/cli/runhang_linux_test.go` (build tag `linux`) with the harness of `run_test.go`, `failWrites`
   and `failErr` set to `timeoutError`, and a `fakeRestarter` whose `timedOutBy` is `hidraw.TimedOut` and whose
   restarts take 2 seconds. Each test checks the whole of standard error, the restarts made and the times they began,
   and the counts `closed` and `reopens` of the fake transport, and fails before the code exists:
@@ -249,15 +249,15 @@ The tree does not build between the first step of this task and the end of task 
     - a stop during the restart, which the fake makes by ending the stop context: `run` ends with `stopped` and writes
       none of the lines of R9 and R11 (R5)
     - in every test, none of the lines of R16 is written (R16, R25)
-- [ ] In `run.go`, give the feeder the restarter, `lastRestart` and the new `hangState` of "What the feeder of `run`
+- [x] In `run.go`, give the feeder the restarter, `lastRestart` and the new `hangState` of "What the feeder of `run`
   does in a hang", rewrite `recoverHung` and `failed` as it says, and remove `suspendPoll`, `suspendMargin`, the closing
   of the transport and the wait for a suspend (R7 to R16)
-- [ ] Update the comments of `feeder`, `reopen` and `recoverHung` to say that a hung screen is restarted, at most once a
+- [x] Update the comments of `feeder`, `reopen` and `recoverHung` to say that a hung screen is restarted, at most once a
   minute
-- [ ] Check that the tests of the lost screen in `run_test.go` pass unchanged with `noScreenRestarter`, which is the
+- [x] Check that the tests of the lost screen in `run_test.go` pass unchanged with `noScreenRestarter`, which is the
   path of every write failure on Windows (R6, R14)
-- [ ] Run the five commands of the suite
-- [ ] Commit: `bugfix-0021 Restart a hung screen in run and in the one-shot commands`
+- [x] Run the five commands of the suite
+- [x] Commit: `bugfix-0021 Restart a hung screen in run and in the one-shot commands`
 
 ### 5. The documents
 

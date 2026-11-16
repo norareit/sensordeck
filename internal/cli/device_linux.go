@@ -2,7 +2,12 @@
 
 package cli
 
-import "github.com/norareit/sensordeck/internal/hidraw"
+import (
+	"context"
+	"time"
+
+	"github.com/norareit/sensordeck/internal/hidraw"
+)
 
 // This file and device_other.go do nothing but choose the transport: they list the supported screens and open one.
 
@@ -18,7 +23,7 @@ func listScreens(sysfsRoot, devRoot string) ([]string, []string, error) {
 	return lines, nil, nil
 }
 
-func openTransport(sysfsRoot, devRoot, device string) (transport, screenPower, error) {
+func openTransport(sysfsRoot, devRoot, device string) (transport, screenRestarter, error) {
 	var opened *hidraw.Transport
 	var err error
 	if device != "" {
@@ -30,25 +35,33 @@ func openTransport(sysfsRoot, devRoot, device string) (transport, screenPower, e
 		// Return a nil interface and not the nil pointer, so that the check of the error is the only check.
 		return nil, nil, err
 	}
-	return opened, linuxPower{sysfsRoot: sysfsRoot, devRoot: devRoot, node: opened.Node}, nil
+	return opened, linuxRestarter{sysfsRoot: sysfsRoot, devRoot: devRoot, screen: opened}, nil
 }
 
-// linuxPower reads the power files of the USB device of the node that the transport has open now, at each call.
-type linuxPower struct {
+// linuxRestarter restarts the screen of the transport, through the USB device of the node that the transport has open
+// at the call.
+type linuxRestarter struct {
 	sysfsRoot, devRoot string
-	node               func() string
+	screen             *hidraw.Transport
 }
 
-func (power linuxPower) timedOut(err error) bool { return hidraw.TimedOut(err) }
+func (restarter linuxRestarter) timedOut(err error) bool { return hidraw.TimedOut(err) }
 
-func (power linuxPower) recovery() (hangRecovery, bool) {
-	device, found := hidraw.USBDevice(power.sysfsRoot, power.devRoot, power.node())
-	if !found {
-		return hangRecovery{}, false
+func (restarter linuxRestarter) restart(stop context.Context) restartResult {
+	result := hidraw.Restart{
+		SysfsRoot: restarter.sysfsRoot,
+		DevRoot:   restarter.devRoot,
+		Node:      restarter.screen.Node(),
+		Usbfs:     hidraw.SystemUsbfs{},
+		Screen:    restarter.screen,
+		Now:       time.Now,
+		Wait:      waitFor,
+	}.Run(stop)
+	outcomes := map[hidraw.RestartOutcome]restartOutcome{
+		hidraw.RestartNotPossible: restartNotPossible,
+		hidraw.NotRestarted:       notRestarted,
+		hidraw.RestartedOpen:      restartedOpen,
+		hidraw.RestartedNotOpen:   restartedNotOpen,
 	}
-	delay, possible := hidraw.Recovery(device)
-	if !possible {
-		return hangRecovery{}, false
-	}
-	return hangRecovery{delay: delay, suspended: func() bool { return hidraw.Suspended(device) }}, true
+	return restartResult{outcome: outcomes[result.Outcome], index: result.Index, err: result.Err}
 }

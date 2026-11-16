@@ -8,43 +8,50 @@ import (
 	"testing"
 	"time"
 
-	"github.com/norareit/sensordeck/internal/fakeusb"
 	"github.com/norareit/sensordeck/internal/uploadstate"
 )
 
 const (
-	hungLine       = "screen hung: write /dev/hidraw3: connection timed out\n"
-	suspendingLine = "suspending the screen to recover it\n"
-	recoveredLine  = "screen recovered\n"
-	noSuspendLine  = "the screen did not suspend within 7s, another program may hold it open\n"
-	noRuleLine     = "the screen has hung. Installing the current udev rule lets sensordeck recover it, see " +
-		`"Linux: access to the screen" in https://github.com/norareit/sensordeck#linux-access-to-the-screen. ` +
-		"Unplugging the screen once recovers it now\n"
+	hungLine        = "screen hung: write /dev/hidraw3: connection timed out\n"
+	restartingText  = "restarting the screen to recover it\n"
+	restarted33Line = "screen restarted at string descriptor 33\n"
+	recoveredLine   = "screen recovered\n"
+	notRestartLine  = "the screen did not restart, trying again every minute. Unplugging the screen once recovers it\n"
+	stillHungText   = "the screen is still hung after its restart, trying again every minute. Unplugging the screen once recovers it\n"
+	permissionError = "open /dev/bus/usb/001/005: permission denied"
+	cannotRestart   = "the screen has hung and sensordeck cannot restart it: " + permissionError +
+		`. Installing the current udev rule lets sensordeck recover it, see "Linux: access to the screen" in ` +
+		"https://github.com/norareit/sensordeck#linux-access-to-the-screen. Unplugging the screen once recovers it now\n"
 )
 
-// hungRun is a run whose first writes time out, as the entries of failWrites say, with the USB device in a temporary
-// tree. The run stops after the given number of waits, and steps is called after each wait first.
+var (
+	openedAt33     = restartResult{outcome: restartedOpen, index: 33}
+	notOpenedAt33  = restartResult{outcome: restartedNotOpen, index: 33}
+	didNotRestart  = restartResult{outcome: notRestarted}
+	notPossibleNow = restartResult{outcome: restartNotPossible, err: errPermission}
+)
+
+var errPermission = &os.PathError{Op: "open", Path: "/dev/bus/usb/001/005", Err: os.ErrPermission}
+
+// hungRun is a run whose first writes time out, as the entries of failWrites say, with a restarter whose restarts take
+// 2 seconds. The run stops after the given number of waits.
 type hungRun struct {
-	harness *harness
-	device  *fakeusb.Device
-	steps   func(count int)
+	harness   *harness
+	restarter *fakeRestarter
 }
 
-func newHungRun(test *testing.T, failures []bool, stopAfterWaits int) *hungRun {
+func newHungRun(test *testing.T, failures []bool, stopAfterWaits int, outcomes ...restartResult) *hungRun {
 	test.Helper()
-	harness, device := hungHarness(test)
+	harness, restarter := hungHarness(test, outcomes...)
 	harness.transport.writeErr = nil
 	harness.transport.failWrites = failures
-	hung := &hungRun{harness: harness, device: device}
+	restarter.duration = 2 * time.Second
 	harness.onWait = func(count int) {
-		if hung.steps != nil {
-			hung.steps(count)
-		}
 		if count >= stopAfterWaits {
 			harness.cancelStop()
 		}
 	}
-	return hung
+	return &hungRun{harness: harness, restarter: restarter}
 }
 
 func (hung *hungRun) run(test *testing.T, config string) {
@@ -56,161 +63,137 @@ func (hung *hungRun) run(test *testing.T, config string) {
 
 func (hung *hungRun) stderr() string { return hung.harness.stderr.String() }
 
-// pollWaits counts the waits of 100 milliseconds, which are the reads of the status of the device.
-func pollWaits(waits []time.Duration) int {
-	count := 0
-	for _, wait := range waits {
-		if wait == 100*time.Millisecond {
-			count++
-		}
+// restartTimes gives when each restart began, in seconds after the first.
+func (hung *hungRun) restartTimes() []int {
+	var seconds []int
+	for _, began := range hung.restarter.began {
+		seconds = append(seconds, int(began.Sub(hung.restarter.began[0])/time.Second))
 	}
-	return count
+	return seconds
 }
 
-func TestRunRecoversAHungScreenBySuspendingAndReopeningIt(test *testing.T) {
-	hung := newHungRun(test, []bool{true}, 5)
-	hung.steps = func(count int) {
-		if count == 4 {
-			hung.device.Set("runtime_status", "suspended\n")
+func (hung *hungRun) checkNoSuspendLines(test *testing.T) {
+	test.Helper()
+	for _, forbidden := range []string{"suspend", "power/"} {
+		if strings.Contains(hung.stderr(), forbidden) {
+			test.Errorf("stderr holds %q: %q", forbidden, hung.stderr())
 		}
 	}
+}
+
+func TestRunRestartsAHungScreenAndGoesOn(test *testing.T) {
+	hung := newHungRun(test, []bool{true}, 3, openedAt33)
 	hung.run(test, writeConfig(test, twoTags))
-	harness := hung.harness
-	if want := hungLine + suspendingLine + recoveredLine; hung.stderr() != want {
+	want := hungLine + restartingText + restarted33Line + recoveredLine
+	if hung.stderr() != want {
 		test.Errorf("stderr %q", hung.stderr())
 	}
-	if got := kinds(test, harness.transport.writes); got != "CV" {
+	if got := kinds(test, hung.harness.transport.writes); !strings.HasPrefix(got, "CV") {
 		test.Errorf("writes %s", got)
 	}
-	if want := []time.Duration{time.Second, 100 * time.Millisecond, 100 * time.Millisecond, 100 * time.Millisecond}; len(harness.waits) < 4 ||
-		strings.Join(durations(harness.waits[:4]), " ") != strings.Join(durations(want), " ") {
-		test.Errorf("waits %v", harness.waits)
+	if len(hung.restarter.began) != 1 || hung.harness.transport.reopens != 1 {
+		test.Errorf("restarts %d, reopenings %d", len(hung.restarter.began), hung.harness.transport.reopens)
 	}
-	// one close for the recovery and one at the end of run
-	if harness.transport.closed != 2 || harness.transport.reopens != 1 {
-		test.Errorf("closed %d, reopened %d", harness.transport.closed, harness.transport.reopens)
-	}
+	hung.checkNoSuspendLines(test)
 }
 
-func durations(values []time.Duration) []string {
-	texts := make([]string, len(values))
-	for position, value := range values {
-		texts[position] = value.String()
-	}
-	return texts
-}
-
-func TestRunChecksTheThemeAfterTheRecoveryOfAHungScreen(test *testing.T) {
+func TestRunChecksTheThemeAfterTheRestartOfAHungScreen(test *testing.T) {
 	folder := writeThemeFolder(test, compiledTheme)
 	compiled := compileExpected(test, folder)
-	hung := newHungRun(test, []bool{true}, 4)
+	hung := newHungRun(test, []bool{true}, 3, openedAt33)
 	harness := hung.harness
 	statePath := harness.useCacheDirectory(test)
 	harness.transport.ackWhenEmpty, harness.transport.serial = true, "S1"
 	if err := uploadstate.Write(statePath, map[string]string{"S1": uploadstate.Hash(compiled.File)}); err != nil {
 		test.Fatal(err)
 	}
-	hung.steps = func(count int) {
-		switch count {
-		case 2:
-			if err := os.Remove(statePath); err != nil {
-				test.Fatal(err)
-			}
-		case 3:
-			hung.device.Set("runtime_status", "suspended\n")
+	hung.restarter.onRestart = func(int) {
+		if err := os.Remove(statePath); err != nil {
+			test.Fatal(err)
 		}
 	}
 	hung.run(test, themeConfig(test, folder))
-	if got := themeKinds(harness.transport.writes); got != "UCV" {
+	if got := themeKinds(harness.transport.writes); !strings.HasPrefix(got, "UCV") {
 		test.Errorf("writes %s", got)
 	}
-	if want := hungLine + suspendingLine + recoveredLine; hung.stderr() != want {
+	if want := hungLine + restartingText + restarted33Line + recoveredLine; hung.stderr() != want {
 		test.Errorf("stderr %q", hung.stderr())
 	}
 }
 
-func TestRunOpensTheNodeAfterTheLimitWhenTheDeviceNeverSuspends(test *testing.T) {
-	hung := newHungRun(test, []bool{true}, 72)
+func TestRunWritesTheLineOfARestartThatDidNotHelpOnceAndTriesAgainAfterAMinute(test *testing.T) {
+	failures := make([]bool, 200)
+	for position := range failures {
+		failures[position] = true
+	}
+	hung := newHungRun(test, failures, 70, didNotRestart)
 	hung.run(test, writeConfig(test, twoTags))
-	if want := hungLine + suspendingLine + noSuspendLine + recoveredLine; hung.stderr() != want {
+	want := hungLine + restartingText + notRestartLine
+	if hung.stderr() != want {
 		test.Errorf("stderr %q", hung.stderr())
 	}
-	if got := pollWaits(hung.harness.waits); got != 70 {
-		test.Errorf("%d reads of the status", got)
+	times := hung.restartTimes()
+	if len(times) < 2 || times[1] < 60 {
+		test.Fatalf("restarts began at %v", times)
 	}
-	if hung.harness.transport.reopens != 1 {
-		test.Errorf("reopened %d times", hung.harness.transport.reopens)
+	// every round between the restarts opens the node plainly
+	if hung.harness.transport.reopens < 10 {
+		test.Errorf("%d reopenings", hung.harness.transport.reopens)
 	}
+	hung.checkNoSuspendLines(test)
 }
 
-func TestRunWritesTheLinesOfARecoveryThatDoesNotHelpOnce(test *testing.T) {
-	hung := newHungRun(test, []bool{true, true, true}, 3)
-	hung.device.Set("runtime_status", "suspended\n")
+func TestRunWritesTheLineOfAScreenStillHungOnceAndRestartsAfterAMinute(test *testing.T) {
+	failures := make([]bool, 200)
+	for position := range failures {
+		failures[position] = true
+	}
+	hung := newHungRun(test, failures, 70, openedAt33)
 	hung.run(test, writeConfig(test, twoTags))
-	if want := hungLine + suspendingLine; hung.stderr() != want {
-		test.Errorf("stderr %q", hung.stderr())
+	got := hung.stderr()
+	if !strings.HasPrefix(got, hungLine+restartingText+restarted33Line+stillHungText) || strings.Count(got, "still hung") != 1 {
+		test.Errorf("stderr %q", got)
 	}
-	// two closes of the recoveries and one at the end of run
-	if hung.harness.transport.closed != 3 || hung.harness.transport.reopens != 2 {
-		test.Errorf("closed %d, reopened %d", hung.harness.transport.closed, hung.harness.transport.reopens)
+	times := hung.restartTimes()
+	if len(times) < 2 || times[1] < 60 {
+		test.Fatalf("restarts began at %v", times)
+	}
+	if strings.Count(got, restartingText) != 1 || strings.Contains(got, "screen lost") || strings.Contains(got, "screen back") {
+		test.Errorf("stderr %q", got)
 	}
 }
 
-func TestRunSaysThatTheDeviceDidNotSuspendOnceOverTwoRecoveries(test *testing.T) {
-	hung := newHungRun(test, []bool{true, true, true}, 143)
+func TestRunWritesTheLineOfARestartThatIsNotPossibleOnceAndTriesInEachRound(test *testing.T) {
+	hung := newHungRun(test, []bool{true, true, true}, 5, notPossibleNow)
 	hung.run(test, writeConfig(test, twoTags))
-	if want := hungLine + suspendingLine + noSuspendLine; hung.stderr() != want {
+	want := hungLine + restartingText + cannotRestart + recoveredLine
+	if hung.stderr() != want {
 		test.Errorf("stderr %q", hung.stderr())
 	}
-	if hung.harness.transport.reopens != 2 {
-		test.Errorf("reopened %d times", hung.harness.transport.reopens)
+	if len(hung.restarter.began) != 3 || hung.harness.transport.reopens != 3 {
+		test.Errorf("restarts %d, reopenings %d", len(hung.restarter.began), hung.harness.transport.reopens)
 	}
 }
 
-func TestRunReopensAHungScreenPlainlyWhenNoRecoveryIsPossible(test *testing.T) {
-	cases := []struct {
-		name    string
-		prepare func(*hungRun)
-	}{
-		{"control on", func(hung *hungRun) { hung.device.Set("control", "on\n") }},
-		{"no USB device", func(hung *hungRun) {
-			hung.harness.power = linuxPower{sysfsRoot: test.TempDir(), devRoot: test.TempDir(), node: func() string { return hung.device.Node }}
-		}},
-	}
-	for _, each := range cases {
-		test.Run(each.name, func(test *testing.T) {
-			hung := newHungRun(test, []bool{true, true, true}, 4)
-			each.prepare(hung)
-			hung.run(test, writeConfig(test, twoTags))
-			if want := hungLine + noRuleLine + recoveredLine; hung.stderr() != want {
-				test.Errorf("stderr %q", hung.stderr())
-			}
-			// the plain reopenings of the rounds 2 to 4, and no close but the one at the end of run
-			if hung.harness.transport.reopens != 3 || hung.harness.transport.closed != 1 {
-				test.Errorf("reopened %d times, closed %d", hung.harness.transport.reopens, hung.harness.transport.closed)
-			}
-		})
-	}
-}
-
-func TestRunReadsThePowerFilesAtEachRoundOfAHang(test *testing.T) {
-	hung := newHungRun(test, []bool{true, true, true}, 4)
-	hung.device.Set("control", "on\n")
-	hung.device.Set("runtime_status", "suspended\n")
-	hung.steps = func(count int) {
-		if count == 2 {
-			hung.device.Set("control", "auto\n")
-		}
-	}
+func TestRunOpensAScreenThatIsNotOpenAfterItsRestartWithNoNewRestart(test *testing.T) {
+	hung := newHungRun(test, []bool{true}, 4, notOpenedAt33)
+	hung.harness.transport.reopenResults = []error{errFake, errFake, nil}
 	hung.run(test, writeConfig(test, twoTags))
-	if want := hungLine + noRuleLine + suspendingLine + recoveredLine; hung.stderr() != want {
+	want := hungLine + restartingText + restarted33Line + recoveredLine
+	if hung.stderr() != want {
 		test.Errorf("stderr %q", hung.stderr())
+	}
+	if len(hung.restarter.began) != 1 || hung.harness.transport.reopens != 3 {
+		test.Errorf("restarts %d, reopenings %d", len(hung.restarter.began), hung.harness.transport.reopens)
+	}
+	if got := kinds(test, hung.harness.transport.writes); !strings.HasPrefix(got, "CV") {
+		test.Errorf("writes %s", got)
 	}
 }
 
 func TestRunWritesThatAnUploadFailedBeforeThatTheScreenHung(test *testing.T) {
 	folder := writeThemeFolder(test, compiledTheme)
-	hung := newHungRun(test, []bool{true}, 1)
+	hung := newHungRun(test, []bool{true}, 1, openedAt33)
 	hung.harness.useCacheDirectory(test)
 	hung.harness.transport.ackWhenEmpty, hung.harness.transport.serial = true, "S1"
 	hung.run(test, themeConfig(test, folder))
@@ -221,60 +204,72 @@ func TestRunWritesThatAnUploadFailedBeforeThatTheScreenHung(test *testing.T) {
 	}
 }
 
-func TestRunStopsDuringTheWaitForTheSuspend(test *testing.T) {
-	hung := newHungRun(test, []bool{true}, 3)
-	hung.run(test, writeConfig(test, twoTags))
-	if want := hungLine + suspendingLine; hung.stderr() != want {
-		test.Errorf("stderr %q", hung.stderr())
-	}
-	if hung.harness.transport.reopens != 0 || len(hung.harness.waits) != 3 {
-		test.Errorf("reopened %d times, waits %v", hung.harness.transport.reopens, hung.harness.waits)
-	}
-	if !strings.HasSuffix(hung.harness.stdout.String(), "stopped\n") {
-		test.Errorf("stdout %q", hung.harness.stdout.String())
-	}
-}
-
 func TestRunHandlesAnotherFailureOutsideAHangAsBefore(test *testing.T) {
-	hung := newHungRun(test, []bool{true}, 2)
+	hung := newHungRun(test, []bool{true}, 2, openedAt33)
 	hung.harness.transport.failErr = errFake
 	hung.run(test, writeConfig(test, twoTags))
 	if want := "screen lost: fake failure\nscreen back\n"; hung.stderr() != want {
 		test.Errorf("stderr %q", hung.stderr())
 	}
+	if len(hung.restarter.began) != 0 {
+		test.Errorf("%d restarts", len(hung.restarter.began))
+	}
 }
 
 func TestRunEndsAHangWithoutALineWhenAnotherFailureFollows(test *testing.T) {
-	hung := newHungRun(test, []bool{true, true}, 3)
-	hung.device.Set("runtime_status", "suspended\n")
-	hung.steps = func(count int) {
-		if count == 1 {
-			hung.harness.transport.failErr = errFake
-		}
-	}
+	hung := newHungRun(test, []bool{true, true}, 3, didNotRestart)
+	hung.restarter.onRestart = func(int) { hung.harness.transport.failErr = errFake }
 	hung.run(test, writeConfig(test, twoTags))
-	if want := hungLine + suspendingLine + "screen lost: fake failure\nscreen back\n"; hung.stderr() != want {
+	want := hungLine + restartingText + notRestartLine + "screen lost: fake failure\nscreen back\n"
+	if hung.stderr() != want {
 		test.Errorf("stderr %q", hung.stderr())
 	}
 }
 
 func TestRunWritesNothingInTheTicksOfAHang(test *testing.T) {
-	hung := newHungRun(test, []bool{true}, 6)
-	hung.device.Set("runtime_status", "suspended\n")
+	hung := newHungRun(test, []bool{true}, 6, openedAt33)
 	written := stampWrites(hung.harness, startOfTheRun())
 	hung.run(test, writeConfig(test, "interval: 5s\n"+twoTags))
-	if got, want := timeline(*written), "C5000 V5000"; got != want {
+	if got := timeline(*written); !strings.HasPrefix(got, "C7000") {
 		test.Errorf("writes %s", got)
 	}
 }
 
 func TestRunWritesTheLinesOfASecondHangAgain(test *testing.T) {
 	// the clock and the values of a round make two writes, so the second hang begins at the first write of round 3
-	hung := newHungRun(test, []bool{true, false, false, true, true}, 4)
-	hung.device.Set("runtime_status", "suspended\n")
+	// that comes more than a minute after the first restart, which the failures at the end of the list make
+	failures := make([]bool, 0, 200)
+	failures = append(failures, true)
+	for len(failures) < 150 {
+		failures = append(failures, false)
+	}
+	hung := newHungRun(test, failures, 80, openedAt33)
+	hung.harness.onWait = func(count int) {
+		if count == 70 {
+			hung.harness.transport.failWrites = []bool{true}
+		}
+		if count >= 80 {
+			hung.harness.cancelStop()
+		}
+	}
 	hung.run(test, writeConfig(test, twoTags))
-	want := hungLine + suspendingLine + recoveredLine + hungLine + suspendingLine
+	want := hungLine + restartingText + restarted33Line + recoveredLine + hungLine + restartingText + restarted33Line + recoveredLine
 	if hung.stderr() != want {
 		test.Errorf("stderr %q", hung.stderr())
+	}
+	if times := hung.restartTimes(); len(times) != 2 || times[1] < 60 {
+		test.Errorf("restarts began at %v", times)
+	}
+}
+
+func TestRunStopsDuringTheRestartWithNoLineOfItsResult(test *testing.T) {
+	hung := newHungRun(test, []bool{true}, 100, openedAt33)
+	hung.restarter.onRestart = func(int) { hung.harness.cancelStop() }
+	hung.run(test, writeConfig(test, twoTags))
+	if want := hungLine + restartingText; hung.stderr() != want {
+		test.Errorf("stderr %q", hung.stderr())
+	}
+	if !strings.HasSuffix(hung.harness.stdout.String(), "stopped\n") {
+		test.Errorf("stdout %q", hung.harness.stdout.String())
 	}
 }

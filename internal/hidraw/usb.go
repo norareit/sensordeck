@@ -9,7 +9,6 @@ import (
 	"strconv"
 	"strings"
 	"syscall"
-	"time"
 )
 
 const usbDeviceType = "DEVTYPE=usb_device"
@@ -55,34 +54,4 @@ func isUSBDevice(directory string) bool {
 		}
 	}
 	return false
-}
-
-// Recovery gives the autosuspend delay of the USB device and whether a recovery by suspending it is possible: its
-// power/control reads auto and its power/autosuspend_delay_ms reads a whole number of 0 or more. A file that cannot
-// be read makes it impossible. It writes no file.
-func Recovery(device string) (time.Duration, bool) {
-	control, err := readPowerFile(device, "control")
-	if err != nil || control != "auto" {
-		return 0, false
-	}
-	text, err := readPowerFile(device, "autosuspend_delay_ms")
-	if err != nil {
-		return 0, false
-	}
-	milliseconds, err := strconv.Atoi(text)
-	if err != nil || milliseconds < 0 {
-		return 0, false
-	}
-	return time.Duration(milliseconds) * time.Millisecond, true
-}
-
-// Suspended tells whether power/runtime_status of the USB device reads suspended, and is false when it cannot be read.
-func Suspended(device string) bool {
-	status, err := readPowerFile(device, "runtime_status")
-	return err == nil && status == "suspended"
-}
-
-func readPowerFile(device, name string) (string, error) {
-	content, err := os.ReadFile(filepath.Join(device, "power", name))
-	return strings.TrimSpace(string(content)), err
 }
