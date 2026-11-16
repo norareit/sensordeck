@@ -41,6 +41,14 @@ supersedes: 0004-linux-sensors-and-run
   `.reviews/0026-signed-tag-values/review-round-1.md`. Independently ran the five required Go checks, the uncached
   end-to-end suite and `npm run check-changes`, all successfully. The physical-device check and Windows runtime
   behavior were not verified. The status stays `in-progress`
+- 2026-11-17T01:10:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, read `review-round-1.md`. It has one
+  finding, C1, blocking: the move of the compiling of the theme into `compileTheme` and the new end-to-end test share
+  a commit, against the rule that a commit does not change both structure and behavior. Proposed decline, not a
+  decision: the move leaves what `TestRunSendsCustomMetricsToTheTagsOfTheTheme` checks unchanged, and that test passes
+  on the final tree, which `go test -count=1 ./e2e` as the review ran it confirms. The deviation is already logged, and
+  splitting it means rewriting commits of a branch whose later commits depend on it, for no change in the tree.
+  The finding stays open until the human decides it. No file other than this record changed. The status stays
+  `in-progress`
 
 ## Amendments
 - 2026-11-16T23:47:45Z [Claude Code, anthropic/claude-opus-5-5] read the spec under the delegation in `AGENTS.md`: its facts are the
