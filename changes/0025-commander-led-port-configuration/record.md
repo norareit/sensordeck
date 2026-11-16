@@ -1,6 +1,6 @@
 ---
 kind: bug
-status: draft
+status: approved
 timestamp: 2026-11-16T23:06:16Z
 supersedes: 0009-commander-led-colour
 ---
@@ -20,6 +20,7 @@ supersedes: 0009-commander-led-colour
   port with LEDs has 4 of them, and `0x1E` left as stored with a line otherwise; `08 15 01` only after a write; a line
   naming iCUE after each rewrite; a fake that stays dark with iCUE's configuration. The unit supersedes unit 0009,
   whose R6 and R10 it changes. No code of OpenLinkHub, liquidctl, OpenRGB or iCUE was read. The status is `draft`
+- 2026-11-16T23:08:20Z [human] approved the spec. The status is `approved`
 
 ## Amendments
 - 2026-11-16T23:08:20Z [Claude Code, anthropic/claude-opus-5-5] read the spec under the delegation in `AGENTS.md`: its facts are those
