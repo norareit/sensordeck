@@ -1,6 +1,6 @@
 ---
 kind: bug
-status: draft
+status: approved
 timestamp: 2026-11-16T14:50:42Z
 supersedes: 0020-recover-hung-screen
 ---
@@ -28,3 +28,4 @@ supersedes: 0020-recover-hung-screen
   request" are declined. Item 2 is not taken into the unit: the orchestrating session adds the amendment to the record
   of `0020-recover-hung-screen` itself when it merges this unit. The device check is the human's and the unit does
   not depend on it. The approval that follows is made under that delegation
+- 2026-11-16T14:52:51Z [human] approved the spec. The status is `approved`
