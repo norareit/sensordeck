@@ -52,11 +52,11 @@ func (current *session) startRun(stop context.Context, named string) error {
 	if err != nil {
 		return err
 	}
-	opened, closeTransport, err := current.open()
+	opened, power, closeTransport, err := current.open()
 	if err != nil {
 		return err
 	}
-	if err := current.serveRun(stop, prepared, opened, closeTransport); err != nil {
+	if err := current.serveRun(stop, prepared, opened, power, closeTransport); err != nil {
 		current.say("sensordeck: " + err.Error())
 		return errLogged
 	}

@@ -105,32 +105,32 @@ plain directory, has no such ancestor, so the end-to-end tests see a recovery th
 
 ### 3. The seam of the command line and the one-shot commands
 
-- [ ] In `internal/cli/hang_test.go` (all systems), write tests of `hangError` with a fake `screenPower` that fail
+- [x] In `internal/cli/hang_test.go` (all systems), write tests of `hangError` with a fake `screenPower` that fail
   before the code exists: a timed-out error with the recovery possible gives the text of the error, `: the screen has
   hung. ` and the text of R13 for a possible recovery; with the recovery not possible, the text of R7 after
   `the screen has hung. `; an error that is no timeout is given back as it is; and `errors.Is` still finds the error of
   the write through the result (R13)
-- [ ] Write `internal/cli/hang.go` with the `screenPower` interface, `hangRecovery`, `noScreenPower`, the constants and
+- [x] Write `internal/cli/hang.go` with the `screenPower` interface, `hangRecovery`, `noScreenPower`, the constants and
   `hangError`. The line of R7 and the error of R13 share one constant for the words after `the screen has hung. `, so
   that the text exists once (R7, R13)
-- [ ] Change `environment.openTransport` to `func(sysfsRoot, devRoot, device string) (transport, screenPower, error)`.
+- [x] Change `environment.openTransport` to `func(sysfsRoot, devRoot, device string) (transport, screenPower, error)`.
   In `device_linux.go`, give a `linuxPower` holding the two roots and the transport's `Node` method: `timedOut` calls
   `hidraw.TimedOut`; `recovery` calls `hidraw.USBDevice` with the current node and then `hidraw.Recovery`, and gives a
   `hangRecovery` whose `suspended` calls `hidraw.Suspended` on the device found. Both read sysfs at each call, never
   caching (R2, R3). In `device_windows.go` and `device_other.go`, give `noScreenPower{}` (R2, non-goal Windows)
-- [ ] Change `session.open` to give the `screenPower` as well, and pass it on in `run.go` and `background.go` to
+- [x] Change `session.open` to give the `screenPower` as well, and pass it on in `run.go` and `background.go` to
   `serveRun`. `listen` discards it
-- [ ] In `commands_test.go`, give the harness a field `power screenPower`, given by its `openTransport`, which is
+- [x] In `commands_test.go`, give the harness a field `power screenPower`, given by its `openTransport`, which is
   `noScreenPower{}` unless a test sets it. Add to `fakeTransport` in `fake_test.go` a field `failErr error`, the error
   of a write that `failWrites` fails, `errFake` when nil
-- [ ] In `internal/cli/hang_linux_test.go` (build tag `linux`), write tests of `clock` with the harness, a `linuxPower`
+- [x] In `internal/cli/hang_linux_test.go` (build tag `linux`), write tests of `clock` with the harness, a `linuxPower`
   on a `fakeusb` tree whose node it is given, and a write that fails with the `ETIMEDOUT` error of task 2: with `auto`
   and `2000` the command ends with status 1 and the error of R13 for a possible recovery; with `on` it ends with the
   error that holds the text of R7; and in both the transport is opened once and never reopened (R13, R22)
-- [ ] In `commands.go`, pass the error of a write of `clock`, `values` and `raw`, and the error of the upload of
+- [x] In `commands.go`, pass the error of a write of `clock`, `values` and `raw`, and the error of the upload of
   `upload`, through `hangError` with the power of the opening. `devices` and `listen` do not change (R13)
-- [ ] Run the five commands of the suite
-- [ ] Commit: `bugfix-0020 Tell a hung screen in the one-shot commands`
+- [x] Run the five commands of the suite
+- [x] Commit: `bugfix-0020 Tell a hung screen in the one-shot commands`
 
 ### 4. The recovery of `run`
 

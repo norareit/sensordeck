@@ -38,7 +38,7 @@ type environment struct {
 	// listScreens gives the lines of the supported screens and, when there is none, the lines of the devices that
 	// almost matched.
 	listScreens   func(sysfsRoot, devRoot string) (screens, nearMisses []string, err error)
-	openTransport func(sysfsRoot, devRoot, device string) (transport, error)
+	openTransport func(sysfsRoot, devRoot, device string) (transport, screenPower, error)
 	userConfigDir func() (string, error)
 	userCacheDir  func() (string, error)
 	newSources    func(sysfsRoot, devRoot, procRoot string) (sourceSet, error)

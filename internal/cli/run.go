@@ -36,11 +36,11 @@ func (current *session) runCommand() *cobra.Command {
 			}
 			stop, cancel := current.env.notifyStop(context.Background())
 			defer cancel()
-			opened, closeTransport, err := current.open()
+			opened, power, closeTransport, err := current.open()
 			if err != nil {
 				return err
 			}
-			return current.serveRun(stop, prepared, opened, closeTransport)
+			return current.serveRun(stop, prepared, opened, power, closeTransport)
 		},
 	}
 	command.Flags().StringVar(&configPath, "config", "", "read the config from this file instead of the default place")
@@ -88,7 +88,7 @@ func (current *session) prepareRun(named string) (preparedRun, error) {
 
 // serveRun writes the line running, feeds the screen until stop is done, ends the keeper and closes the transport, and
 // writes stopped. Its error is the error of the feeding.
-func (current *session) serveRun(stop context.Context, prepared preparedRun, opened transport, closeTransport func()) error {
+func (current *session) serveRun(stop context.Context, prepared preparedRun, opened transport, power screenPower, closeTransport func()) error {
 	settings := prepared.started.settings
 	sources := prepared.sources
 	current.say(fmt.Sprintf("running: %d metrics every %s", len(settings.Mappings), settings.Interval))

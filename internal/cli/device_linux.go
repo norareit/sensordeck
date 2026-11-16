@@ -18,7 +18,7 @@ func listScreens(sysfsRoot, devRoot string) ([]string, []string, error) {
 	return lines, nil, nil
 }
 
-func openTransport(sysfsRoot, devRoot, device string) (transport, error) {
+func openTransport(sysfsRoot, devRoot, device string) (transport, screenPower, error) {
 	var opened *hidraw.Transport
 	var err error
 	if device != "" {
@@ -28,7 +28,27 @@ func openTransport(sysfsRoot, devRoot, device string) (transport, error) {
 	}
 	if err != nil {
 		// Return a nil interface and not the nil pointer, so that the check of the error is the only check.
-		return nil, err
+		return nil, nil, err
 	}
-	return opened, nil
+	return opened, linuxPower{sysfsRoot: sysfsRoot, devRoot: devRoot, node: opened.Node}, nil
+}
+
+// linuxPower reads the power files of the USB device of the node that the transport has open now, at each call.
+type linuxPower struct {
+	sysfsRoot, devRoot string
+	node               func() string
+}
+
+func (power linuxPower) timedOut(err error) bool { return hidraw.TimedOut(err) }
+
+func (power linuxPower) recovery() (hangRecovery, bool) {
+	device, found := hidraw.USBDevice(power.sysfsRoot, power.devRoot, power.node())
+	if !found {
+		return hangRecovery{}, false
+	}
+	delay, possible := hidraw.Recovery(device)
+	if !possible {
+		return hangRecovery{}, false
+	}
+	return hangRecovery{delay: delay, suspended: func() bool { return hidraw.Suspended(device) }}, true
 }

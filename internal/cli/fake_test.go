@@ -89,7 +89,8 @@ type fakeTransport struct {
 	ackWhenEmpty  bool
 	writes        []smartmonitor.Report
 	writeErr      error
-	failWrites    []bool  // one entry for each write from the next on: true fails it with errFake
+	failWrites    []bool  // one entry for each write from the next on: true fails it with failErr
+	failErr       error   // the error of a write that failWrites fails, errFake when nil
 	reopenResults []error // one entry for each reopening from the next on, then reopenErr
 	reopens       int
 	reopenErr     error
@@ -105,6 +106,9 @@ func (fake *fakeTransport) Write(report smartmonitor.Report) error {
 	if len(fake.failWrites) > 0 {
 		failing := fake.failWrites[0]
 		fake.failWrites = fake.failWrites[1:]
+		if failing && fake.failErr != nil {
+			return fake.failErr
+		}
 		if failing {
 			return errFake
 		}
