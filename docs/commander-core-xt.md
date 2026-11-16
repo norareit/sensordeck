@@ -14,9 +14,11 @@ The facts below come from four sources, and from nothing else:
   report descriptor of interface 0 in that sysfs
 * A black-box trace, made with `strace`, of the hidraw traffic of OpenLinkHub on the same machine. It gave the channels,
   the endpoints `0x20`, `0x1A`, `0x21` and `0x22`, the colour write, the LED count and the rate of its readings
-* Tests made by hand on the device with the LEDs watched (units 0008 and 0009). They showed the effect of software mode
-  on the LEDs, the status `0x03` of commands outside software mode and of a second endpoint opened on a channel, and that
-  one colour write lights the LEDs
+* Tests made by hand on the device with the LEDs watched (units 0008, 0009 and 0025). They showed the effect of software
+  mode on the LEDs, the status `0x03` of commands outside software mode and of a second endpoint opened on a channel,
+  and that one colour write lights the LEDs. Those of unit 0025, made on 2026-11-16 after iCUE had run on Windows, showed
+  that the LEDs stayed dark in software mode with the configuration of the endpoint `0x1E` that iCUE left, and lit, with
+  the same colour write, after the configuration of OpenLinkHub was written to it
 
 liquidctl's public description of the protocol was read for facts only, for the keepalive. No code of liquidctl,
 OpenLinkHub or OpenRGB was read, translated or copied. The traces themselves are kept locally and are not part of the
@@ -147,6 +149,39 @@ the colour, and wrote neither again until the colour changed. For an animated ef
 milliseconds. It wrote the full output report of 385 bytes with the report ID. sensordeck writes one colour write of 97
 bytes, without the write of zero triples, because the device test lit the LEDs with it.
 
+### The endpoint `0x1E`, the LED port configuration
+
+The endpoint `0x1E` holds a configuration of the LED ports, which the controller stores. In software mode the colour
+write lights only the ports that this configuration enables.
+
+The read of `0x1E` on channel 1 answers the data type `0D 00` in bytes 3 and 4, a count in byte 5 and then the
+configuration entries. After a write by OpenLinkHub and by sensordeck it answered, from byte 3,
+`0D 00 07 00 00 00 01 03 01 03 01 03 01 03`: the count 7 is the count of connections of the answer of `0x20`, and each
+connection has one entry, `00` for a connection with no LEDs (EXT and the ports 1 and 2 of the host) and `01 03` for one
+with LEDs (the ports 3 to 6). The entries are of two lengths, so the layout is read from this one example. After iCUE
+had run the read answered, from byte 3, `0D 00 07`, then seven times `06`, then `00 00 01 03 01 03 01 03 01 03`. The
+seven `06` do not fit the layout above, since there are seven connections and two lengths of entry. The bytes after the
+seven `06` are taken to be stale bytes of an earlier answer, which is not established.
+
+The write is the command `06` on channel 1, laid out as the colour write is: `08 06 01`, then in bytes 3 and 4 a
+length, low byte first, then `00 00` in bytes 5 and 6, and from byte 7 the configuration. The length counts the bytes of
+the configuration. For the host it is `08 06 01 0E 00 00 00 0D 00 07 00 00 00 01 03 01 03 01 03 01 03`. OpenLinkHub wrote
+it after the close and open of `0x1E` on channel 1, followed by the close of `0x1E` and then `08 15 01`, each answered
+with status `00`, and sensordeck writes it in the same way. The configuration is stored in the controller: a colour
+written afterwards showed again until iCUE rewrote the configuration, and the configuration that iCUE left outlasted a
+full power cut.
+
+The device tests of unit 0025 showed that with the configuration that iCUE left, the setup of unit 0009 was accepted
+with every answer at status `00`, and the LEDs stayed dark; with the configuration of OpenLinkHub written first, the
+same colour write lit them. `08 14 0N 01` was not needed.
+
+sensordeck builds the configuration from the answer of `0x20`: the entries are those of "The endpoint `0x20`, the
+ports", an entry has LEDs when its mode is 2 and its LED count is not 0, and the configuration is `0D 00`, the count, and
+`01 03` for each entry with LEDs and `00` for each other. The type `03` is written only when every entry with LEDs has 4
+LEDs, the one kind of fan seen. With another count sensordeck leaves `0x1E` as stored and writes a line. At each setup it
+reads `0x1E`, and writes the configuration, then `08 15 01`, only when the first bytes of the answer, as many as the
+configuration holds, are not the wanted configuration, to spare the controller's memory.
+
 ## Stale bytes
 
 The bytes of an answer past what its command fills keep the content of an earlier answer. The answer of step 1 held the
@@ -187,7 +222,9 @@ at most 1 second between the start of one reading and the start of the next, wha
 With `commander_color`, `run` makes a session. The commands are those after the report ID byte.
 
 * The setup: `08 01 03 00 02`; the read of `0x20` on channel 1 as four exchanges, `08 05 01 01 20`, `08 0D 01 20`,
-  `08 08 01 20` and `08 05 01 01 20`; `08 0D 00 22`; and the colour write. The first exchange that does not succeed ends
+  `08 08 01 20` and `08 05 01 01 20`; when every port with LEDs has 4 of them, the read of `0x1E` in the same four
+  exchanges; when the answer is not the wanted configuration, `08 05 01 01 1E`, `08 0D 01 1E`, the configuration write,
+  `08 05 01 01 1E` and `08 15 01`; `08 0D 00 22`; and the colour write. The first exchange that does not succeed ends
   the setup
 * A reading, made at least once a second: for each of `0x1A`, `0x17` and `0x21` in that order, the four exchanges close,
   open, read and close on channel 1. Only the answer of `0x21` is used. They are the traffic of the trace, copied whole
@@ -197,10 +234,10 @@ With `commander_color`, `run` makes a session. The commands are those after the 
   come, so that a controller that stopped answering costs a stop at most two time limits. The return to hardware mode is
   never left out
 
-OpenLinkHub also wrote at setup `08 02 13`, `08 14 0N 01` for N from 1 to 6, writes with the command `06` to the
-endpoints `0x18`, data type `07 00`, and `0x1E`, data type `0D 00`, opened on channel 1, and `08 15 01`. sensordeck does
-not send them, and nor does it send a colour write of zero triples or a command that opens another endpoint on channel
-0. Their meaning is unknown, and the device test lit the LEDs without them.
+OpenLinkHub also wrote at setup `08 02 13`, `08 14 0N 01` for N from 1 to 6, and a write with the command `06` to the
+endpoint `0x18`, data type `07 00`. sensordeck does not send them, and nor does it send a colour write of zero triples
+or a command that opens another endpoint on channel 0. Their meaning is unknown, and the device test lit the LEDs
+without them.
 
 ## Unknown
 
@@ -221,6 +258,13 @@ not send them, and nor does it send a colour write of zero triples or a command 
 * The software-mode timeout
 * The meaning of the setup commands that sensordeck does not send, listed under "A session of run"
 * The meaning of the answer of `0x1A`
+* The meaning of the type `03` of the LED port configuration, which is taken to be an LED type that stands for the fan
+  with 4 LEDs of the host, and what a port with another LED count needs
+* The meaning of `06`, the value that iCUE left in the configuration
+* Whether `08 15 01` is needed. It was sent in every setup that lit the LEDs after a configuration write
+* Whether the bytes after the seven `06` in the configuration that iCUE left are stale
+* Whether a write of `0x1E` wears the memory of the controller
+* What iCUE does with the configuration that sensordeck writes
 * The modes of an entry of `0x20` other than 2 and 3
 * The order in which the triples of a colour write map to ports
 * Whether the trailing endpoint byte of a read or a close matters. The `08 05 01` of the first traces worked without it

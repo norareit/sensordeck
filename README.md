@@ -532,6 +532,14 @@ tags:
 What you see with the colour: at the start a moment of darkness and then the colour, steady while `run` runs, and after
 Ctrl+C or SIGTERM the lighting stored in the controller again.
 
+The controller also stores which of its ports have LEDs. iCUE rewrites this, and afterwards the LEDs stay dark in
+software mode, on Linux and on Windows, although every command of the setup is accepted. `run` checks it at the start of
+each session and repairs it when it does not match the fans the controller reports, writing
+`controller LED ports configured: the stored configuration did not enable the ports with LEDs, iCUE may have changed it`
+to standard error. The repair stays stored in the controller until iCUE changes it again. It is made only when every
+port with LEDs has 4 of them, the one kind of fan it was tested with. Otherwise `run` writes
+`controller LED ports left as stored` with the port and its LED count, once, and the LEDs may stay dark.
+
 When the controller is unplugged or stops answering, `run` returns it to hardware mode if it can, writes
 `controller lost` to standard error, leaves the metrics of the controller out and keeps the screen going. It tries
 again after 10 seconds and then less often, up to every 5 minutes, and writes `controller back` and lights the colour
@@ -539,7 +547,8 @@ again when it succeeds.
 
 Another program that talks to the controller at the same time, such as iCUE, liquidctl, OpenLinkHub or
 `sensordeck sensors`, is not supported: the commands of both mix, readings fail, the LEDs may show the stored lighting or
-go dark, and `run` sets the colour again at its next setup.
+go dark, and `run` sets the colour again at its next setup. Running iCUE and sensordeck at the same time is not
+supported.
 
 What the controller does with fans that it runs, in software mode with no fan settings sent, is not known. sensordeck
 sends no fan settings, and the fans of the machine it was tested on are not run by the controller.

@@ -261,7 +261,7 @@ The sandbox runs the suite here, and the Windows build and vet of `AGENTS.md` co
 
 ### 6. The documents
 
-- [ ] In `docs/commander-core-xt.md`, add after "### The endpoint `0x22`, the LEDs, and the colour write" a section
+- [x] In `docs/commander-core-xt.md`, add after "### The endpoint `0x22`, the LEDs, and the colour write" a section
   "### The endpoint `0x1E`, the LED port configuration" that says, in the project's own words: the read on channel 1
   and its layout, data type `0D 00`, the count and one entry per connection; the write `08 06 01` and its layout, with
   the bytes of the host `08 06 01 0E 00 00 00 0D 00 07 00 00 00 01 03 01 03 01 03 01 03`; the configuration of
@@ -269,16 +269,16 @@ The sandbox runs the suite here, and the Windows build and vet of `AGENTS.md` co
   stale; that it is stored in the controller and survives a power cut; that in software mode the colour lights only
   the ports it enables, as the device tests of unit 0025 showed; the rule of R1 and R3, with `01 03` written only when
   every port with LEDs has 4; and `08 15 01` after the write (R10)
-- [ ] In "How it was learned", add the device tests of unit 0025 of 2026-11-16 to the source of tests made by hand,
+- [x] In "How it was learned", add the device tests of unit 0025 of 2026-11-16 to the source of tests made by hand,
   with what they showed: the configuration of `0x1E` decides which ports light (R10)
-- [ ] In "## A session of run", give the setup of R4, with the read of `0x1E` and, when it differs, the five exchanges
+- [x] In "## A session of run", give the setup of R4, with the read of `0x1E` and, when it differs, the five exchanges
   of the write. In the paragraph of the commands that sensordeck does not send, remove `0x1E` and `08 15 01` and keep
   `08 02 13`, `08 14 0N 01`, the write to `0x18`, the zero triples and the other opens on channel 0 (R10)
-- [ ] In "## Unknown", add: the meaning of the type `03` and what a port with another LED count needs; the meaning of
+- [x] In "## Unknown", add: the meaning of the type `03` and what a port with another LED count needs; the meaning of
   `06`; whether `08 15 01` is needed; whether the bytes after the seven `06` are stale; whether a write of `0x1E` wears
   the memory of the controller; and what iCUE does with the configuration that sensordeck writes (R10)
-- [ ] Check with `git diff` that no line of the document was removed but those the requirement names (R10)
-- [ ] In `README.md`, section `## The Corsair iCUE Commander Core XT`, add a paragraph after the one on losing the
+- [x] Check with `git diff` that no line of the document was removed but those the requirement names (R10)
+- [x] In `README.md`, section `## The Corsair iCUE Commander Core XT`, add a paragraph after the one on losing the
   controller that says: the controller stores which of its ports have LEDs; iCUE rewrites it, and afterwards the LEDs
   stay dark in software mode, on Linux and on Windows; `run` checks it at the start of each session and repairs it when
   it does not match the fans the controller reports, writing `controller LED ports configured: ...` with the rest of
@@ -286,7 +286,7 @@ The sandbox runs the suite here, and the Windows build and vet of `AGENTS.md` co
   LEDs has 4, the one kind of fan it was tested with, and otherwise `run` writes `controller LED ports left as stored`
   and the LEDs may stay dark. In the paragraph on other programs, say that running iCUE and sensordeck at the same time
   is not supported, keeping the programs it names (R11)
-- [ ] Commit: `bugfix-0025 Describe the LED port configuration in the documents`
+- [x] Commit: `bugfix-0025 Describe the LED port configuration in the documents`
 
 ## Verification
 
@@ -304,7 +304,7 @@ The sandbox runs the suite here, and the Windows build and vet of `AGENTS.md` co
 - [x] After task 3: the setup
 - [x] After task 4: the lines of run
 - [x] After task 5: the end-to-end tests
-- [ ] After task 6: the documents
+- [x] After task 6: the documents
 
 ## Trace
 
