@@ -63,12 +63,12 @@ plain directory, has no such ancestor, so the end-to-end tests see a recovery th
 
 ### 1. The udev rule
 
-- [ ] In `udev_test.go`, write a test that reads `udev/70-sensordeck.rules` and fails unless it holds, each as a whole
+- [x] In `udev_test.go`, write a test that reads `udev/70-sensordeck.rules` and fails unless it holds, each as a whole
   line, the two hidraw rules as they stand and the line of R1 exactly. Run it and see it fail (R19)
-- [ ] Add to `udev/70-sensordeck.rules`, after the two hidraw rules and a blank line, a comment that says the rule lets
+- [x] Add to `udev/70-sensordeck.rules`, after the two hidraw rules and a blank line, a comment that says the rule lets
   the kernel suspend the screen when no program holds it open, which clears the hang of its firmware after a USB reset
   and which `run` relies on to recover it, and then the line of R1. The two hidraw rules stay as they are (R1, D2, D3)
-- [ ] Commit: `bugfix-0020 Set the screen to autosuspend in the udev rule`
+- [x] Commit: `bugfix-0020 Set the screen to autosuspend in the udev rule`
 
 ### 2. The Linux side: timeout, USB device, power files
 

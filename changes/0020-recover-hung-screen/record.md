@@ -1,6 +1,6 @@
 ---
 kind: bug
-status: approved
+status: in-progress
 timestamp: 2026-11-16T13:25:49Z
 supersedes: 0004-linux-sensors-and-run
 ---
@@ -34,3 +34,5 @@ supersedes: 0004-linux-sensors-and-run
   branch: five commits, for the udev rule, the reading of the USB power state in the Linux transport, the seam of the
   command line with the one-shot commands, the recovery of `run`, and the documents, with each requirement traced to
   its tasks. The status stays `approved`
+- 2026-11-16T13:40:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, began the work. The status is
+  `in-progress`
