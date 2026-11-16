@@ -196,27 +196,27 @@ plain directory, has no such ancestor, so the end-to-end tests see a recovery th
 
 ### 5. The documents
 
-- [ ] In `docs/protocol.md`, add a section `## Hang after a USB reset` before `## Unknown`, holding facts 1 to 3 of the
+- [x] In `docs/protocol.md`, add a section `## Hang after a USB reset` before `## Unknown`, holding facts 1 to 3 of the
   spec with the date 2026-11-16, the report descriptor, and `bmAttributes` `0x80` with no `power/wakeup`; that fact 3
   was observed once and the reset at boot as its cause is an inference; that the screen is not suspended while a
   program holds its node open, because it cannot wake the host, as read and not observed; and how sensordeck recovers.
   Add to `## Unknown` whether a suspend and resume of a screen that works is harmless, what the screen shows while
   suspended, and whether the hang happens on Windows (R15)
-- [ ] In the README's section "Linux: access to the screen", replace the sentence that the rule is one line and its
+- [x] In the README's section "Linux: access to the screen", replace the sentence that the rule is one line and its
   block with the whole rule file, and say in a few sentences what the third rule does and why, linking the section of
   `docs/protocol.md`. Say that a rule file without the line that sets `power/control` is old and is installed again,
   that `grep power/control /etc/udev/rules.d/70-sensordeck.rules` printing nothing tells it, and that a replug applies
   it (R16)
-- [ ] In the README, after the sentence that `run` keeps running when the screen is unplugged and plugged in again, say
+- [x] In the README, after the sentence that `run` keeps running when the screen is unplugged and plugged in again, say
   that on Linux `run` recovers a hung screen by letting it suspend and opening it again, with the lines
   `screen hung: `, `suspending the screen to recover it` and `screen recovered`, and the line of R7 without the rule
   (R18)
-- [ ] Add a section `## Troubleshooting` to the README before `## Making a release`, with an entry for a screen that
+- [x] Add a section `## Troubleshooting` to the README before `## Making a release`, with an entry for a screen that
   shows its theme but no values after boot, with 12:00:00 and 2022-01-01 and `screen hung` in the log: that it hung on
   the USB reset of the boot, that installing the current udev rule lets sensordeck recover it, and that unplugging it
   once recovers it now (R17)
-- [ ] Run the five commands of the suite (R23)
-- [ ] Commit: `bugfix-0020 Document the hang of the screen and its recovery`
+- [x] Run the five commands of the suite (R23)
+- [x] Commit: `bugfix-0020 Document the hang of the screen and its recovery`
 
 ## Trace
 

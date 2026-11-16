@@ -157,19 +157,27 @@ sensordeck --help                 # list the commands and flags
 On Linux the screen is reached through hidraw, and a udev rule gives the user of the active session access to its
 device node. Without the rule the node belongs to root, and the commands fail with a message that points here.
 
-The rule is one line:
+The rule file holds three rules:
 
 ```
 SUBSYSTEM=="hidraw", ATTRS{idVendor}=="0483", ATTRS{idProduct}=="0065", MODE="0660", TAG+="uaccess"
+SUBSYSTEM=="hidraw", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="0c2a", MODE="0660", TAG+="uaccess"
+SUBSYSTEM=="usb", ENV{DEVTYPE}=="usb_device", ATTR{idVendor}=="0483", ATTR{idProduct}=="0065", ATTR{power/autosuspend_delay_ms}="2000", ATTR{power/control}="auto"
 ```
 
 It is the file `udev/70-sensordeck.rules` of this repository. To install it, copy that file to `/etc/udev/rules.d/`
 and replug the screen. The file name starts with `70` because the `uaccess` tag is acted on by `73-seat-late.rules`,
 and the rule must sort before it.
 
-The same file holds a second rule of the same form, for the USB ID `1b1c:0c2a` of the Corsair iCUE Commander Core XT, so
+The second rule is of the same form, for the USB ID `1b1c:0c2a` of the Corsair iCUE Commander Core XT, so
 that its temperature probes can be read without liquidctl. Its metrics are left out when the controller cannot be
 opened, for lack of this rule for instance.
+
+The third rule lets the kernel suspend the screen when no program holds it open. After a USB reset, such as the one at
+boot, the firmware of the screen can hang and time out every write, and a suspend and resume clears it. `run` relies on
+that to recover the screen, see [Hang after a USB reset](docs/protocol.md#hang-after-a-usb-reset). A rule file without
+the line that sets `power/control` is an old one, and is installed again. `grep power/control
+/etc/udev/rules.d/70-sensordeck.rules` printing nothing tells it. A replug applies the rule.
 
 hidraw is provided by the kernel's `usbhid` driver, so that driver must stay bound to the screen. A rule that unbinds
 `usbhid` for this device, as some guides for other tools add, has to be removed.
@@ -259,6 +267,11 @@ screen keeps its last value.
 
 `sensordeck run` sends the values until Ctrl+C or SIGTERM. It sets the clock of the screen when it starts and once a
 second, and it keeps running when the screen is unplugged and plugged in again.
+
+On Linux `run` also recovers a hung screen, one whose writes time out, by letting it suspend and opening it again. It
+writes `screen hung: ` and the error, `suspending the screen to recover it` and then `screen recovered` to standard
+error, each once in a hang. Without the third rule of the udev rule file it writes one line that says to install the
+current rule, and unplugging the screen once recovers it.
 
 `run` reads the config file again when its modification time or its size changes, at the start of a round, so an edit
 or `sensordeck theme use` takes effect within a round, with no restart. A reload applies the theme and the tags. A change
@@ -571,6 +584,14 @@ as magenta outlines, because the device's own alignment and the fields of a bar 
 device and works with no screen connected, on Linux and on Windows. It prints each warning of the reader, such as a
 record of a type it does not know, to standard error. The format is described in
 [docs/theme-format.md](docs/theme-format.md).
+
+## Troubleshooting
+
+### The screen shows its theme but no values after boot
+
+The screen shows 12:00:00 and 2022-01-01, and the log of `run` has `screen hung`. The screen hung after the USB reset of
+the boot. Installing the current udev rule, see [Linux: access to the screen](#linux-access-to-the-screen), lets
+sensordeck recover it by itself. Unplugging the screen once and plugging it in again recovers it now.
 
 ## Making a release
 

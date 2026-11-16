@@ -110,8 +110,45 @@ A block is therefore 133 or 1029 bytes long. The CRC is computed over the data b
 Polynomial `0x1021`, initial value `0x0000`, no reflection of input or output, no final XOR. The CRC of the nine ASCII
 bytes `123456789` is `0x31C3`.
 
+## Hang after a USB reset
+
+Facts 1 to 3 were observed on the device on 2026-11-16, on a Linux machine.
+
+1. **The firmware hangs on a USB reset while it runs.** A `USBDEVFS_RESET` ioctl on the usbfs node of a screen that
+   worked made every later write time out at once. Disabling and enabling its port of the root hub, by writing 1 and
+   then 0 to `usb1-port4/disable`, did the same. After a cold boot the screen shows its theme with the default time
+   12:00:00 and date 2022-01-01, and every write to its hidraw node fails after the kernel's limit of 5 seconds with a
+   timeout. Only a replug made it work. That Linux resets the device once more at boot, after the firmware of the
+   screen has set it up, is an inference from this and from the replug that works, not an observation of the boot
+2. **The hung state.** Writes of output reports to the interrupt OUT endpoint time out. `HIDIOCSOUTPUT`, the output
+   report by the control endpoint, times out too. `HIDIOCSFEATURE` is accepted and does nothing, because the report
+   descriptor declares one input and one output report of 64 bytes and no feature report. No input report arrives. A
+   further USB reset does not help. The disable switch of the port does not cut its power, and the port has no ACPI
+   power resources. The report descriptor is
+   `06 00 ff 09 01 a1 01 09 01 15 00 26 ff 00 95 40 75 08 81 02 09 01 15 00 26 ff 00 95 40 75 08 91 02 c0`
+3. **A USB runtime suspend and resume recovers it.** With no program holding the hidraw node open, `power/control` of
+   the USB device was set to `auto`, with `power/autosuspend_delay_ms` at 2000. `power/runtime_status` read
+   `suspended` within 5 seconds. Setting `control` back to `on` resumed the device, and the clock and the values
+   worked again at once. This was observed once, on a screen hung by the reset of fact 1
+
+The USB device has `bmAttributes` `0x80`, bus powered without remote wakeup, and no `power/wakeup` file.
+
+The kernel does not suspend a device that cannot wake the host while a driver holds it busy. usbhid marks the interface
+as needing remote wakeup when a program opens its node, so the screen is not suspended while sensordeck holds its node
+open. This is read from the behaviour of the kernel's USB power management and the attributes above, and is not
+observed.
+
+sensordeck recovers a hung screen as follows. The third rule of `udev/70-sensordeck.rules` sets `power/control` to
+`auto` and the autosuspend delay to 2000 milliseconds for the screen's USB device. A screen hung at boot then suspends
+before `run` opens it, and the opening resumes it. `run` closes the node of a screen whose write timed out, waits until
+`power/runtime_status` reads `suspended`, and opens the node again. sensordeck sends no USB reset and writes no file
+in sysfs.
+
 ## Unknown
 
+* Whether a suspend and resume of a screen that works is harmless
+* What the screen shows while it is suspended
+* Whether the hang happens on Windows
 * How the brightness is set
 * How device information or the firmware version is read back
 * What the device sends on the IN endpoint without being asked
