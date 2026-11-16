@@ -1,6 +1,6 @@
 ---
 kind: bug
-status: draft
+status: approved
 timestamp: 2026-11-16T23:45:33Z
 supersedes: 0004-linux-sensors-and-run
 ---
@@ -19,6 +19,7 @@ supersedes: 0004-linux-sensors-and-run
   replaces, and changes requirements and decisions of the units 0002, 0003, 0007, 0011 and 0024, which the spec names.
   The check on the device of a negative custom metric is the human's, and the unit does not wait for it. The status is
   `draft`
+- 2026-11-16T23:47:46Z [human] approved the spec. The status is `approved`
 
 ## Amendments
 - 2026-11-16T23:47:45Z [Claude Code, anthropic/claude-opus-5-5] read the spec under the delegation in `AGENTS.md`: its facts are the
