@@ -1,6 +1,6 @@
 ---
 kind: bug
-status: draft
+status: approved
 timestamp: 2026-11-16T13:25:49Z
 supersedes: 0004-linux-sensors-and-run
 ---
@@ -29,3 +29,4 @@ supersedes: 0004-linux-sensors-and-run
   Item 3 of "Beyond the request" is not taken into the unit: the orchestrating session adds the amendment to the record
   of `0004-linux-sensors-and-run` itself when it merges this unit. Items 1 and 2 are declined. The approval that
   follows is made under that delegation
+- 2026-11-16T13:28:22Z [human] approved the spec. The status is `approved`
