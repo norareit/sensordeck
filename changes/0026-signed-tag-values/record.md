@@ -49,6 +49,12 @@ supersedes: 0004-linux-sensors-and-run
   splitting it means rewriting commits of a branch whose later commits depend on it, for no change in the tree.
   The finding stays open until the human decides it. No file other than this record changed. The status stays
   `in-progress`
+- 2026-11-16T23:57:03Z [OpenCode, openai/gpt-6.1-sol] as the reviewer, completed a delta review of
+  `0026-signed-tag-values` at `5e3f396f4764f52e32ab2795a3302771fa4e667b` from the previous review's commit,
+  `d6e5e9cdb0b2a45e42a01693d31f1318d2b126ff`. Returned no new findings; the review of the delta and previous C1 is
+  saved in `.reviews/0026-signed-tag-values/review-round-2.md`. Independently reran the five required Go checks,
+  the uncached end-to-end suite and `npm run check-changes`, all successfully. The physical-device check and Windows
+  runtime behavior were not verified. The status stays `in-progress`
 
 ## Amendments
 - 2026-11-16T23:47:45Z [Claude Code, anthropic/claude-opus-5-5] read the spec under the delegation in `AGENTS.md`: its facts are the
