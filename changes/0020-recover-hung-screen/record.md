@@ -65,3 +65,7 @@ supersedes: 0004-linux-sensors-and-run
   code. This is retrospective validation and not test-first execution. Proposed decline, for the human: the rule
   that the test comes first was broken, and the exception the review asks for is the human's to record, so none is
   recorded here. The status stays `in-progress`
+- 2026-11-16T13:40:51Z [Claude Code, anthropic/claude-opus-5-5] under the delegation in `AGENTS.md`, decided the proposed decline of
+  P1 of round 1: declined, and an exception to the order of tests first is recorded for the tests of the hang in
+  `run`. The order cannot be restored after the fact, the record states it, and the implementer showed that 11 of
+  the tests fail with the classification of timeouts disabled, so they guard the fix. P1 does not block
