@@ -98,7 +98,7 @@ run.
 
 ### 1. The fake controller
 
-- [ ] In `fakecommander_test.go`, write the tests first, each failing against the tree:
+- [x] In `fakecommander_test.go`, write the tests first, each failing against the tree:
     - the read of `0x1E` on channel 1 in software mode answers status `00` with
       `0D 00 07 00 00 00 01 03 01 03 01 03 01 03` from byte 3 by default, and the bytes set with
       `SetPortConfiguration` after it is called (R12)
@@ -118,23 +118,23 @@ run.
       `TestEachFailureChangesTheAnswerOfItsStep`, so that the session tests of R14 can fail an exchange with the
       status `03` that the spec names (R14)
     - `TestLightingFollowsTheModeAndTheColourWrites` and the other tests of the fake keep what they expect (R12, R17)
-- [ ] In `fakecommander.go`, add the constant `portConfigurationEndpoint = 0x1E`, a package variable
+- [x] In `fakecommander.go`, add the constant `portConfigurationEndpoint = 0x1E`, a package variable
   `defaultPortConfiguration` holding `0D 00 07 00 00 00 01 03 01 03 01 03 01 03`, and on `Controller` the fields
   `portConfiguration []byte` and `lightingConfiguration []byte`, both set to copies of the default in `newController`
   (R12)
-- [ ] Add `SetPortConfiguration(configuration []byte)`, `PortConfiguration() []byte` (a copy) and
+- [x] Add `SetPortConfiguration(configuration []byte)`, `PortConfiguration() []byte` (a copy) and
   `SetLightingConfiguration(configuration []byte)`, where nil means none, each under the mutex, with doc comments that
   say the defaults (R12)
-- [ ] In `answerOf`, answer `portConfigurationEndpoint` with a copy of the stored configuration (R12)
-- [ ] In `handle`, after the software-mode check, add the case `08 06 01`: status `03` unless `open[1]` is
+- [x] In `answerOf`, answer `portConfigurationEndpoint` with a copy of the stored configuration (R12)
+- [x] In `handle`, after the software-mode check, add the case `08 06 01`: status `03` unless `open[1]` is
   `portConfigurationEndpoint`; otherwise read the length from bytes 3 and 4, low byte first, store a copy of
   `command[7:7+length]`, bounded by the command, and answer `00`. Add the case `08 15 01`, answering `00` (R12)
-- [ ] In the case `08 06 00`, keep the write in `writtenColours` and the colour as today, and set `lighting` to
+- [x] In the case `08 06 00`, keep the write in `writtenColours` and the colour as today, and set `lighting` to
   `SentColour` when `lightingConfiguration` is nil or equals `portConfiguration`, and to `Dark` otherwise (R12, D13)
-- [ ] Add `UnavailableStatus` after the last value of `Failure`, and its case in `applyFailure`, writing `0x03` in
+- [x] Add `UnavailableStatus` after the last value of `Failure`, and its case in `applyFailure`, writing `0x03` in
   byte 2 (R14)
-- [ ] Update the package comment and the comment of `Controller` to name the LED port configuration (R12)
-- [ ] Commit: `bugfix-0025 Keep an LED port configuration in the fake controller`
+- [x] Update the package comment and the comment of `Controller` to name the LED port configuration (R12)
+- [x] Commit: `bugfix-0025 Keep an LED port configuration in the fake controller`
 
 ### 2. The protocol
 
@@ -299,7 +299,7 @@ The sandbox runs the suite here, and the Windows build and vet of `AGENTS.md` co
 
 ## Commit Points
 
-- [ ] After task 1: the fake controller
+- [x] After task 1: the fake controller
 - [ ] After task 2: the protocol
 - [ ] After task 3: the setup
 - [ ] After task 4: the lines of run

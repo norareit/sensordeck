@@ -3,8 +3,9 @@
 // Package fakecommander is test support: a directory tree that looks like the sysfs and the device nodes of a Corsair
 // Commander Core XT on Linux, with pseudo terminals behind the nodes. The node of interface 0 answers the commands
 // of the controller as the controller did in the traces and the device tests that docs/commander-core-xt.md describes:
-// the eight commands of unit 0005, the endpoints on two channels, the LED endpoint with its colour write, the modes and
-// a software-mode timeout. It is shared by the tests of the driver and the end-to-end tests.
+// the eight commands of unit 0005, the endpoints on two channels, the LED endpoint with its colour write, the LED port
+// configuration of the endpoint 0x1E, the modes and a software-mode timeout. It is shared by the tests of the driver
+// and the end-to-end tests.
 package fakecommander
 
 import (
@@ -39,6 +40,8 @@ const (
 	unknownEndpoint     = 0x1A
 	ledEndpoint         = 0x22
 
+	portConfigurationEndpoint = 0x1E
+
 	statusUnavailable = 0x03
 )
 
@@ -52,12 +55,16 @@ type Probe struct {
 type Failure int
 
 const (
-	NoAnswer      Failure = iota + 1
-	WrongEcho             // byte 1 of the answer is not the second written byte of the command
-	BadStatus             // byte 2 of the answer is 0x01
-	WrongDataType         // bytes 3 and 4 are 06 00; meaningful for step 6
-	CountTooLarge         // byte 5 is 31, so that 6 + 3·31 > 96; meaningful for step 6
+	NoAnswer          Failure = iota + 1
+	WrongEcho                 // byte 1 of the answer is not the second written byte of the command
+	BadStatus                 // byte 2 of the answer is 0x01
+	WrongDataType             // bytes 3 and 4 are 06 00; meaningful for step 6
+	CountTooLarge             // byte 5 is 31, so that 6 + 3·31 > 96; meaningful for step 6
+	UnavailableStatus         // byte 2 is 0x03, the status of a command the controller cannot take
 )
+
+// defaultPortConfiguration is the configuration that enables exactly the ports with LEDs of the default entries.
+var defaultPortConfiguration = []byte{0x0D, 0x00, 0x07, 0x00, 0x00, 0x00, 0x01, 0x03, 0x01, 0x03, 0x01, 0x03, 0x01, 0x03}
 
 // Mode is the mode that the last mode command set.
 type Mode int
@@ -125,13 +132,16 @@ func (fake *Fake) newController() *Controller {
 		ports:    []Port{{0, 0}, {3, 0}, {3, 0}, {2, 4}, {2, 4}, {2, 4}, {2, 4}},
 		failures: map[int]Failure{},
 		actions:  map[int]func(){},
+
+		portConfiguration:     bytes.Clone(defaultPortConfiguration),
+		lightingConfiguration: bytes.Clone(defaultPortConfiguration),
 	}
 	fake.test.Cleanup(controller.close)
 	return controller
 }
 
-// Controller is one fake controller. It keeps the mode, the endpoint open on each channel, the colour writes and what
-// its LEDs show, and every command on interface 0 gets the answer that handle works out.
+// Controller is one fake controller. It keeps the mode, the endpoint open on each channel, the colour writes, the LED
+// port configuration and what its LEDs show, and every command on interface 0 gets the answer that handle works out.
 type Controller struct {
 	fake  *Fake
 	nodes [2]*node // by interface; nil where the controller has none
@@ -147,9 +157,14 @@ type Controller struct {
 	colour         [3]byte
 	writtenColours [][]byte
 	hooks          []commandHook
-	timeout        time.Duration
-	timer          *time.Timer
-	idle           int // counts the commands in software mode, so that a timer that fired late can tell it is stale
+	// portConfiguration is the content of the endpoint 0x1E. It is stored apart from the mode and the channels, so it
+	// survives a return to hardware mode, the timeout and a close of the node.
+	portConfiguration []byte
+	// lightingConfiguration is the configuration with which the LEDs show a colour; nil lights them whatever is stored.
+	lightingConfiguration []byte
+	timeout               time.Duration
+	timer                 *time.Timer
+	idle                  int // counts the commands in software mode, so that a timer that fired late can tell it is stale
 }
 
 // node is the hidraw node of one interface.
@@ -276,6 +291,30 @@ func (controller *Controller) Lighting() (Lighting, [3]byte) {
 	controller.mutex.Lock()
 	defer controller.mutex.Unlock()
 	return controller.lighting, controller.colour
+}
+
+// SetPortConfiguration sets the bytes of the endpoint 0x1E from byte 3 of the answer. The default is the wanted
+// configuration of the default entries, 0D 00 07 00 00 00 01 03 01 03 01 03 01 03.
+func (controller *Controller) SetPortConfiguration(configuration []byte) {
+	controller.mutex.Lock()
+	defer controller.mutex.Unlock()
+	controller.portConfiguration = bytes.Clone(configuration)
+}
+
+// PortConfiguration gives a copy of the bytes stored in the endpoint 0x1E.
+func (controller *Controller) PortConfiguration() []byte {
+	controller.mutex.Lock()
+	defer controller.mutex.Unlock()
+	return bytes.Clone(controller.portConfiguration)
+}
+
+// SetLightingConfiguration sets the configuration with which a colour write lights the LEDs: they stay dark when the
+// stored configuration differs from it. The default is the default port configuration, and nil lights the LEDs
+// whatever is stored.
+func (controller *Controller) SetLightingConfiguration(configuration []byte) {
+	controller.mutex.Lock()
+	defer controller.mutex.Unlock()
+	controller.lightingConfiguration = bytes.Clone(configuration)
 }
 
 // RemoveNode removes the node of interface 0 and leaves the sysfs entries.
@@ -499,16 +538,39 @@ func (controller *Controller) handle(command []byte) (step int, status byte, bod
 			controller.open[0] = 0
 		}
 		return step, 0, nil, true
+	case bytes.HasPrefix(command, []byte{0x08, 0x06, 0x01}):
+		if controller.open[1] != portConfigurationEndpoint {
+			return 0, statusUnavailable, nil, true
+		}
+		controller.storePortConfiguration(command)
+		return 0, 0, nil, true
+	case bytes.HasPrefix(command, []byte{0x08, 0x15, 0x01}):
+		return 0, 0, nil, true
 	case bytes.HasPrefix(command, []byte{0x08, 0x06, 0x00}):
 		if controller.open[0] != ledEndpoint {
 			return 0, statusUnavailable, nil, true
 		}
 		controller.writtenColours = append(controller.writtenColours, bytes.Clone(command))
-		controller.lighting = SentColour
+		controller.lighting = Dark
+		if controller.lightingConfiguration == nil || bytes.Equal(controller.lightingConfiguration, controller.portConfiguration) {
+			controller.lighting = SentColour
+		}
 		copy(controller.colour[:], command[9:12])
 		return 0, 0, nil, true
 	}
 	return 0, 0, nil, false
+}
+
+// storePortConfiguration keeps the data of a configuration write: from byte 7, as many bytes as bytes 3 and 4 say, low
+// byte first, and no more than the command holds. The caller holds the mutex.
+func (controller *Controller) storePortConfiguration(command []byte) {
+	const dataStart = 7
+	length := 0
+	if len(command) > 4 {
+		length = int(command[3]) | int(command[4])<<8
+	}
+	end := min(dataStart+length, len(command))
+	controller.portConfiguration = bytes.Clone(command[min(dataStart, end):end])
 }
 
 // stepOnChannelZero gives the step of unit 0005 of the command, from the endpoint open on channel 0 before the command
@@ -548,6 +610,8 @@ func (controller *Controller) answerOf(endpoint byte) []byte {
 			body = append(body, byte(port.Mode), byte(port.Mode>>8), byte(port.LEDs), byte(port.LEDs>>8))
 		}
 		return body
+	case portConfigurationEndpoint:
+		return bytes.Clone(controller.portConfiguration)
 	case temperatureEndpoint:
 		count := min(len(controller.probes), maxProbes)
 		body := []byte{0x10, 0x00, byte(count)}
@@ -581,5 +645,7 @@ func applyFailure(answer []byte, failure Failure) {
 		copy(answer[3:], []byte{0x06, 0x00})
 	case CountTooLarge:
 		answer[5] = maxProbes + 1
+	case UnavailableStatus:
+		answer[2] = statusUnavailable
 	}
 }

@@ -1,6 +1,6 @@
 ---
 kind: bug
-status: approved
+status: in-progress
 timestamp: 2026-11-16T23:06:16Z
 supersedes: 0009-commander-led-colour
 ---
@@ -29,6 +29,8 @@ supersedes: 0009-commander-led-colour
   did with the configuration beside the session and the error; the keeper writes the lines of R8 from a notice of its
   own; the end-to-end tests; the documents. Every requirement has a task, and every task traces to a requirement. The
   status stays `approved`
+- 2026-11-16T23:30:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, began the work on
+  `bugfix-0025-commander-led-port-configuration`, from the approved spec and the plan. The status is `in-progress`
 
 ## Amendments
 - 2026-11-16T23:08:20Z [Claude Code, anthropic/claude-opus-5-5] read the spec under the delegation in `AGENTS.md`: its facts are those

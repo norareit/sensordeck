@@ -438,3 +438,159 @@ func TestOnCommandRunsAfterTheWriteAndBeforeTheAnswer(test *testing.T) {
 		test.Fatal("the action did not run once the write had arrived, before the answer")
 	}
 }
+
+var (
+	hostConfiguration = []byte{0x0D, 0x00, 0x07, 0x00, 0x00, 0x00, 0x01, 0x03, 0x01, 0x03, 0x01, 0x03, 0x01, 0x03}
+	icueConfiguration = []byte{0x0D, 0x00, 0x07, 0x06, 0x06, 0x06, 0x06, 0x06, 0x06, 0x06, 0x00, 0x00, 0x01, 0x03, 0x01, 0x03,
+		0x01, 0x03, 0x01, 0x03}
+)
+
+// configurationWrite is the command 08 06 01 that stores the configuration, 7 bytes of header and the data.
+func configurationWrite(configuration []byte) []byte {
+	command := []byte{0x08, 0x06, 0x01, byte(len(configuration)), 0x00, 0x00, 0x00}
+	return append(command, configuration...)
+}
+
+// writeConfiguration opens 0x1E on channel 1, writes the configuration and closes it, and gives the answer of the write.
+func (harness *harness) writeConfiguration(configuration []byte) []byte {
+	harness.test.Helper()
+	harness.send([]byte{0x08, 0x05, 0x01, 0x01, 0x1E})
+	harness.send([]byte{0x08, 0x0D, 0x01, 0x1E})
+	answer := harness.send(configurationWrite(configuration))
+	harness.send([]byte{0x08, 0x05, 0x01, 0x01, 0x1E})
+	return answer
+}
+
+func TestTheReadOfThePortConfigurationAnswersTheStoredBytes(test *testing.T) {
+	harness := newHarness(test)
+	harness.send(enterSoftware)
+	if got, want := harness.openReadClose(0x1E), padded(append([]byte{0x00, 0x08, 0x00}, hostConfiguration...)...); !bytes.Equal(got, want) {
+		test.Fatalf("default: got % x", got)
+	}
+	harness.controller.SetPortConfiguration(icueConfiguration)
+	if got, want := harness.openReadClose(0x1E), padded(append([]byte{0x00, 0x08, 0x00}, icueConfiguration...)...); !bytes.Equal(got, want) {
+		test.Fatalf("after SetPortConfiguration: got % x", got)
+	}
+}
+
+func TestTheConfigurationWriteStoresItsDataWhenTheEndpointIsOpen(test *testing.T) {
+	harness := newHarness(test)
+	harness.send(enterSoftware)
+	if got := harness.writeConfiguration(icueConfiguration); got == nil || got[2] != 0x00 {
+		test.Fatalf("write: got % x", got)
+	}
+	if got := harness.controller.PortConfiguration(); !bytes.Equal(got, icueConfiguration) {
+		test.Fatalf("stored % x", got)
+	}
+	harness.controller.SetPortConfiguration(hostConfiguration)
+	got := harness.send(configurationWrite(icueConfiguration))
+	if got == nil || got[2] != 0x03 {
+		test.Fatalf("write with nothing open: got % x", got)
+	}
+	if stored := harness.controller.PortConfiguration(); !bytes.Equal(stored, hostConfiguration) {
+		test.Fatalf("stored % x after a refused write", stored)
+	}
+}
+
+func TestPortConfigurationReturnsACopy(test *testing.T) {
+	harness := newHarness(test)
+	harness.controller.PortConfiguration()[0] = 0xEE
+	if got := harness.controller.PortConfiguration(); got[0] != 0x0D {
+		test.Fatalf("the stored configuration changed: % x", got)
+	}
+}
+
+func TestTheAfterConfigurationCommandAnswersZeroAndTheConfigurationCommandsNeedSoftwareMode(test *testing.T) {
+	harness := newHarness(test)
+	outside := [][]byte{{0x08, 0x15, 0x01}, configurationWrite(hostConfiguration), {0x08, 0x08, 0x01}}
+	for _, command := range outside {
+		if got := harness.send(command); got == nil || got[2] != 0x03 {
+			test.Errorf("outside software mode, % x: got % x", command[:3], got)
+		}
+	}
+	harness.send(enterSoftware)
+	if got := harness.send([]byte{0x08, 0x15, 0x01}); got == nil || got[2] != 0x00 {
+		test.Fatalf("08 15 01: got % x", got)
+	}
+}
+
+func TestTheStoredPortConfigurationOutlastsModesTheTimeoutAndTheNode(test *testing.T) {
+	harness := newHarness(test)
+	controller := harness.controller
+	controller.SetSoftwareModeTimeout(100 * time.Millisecond)
+	harness.send(enterSoftware)
+	harness.writeConfiguration(icueConfiguration)
+	harness.send(returnHardware)
+	if got := controller.PortConfiguration(); !bytes.Equal(got, icueConfiguration) {
+		test.Fatalf("after hardware mode: % x", got)
+	}
+	harness.send(enterSoftware)
+	time.Sleep(300 * time.Millisecond)
+	if controller.Mode() != HardwareMode {
+		test.Fatal("the timeout did not fire")
+	}
+	if got := controller.PortConfiguration(); !bytes.Equal(got, icueConfiguration) {
+		test.Fatalf("after the timeout: % x", got)
+	}
+	second, err := hidraw.OpenNode(filepath.Join(harness.fake.devRoot, "hidraw9"))
+	if err != nil {
+		test.Fatal(err)
+	}
+	test.Cleanup(func() { _ = second.Close() })
+	exchange(test, second, enterSoftware)
+	exchange(test, second, []byte{0x08, 0x05, 0x01, 0x01, 0x1E})
+	exchange(test, second, []byte{0x08, 0x0D, 0x01, 0x1E})
+	got := exchange(test, second, []byte{0x08, 0x08, 0x01, 0x1E})
+	if want := padded(append([]byte{0x00, 0x08, 0x00}, icueConfiguration...)...); !bytes.Equal(got, want) {
+		test.Fatalf("through a second node: got % x", got)
+	}
+}
+
+func TestTheLightingConfigurationDecidesWhetherAColourShows(test *testing.T) {
+	colourWrite := append([]byte{0x08, 0x06, 0x00, 0x32, 0x00, 0x00, 0x00, 0x12, 0x00}, bytes.Repeat([]byte{0xFF, 0x00, 0x00}, 16)...)
+	writeColour := func(harness *harness) {
+		harness.send([]byte{0x08, 0x0D, 0x00, 0x22})
+		if got := harness.send(colourWrite); got == nil || got[2] != 0x00 {
+			test.Fatalf("colour write: got % x", got)
+		}
+		harness.send([]byte{0x08, 0x05, 0x01, 0x00, 0x22})
+	}
+	test.Run("dark with the configuration iCUE left, lit after the wanted one", func(test *testing.T) {
+		harness := newHarness(test)
+		harness.controller.SetPortConfiguration(icueConfiguration)
+		harness.send(enterSoftware)
+		writeColour(harness)
+		if lighting, _ := harness.controller.Lighting(); lighting != Dark {
+			test.Fatalf("lighting %d with the configuration of iCUE", lighting)
+		}
+		if len(harness.controller.ColourWrites()) != 1 {
+			test.Fatal("the colour write was not kept")
+		}
+		harness.writeConfiguration(hostConfiguration)
+		writeColour(harness)
+		if lighting, colour := harness.controller.Lighting(); lighting != SentColour || colour != [3]byte{0xFF, 0, 0} {
+			test.Fatalf("lighting %d, colour %v after the repair", lighting, colour)
+		}
+	})
+	test.Run("none set lights whatever is stored", func(test *testing.T) {
+		harness := newHarness(test)
+		harness.controller.SetPortConfiguration(icueConfiguration)
+		harness.controller.SetLightingConfiguration(nil)
+		harness.send(enterSoftware)
+		writeColour(harness)
+		if lighting, _ := harness.controller.Lighting(); lighting != SentColour {
+			test.Fatalf("lighting %d", lighting)
+		}
+	})
+}
+
+func TestUnavailableStatusWritesThreeInByteTwo(test *testing.T) {
+	harness := newHarness(test)
+	harness.controller.Fail(6, UnavailableStatus)
+	for step := 0; step < 5; step++ {
+		harness.send(commands[step])
+	}
+	if answer := harness.send(commands[5]); answer == nil || answer[2] != 0x03 {
+		test.Fatalf("got % x", answer)
+	}
+}
