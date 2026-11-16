@@ -15,7 +15,15 @@ func TestParseValues(test *testing.T) {
 	}{
 		{[]string{"1=0x1234", "255=1"}, []smartmonitor.Value{{Tag: 1, Value: 0x1234}, {Tag: 255, Value: 1}}},
 		{[]string{"010=1"}, []smartmonitor.Value{{Tag: 10, Value: 1}}},
-		{[]string{"0x1F=0XFFFF"}, []smartmonitor.Value{{Tag: 31, Value: 65535}}},
+		{[]string{"0x1F=0XFFFF"}, []smartmonitor.Value{{Tag: 31, Value: -1}}},
+		{[]string{"1=-1"}, []smartmonitor.Value{{Tag: 1, Value: -1}}},
+		{[]string{"1=-32768"}, []smartmonitor.Value{{Tag: 1, Value: -32768}}},
+		{[]string{"1=-0x8000"}, []smartmonitor.Value{{Tag: 1, Value: -32768}}},
+		{[]string{"1=32768"}, []smartmonitor.Value{{Tag: 1, Value: -32768}}},
+		{[]string{"1=0x8000"}, []smartmonitor.Value{{Tag: 1, Value: -32768}}},
+		{[]string{"1=65535"}, []smartmonitor.Value{{Tag: 1, Value: -1}}},
+		{[]string{"1=-0"}, []smartmonitor.Value{{Tag: 1, Value: 0}}},
+		{[]string{"1=32767"}, []smartmonitor.Value{{Tag: 1, Value: 32767}}},
 		{[]string{"0=0"}, []smartmonitor.Value{{Tag: 0, Value: 0}}},
 	}
 	for _, scenario := range cases {
@@ -23,6 +31,23 @@ func TestParseValues(test *testing.T) {
 		if err != nil || !reflect.DeepEqual(got, scenario.want) {
 			test.Errorf("%v: got %v, %v", scenario.args, got, err)
 		}
+	}
+}
+
+func TestParseValuesEncodeAsTwosComplement(test *testing.T) {
+	encode := func(args ...string) smartmonitor.Report {
+		values, err := parseValues(args)
+		if err != nil {
+			test.Fatal(err)
+		}
+		return smartmonitor.EncodeValues(values)[0]
+	}
+	want := reportOf(0x02, 0x02, 0x01, 0xFF, 0xFF, 0x02, 0x7F, 0xFF)
+	if got := encode("1=-1", "2=32767"); got != want {
+		test.Errorf("got % X", got[:])
+	}
+	if encode("1=65535") != encode("1=-1") {
+		test.Error("65535 and -1 differ")
 	}
 }
 
@@ -44,13 +69,22 @@ func TestParseValuesErrors(test *testing.T) {
 		{[]string{"0b1=1"}, form("0b1=1")},
 		{[]string{"1=1.0"}, form("1=1.0")},
 		{[]string{"18446744073709551616=1"}, `invalid argument "18446744073709551616=1": the tag is outside 0 to 255`},
-		{[]string{"1=18446744073709551616"}, `invalid argument "1=18446744073709551616": the value is outside 0 to 65535`},
+		{[]string{"1=18446744073709551616"}, `invalid argument "1=18446744073709551616": the value is outside -32768 to 65535`},
 		{[]string{"0x10000000000000000=1"}, `invalid argument "0x10000000000000000=1": the tag is outside 0 to 255`},
-		{[]string{"1=0x10000000000000000"}, `invalid argument "1=0x10000000000000000": the value is outside 0 to 65535`},
-		{[]string{"1=" + strings.Repeat("9", 30)}, `invalid argument "1=` + strings.Repeat("9", 30) + `": the value is outside 0 to 65535`},
+		{[]string{"1=0x10000000000000000"}, `invalid argument "1=0x10000000000000000": the value is outside -32768 to 65535`},
+		{[]string{"1=" + strings.Repeat("9", 30)}, `invalid argument "1=` + strings.Repeat("9", 30) + `": the value is outside -32768 to 65535`},
 		{[]string{"256=1"}, `invalid argument "256=1": the tag is outside 0 to 255`},
-		{[]string{"1=65536"}, `invalid argument "1=65536": the value is outside 0 to 65535`},
+		{[]string{"1=65536"}, `invalid argument "1=65536": the value is outside -32768 to 65535`},
 		{[]string{"1=1", "2"}, form("2")},
+		{[]string{"1=-32769"}, `invalid argument "1=-32769": the value is outside -32768 to 65535`},
+		{[]string{"1=-0x8001"}, `invalid argument "1=-0x8001": the value is outside -32768 to 65535`},
+		{[]string{"1=-" + strings.Repeat("9", 30)}, `invalid argument "1=-` + strings.Repeat("9", 30) + `": the value is outside -32768 to 65535`},
+		{[]string{"1=-18446744073709551616"}, `invalid argument "1=-18446744073709551616": the value is outside -32768 to 65535`},
+		{[]string{"1=-"}, form("1=-")},
+		{[]string{"1=--1"}, form("1=--1")},
+		{[]string{"1=+1"}, form("1=+1")},
+		{[]string{"1=- 1"}, form("1=- 1")},
+		{[]string{"1=-0x"}, form("1=-0x")},
 	}
 	for _, scenario := range cases {
 		_, err := parseValues(scenario.args)

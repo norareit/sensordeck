@@ -26,19 +26,33 @@ func parseValues(args []string) ([]smartmonitor.Value, error) {
 			return nil, invalidPair(argument)
 		}
 		tag, tagIsNumber := parseNumber(tagText)
-		value, valueIsNumber := parseNumber(valueText)
+		value, valueIsNumber, valueInRange := parseValue(valueText)
 		if !tagIsNumber || !valueIsNumber {
 			return nil, invalidPair(argument)
 		}
 		if tag > 255 {
 			return nil, fmt.Errorf(`invalid argument %q: the tag is outside 0 to 255`, argument)
 		}
-		if value > 65535 {
-			return nil, fmt.Errorf(`invalid argument %q: the value is outside 0 to 65535`, argument)
+		if !valueInRange {
+			return nil, fmt.Errorf(`invalid argument %q: the value is outside -32768 to 65535`, argument)
 		}
-		values = append(values, smartmonitor.Value{Tag: uint8(tag), Value: uint16(value)})
+		values = append(values, smartmonitor.Value{Tag: uint8(tag), Value: value})
 	}
 	return values, nil
+}
+
+// parseValue reads a number with an optional leading "-". A value from 0 to 65535 is the 16-bit pattern that goes on
+// the wire, so 65535 and -1 give the same value, and a negative one is its two's complement.
+func parseValue(text string) (value int16, isNumber, inRange bool) {
+	magnitudeText, negative := strings.CutPrefix(text, "-")
+	magnitude, isNumber := parseNumber(magnitudeText)
+	if !isNumber {
+		return 0, false, false
+	}
+	if negative {
+		return int16(-int64(min(magnitude, 32769))), true, magnitude <= 32768
+	}
+	return int16(uint16(min(magnitude, 65536))), true, magnitude <= 65535
 }
 
 // parseNumber reads decimal digits, or 0x or 0X and hexadecimal digits, and nothing else. Leading zeros stay decimal,

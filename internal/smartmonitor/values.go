@@ -4,8 +4,9 @@ const maxPairsPerReport = 20
 
 // Value sets the numeric tag of a widget of the theme.
 type Value struct {
-	Tag   uint8
-	Value uint16
+	Tag uint8
+	// Value is sent as a 16-bit two's complement number, which is how the screen reads it (docs/protocol.md).
+	Value int16
 }
 
 // EncodeValues gives the value update reports for the values, at most 20 pairs in each, in the order of the list.
@@ -25,8 +26,9 @@ func encodeValueReport(values []Value) Report {
 	for position, value := range values {
 		offset := 2 + position*3
 		report[offset] = value.Tag
-		report[offset+1] = byte(value.Value >> 8)
-		report[offset+2] = byte(value.Value)
+		bits := uint16(value.Value)
+		report[offset+1] = byte(bits >> 8)
+		report[offset+2] = byte(bits)
 	}
 	return report
 }

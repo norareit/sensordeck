@@ -44,7 +44,7 @@ func TestValueScalesAndShifts(test *testing.T) {
 }
 
 func TestValuesAreSentAsTheScreenTakesThem(test *testing.T) {
-	cases := map[float64]uint16{-5: 0, 0.4: 0, 51.5: 52, 70000: 65535}
+	cases := map[float64]int16{-5: -5, 0.4: 0, 51.5: 52, 70000: 32767}
 	for value, want := range cases {
 		if got := sensors.ToValue(Value(value, config.Metric{Scale: 1})); got != want {
 			test.Errorf("ToValue(%v) = %d, want %d", value, got, want)

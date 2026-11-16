@@ -3,14 +3,14 @@ package sensors
 import "math"
 
 // ToValue gives the 16-bit value of a value update for a reading: rounded to the nearest whole number with halves
-// away from zero, then clamped to 0 to 65535.
-func ToValue(value float64) uint16 {
+// away from zero, then clamped to -32768 to 32767, the range of the signed number that the screen reads.
+func ToValue(value float64) int16 {
 	rounded := math.Round(value)
-	if rounded <= 0 {
-		return 0
+	if rounded <= math.MinInt16 {
+		return math.MinInt16
 	}
-	if rounded >= math.MaxUint16 {
-		return math.MaxUint16
+	if rounded >= math.MaxInt16 {
+		return math.MaxInt16
 	}
-	return uint16(rounded)
+	return int16(rounded)
 }

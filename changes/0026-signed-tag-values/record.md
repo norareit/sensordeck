@@ -1,6 +1,6 @@
 ---
 kind: bug
-status: approved
+status: in-progress
 timestamp: 2026-11-16T23:45:33Z
 supersedes: 0004-linux-sensors-and-run
 ---
@@ -24,6 +24,8 @@ supersedes: 0004-linux-sensors-and-run
   branch: `smartmonitor.Value` takes an `int16` written as its 16-bit pattern, `sensors.ToValue` clamps to the signed
   range, `values` reads an optional `-` with a parser of its own, and the tests and documents follow. The fix takes
   more than a couple of steps, so it has a plan. The status stays `approved`
+- 2026-11-17T00:05:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, began the work from the plan. The status is
+  `in-progress`
 
 ## Amendments
 - 2026-11-16T23:47:45Z [Claude Code, anthropic/claude-opus-5-5] read the spec under the delegation in `AGENTS.md`: its facts are the

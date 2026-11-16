@@ -45,6 +45,8 @@ names the others in its spec.
 - `internal/smartmonitor/values.go`, `internal/smartmonitor/values_test.go`: `Value.Value` is an `int16`, written as
   its 16-bit pattern
 - `internal/cli/arguments.go`, `internal/cli/arguments_test.go`: `parseValue` and the new range of `values`
+- `internal/custommetrics/number_test.go`: the table of `TestValuesAreSentAsTheScreenTakesThem` follows the new type
+  and range of `ToValue`
 - `internal/cli/run_test.go`: the conversion at line 512 follows the type
 - `e2e/commands_test.go`: the example of R6 and the error on the range with no screen
 - `e2e/custom_metrics_test.go`: a helper that compiles a theme folder and gives the tag of a metric, shared by the
@@ -56,24 +58,27 @@ names the others in its spec.
 
 ### The value of a reading and its encoding
 
-- [ ] In `internal/sensors/convert_test.go`, change the table of `TestToValue` to `want int16` and to exactly the
+- [x] In `internal/sensors/convert_test.go`, change the table of `TestToValue` to `want int16` and to exactly the
   examples of R1: 51.5 gives 52, 51.49 gives 51, 0.5 gives 1, -0.4 gives 0, -0.5 gives -1, -5 gives -5, -51.5 gives
   -52, 32767.4 gives 32767, 32767.5 gives 32767, 40000 gives 32767, 70000 gives 32767, -32768.4 gives -32768,
   -32768.5 gives -32768, -40000 gives -32768, `math.Inf(1)` gives 32767 and `math.Inf(-1)` gives -32768, and keep 0
   giving 0 (R1, R11)
-- [ ] In `internal/smartmonitor/values_test.go`, add `TestEncodeValuesSigned`: one report of the pairs (1, -1),
+- [x] In `internal/smartmonitor/values_test.go`, add `TestEncodeValuesSigned`: one report of the pairs (1, -1),
   (2, -5), (3, -32768), (4, 32767) and (5, 0) gives `02 05 01 FF FF 02 FF FB 03 80 00 04 7F FF 05 00 00` followed by
   `0x00`. The reading of -0.4 is the value 0 by R1, which this list encodes as `00 00`. Change `pairs` to
   `int16(index * 3)` (R2, R11)
-- [ ] In `internal/smartmonitor/values.go`, make `Value.Value` an `int16`, with a comment that the screen reads it as
+- [x] In `internal/smartmonitor/values.go`, make `Value.Value` an `int16`, with a comment that the screen reads it as
   a two's complement number (`docs/protocol.md`), and write `bits := uint16(value.Value)` high byte first in
   `encodeValueReport` (R2)
-- [ ] In `internal/sensors/convert.go`, make `ToValue` return an `int16`: `math.Round`, then `math.MinInt16` when the
+- [x] In `internal/sensors/convert.go`, make `ToValue` return an `int16`: `math.Round`, then `math.MinInt16` when the
   rounded value is at or below it, `math.MaxInt16` when at or above it, and `int16(rounded)` otherwise. The comment
   says rounded with halves away from zero and clamped to -32768 to 32767. A rounded -0 converts to 0 (R1, D5)
-- [ ] In `internal/cli/run_test.go` line 512, write `int16(round + 1)`. Check with `go build ./...` and
+- [x] In `internal/cli/run_test.go` line 512, write `int16(round + 1)`. Check with `go build ./...` and
   `GOOS=windows GOARCH=amd64 go build ./...` that `run.go` and every other user of `Value` and `ToValue` compile
   unchanged, which is what R3 needs of `run` (R3)
+
+- [x] In `internal/custommetrics/number_test.go`, change `TestValuesAreSentAsTheScreenTakesThem` to `int16` with -5 giving
+  -5 and 70000 giving 32767, since it calls `ToValue` and did not compile with the new type (R1, R3)
 
 ### The `values` command
 

@@ -509,7 +509,7 @@ func TestRunSendsTheKeptReadingsAndReadsTheOtherSourcesInEveryRound(test *testin
 		test.Fatalf("%d value reports, %d reads of the controller", len(reports), controller.readsAt)
 	}
 	for round, report := range reports {
-		want := valueReport(smartmonitor.Value{Tag: 1, Value: uint16(round + 1)}, smartmonitor.Value{Tag: 4, Value: 37}, smartmonitor.Value{Tag: 5, Value: 23})
+		want := valueReport(smartmonitor.Value{Tag: 1, Value: int16(round + 1)}, smartmonitor.Value{Tag: 4, Value: 37}, smartmonitor.Value{Tag: 5, Value: 23})
 		if report != want {
 			test.Errorf("round %d: % X", round, report[:12])
 		}

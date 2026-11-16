@@ -17,10 +17,19 @@ func TestEncodeValuesExample(test *testing.T) {
 	}
 }
 
+func TestEncodeValuesSigned(test *testing.T) {
+	reports := EncodeValues([]Value{{Tag: 1, Value: -1}, {Tag: 2, Value: -5}, {Tag: 3, Value: -32768}, {Tag: 4, Value: 32767}, {Tag: 5, Value: 0}})
+	var want Report
+	copy(want[:], []byte{0x02, 0x05, 0x01, 0xFF, 0xFF, 0x02, 0xFF, 0xFB, 0x03, 0x80, 0x00, 0x04, 0x7F, 0xFF, 0x05, 0x00, 0x00})
+	if len(reports) != 1 || reports[0] != want {
+		test.Fatalf("got % X", reports[0][:])
+	}
+}
+
 func pairs(count int) []Value {
 	values := make([]Value, count)
 	for index := range values {
-		values[index] = Value{Tag: uint8(index), Value: uint16(index * 3)}
+		values[index] = Value{Tag: uint8(index), Value: int16(index * 3)}
 	}
 	return values
 }
