@@ -35,3 +35,10 @@ supersedes: 0013-theme-key-and-upload-on-change
   its seconds to every boot, and the spec was amended for it; items 2 and 3 are declined. The device check is the
   human's and the unit does not depend on it. The approval that follows is made under that delegation
 - 2026-11-16T20:00:52Z [human] approved the spec. The status is `approved`
+- 2026-11-16T20:04:08Z [Claude Code, anthropic/claude-opus-5-5] as the planner, wrote the plan against the tree of the branch: the
+  theme holder of `run` uploads at every start and decides a reload by the bytes of its last completed upload, kept in
+  memory; `upload` calls the upload directly; the state file, the package `uploadstate`, the hash of the config theme
+  and the serial of the open Linux and Windows transports are removed, with the `--device` look-up of the sysfs entry
+  and the roots `OpenPath` took only for it, while `entryOfNode` stays for the restart of unit 0021; a restart that
+  recovered a hung screen clears the wait of a due upload; the README is rewritten last. Five commits, tests first in
+  each. The fix needs a plan, since it takes far more than a couple of steps. The status stays `approved`
