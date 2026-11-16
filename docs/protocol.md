@@ -43,11 +43,26 @@ One report sets up to 20 values:
 |---|---|---|
 | 0 | 1 | `0x02` |
 | 1 | 1 | the number of pairs in this report, 1 to 20 |
-| 2 | 3 for each pair | the tag, one byte, then the value, 16 bits unsigned, high byte first |
+| 2 | 3 for each pair | the tag, one byte, then the value, 16 bits signed, two's complement, from -32768 to 32767, high byte first |
 | after the pairs | the rest | `0x00` up to 64 bytes |
 
 For example, the pairs (tag `0x01`, value `0x1234`) and (tag `0xFF`, value `0x0001`) give `02 02 01 12 34 FF 00 01`
-followed by 56 bytes of `0x00`. More than 20 pairs are sent as several reports.
+followed by 56 bytes of `0x00`. The pair (tag `0x01`, value -1) gives `02 01 01 FF FF`. More than 20 pairs are sent
+as several reports.
+
+The screen reads the value as a signed number, as seen on the device on 2026-11-17 with number widgets and the raw
+values of `sensordeck values`:
+
+| Value sent | Bytes of the value | The number widget showed |
+|---|---|---|
+| 65535 | `FF FF` | `-1` |
+| 40000 | `9C 40` | `25536`, with its minus sign clipped by the box of the widget, so -25536 |
+| 32768 | `80 00` | `-32768` |
+| 32767 | `7F FF` | `32767` |
+| 0 | `00 00` | `0` |
+
+The screen draws the minus sign of a negative value with the `-` glyph that a number record holds, and the box of a
+widget can clip it.
 
 ## Clock
 

@@ -179,6 +179,11 @@ sensordeck --version              # print the version
 sensordeck --help                 # list the commands and flags
 ```
 
+`sensordeck values` takes arguments `<tag>=<value>`, with a tag of 0 to 255 and a value in decimal or in hexadecimal
+with `0x`, optionally after a `-`. A value from -32768 to 32767 is the number the screen shows. A value from 32768 to
+65535 is the raw 16-bit pattern, which the screen shows as that value minus 65536, so `-1` and `65535` send the same
+bytes.
+
 ## Linux: access to the screen
 
 On Linux the screen is reached through hidraw, and a udev rule gives the user of the active session access to its
@@ -292,7 +297,9 @@ The period applies when `commander_color` is not given. With it, the controller 
 Between two readings `sensordeck run` sends the values of the last reading. `sensordeck sensors` reads the controller
 once each time it runs.
 
-Values are sent as whole numbers, rounded, so 51.5 is sent as 52. A metric that cannot be read is not sent, so the
+Values are sent as whole numbers, rounded and clamped to -32768 to 32767, so 51.5 is sent as 52. A negative value shows
+with its minus sign, and a reading above 32767, such as a network rate of 40000 KiB/s, shows 32767 while
+`sensordeck sensors` shows the reading. A metric that cannot be read is not sent, so the
 screen keeps its last value.
 
 `sensordeck run` sends the values until Ctrl+C or SIGTERM. It sets the clock of the screen when it starts and once a
@@ -416,8 +423,8 @@ A definition has exactly one source key, and these keys besides:
 The number of a reading is the first match in its text of an optional `-` or `+`, one or more digits and optionally a point
 and one or more digits. Exponents, a comma as the decimal mark, `NaN` and `Inf` are not numbers, and a text with no number
 gives the metric no value. The value is the number times `scale`, plus `offset`. `sensordeck sensors` writes it with one
-decimal. The screen shows whole numbers from 0 to 65535, as for every metric, so `run` rounds the value, a negative value
-shows 0, and tenths are shown by a `scale` ten times larger.
+decimal. The screen shows whole numbers from -32768 to 32767, as for every metric, so `run` rounds the value, a negative value
+shows with its minus sign, and tenths are shown by a `scale` ten times larger.
 
 ### A chip of hwmon
 
