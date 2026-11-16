@@ -1,6 +1,6 @@
 ---
 kind: feature
-status: approved
+status: in-progress
 timestamp: 2026-11-16T20:28:31Z
 ---
 
@@ -31,6 +31,8 @@ timestamp: 2026-11-16T20:28:31Z
   a console window from opening for `nvidia-smi` on Windows, then the name rule, the theme compiler, the key
   `metrics`, the package that reads custom metrics, `run`, `sensors`, the end-to-end tests and the documents. Every
   requirement traces to a task. The status stays `approved`
+- 2026-11-16T20:45:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, began the work. The status is
+  `in-progress`
 
 ## Amendments
 - 2026-11-16T20:31:31Z [Claude Code, anthropic/claude-opus-5-5] read the spec under the delegation in `AGENTS.md`: the three sources

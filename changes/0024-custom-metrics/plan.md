@@ -192,14 +192,14 @@ What the tree on `feature-0024-custom-metrics` holds, and what the plan builds o
 
 ### 1. The lookup of hwmon chips, shared (refactoring)
 
-- [ ] Add `internal/hwmonchips/chips_linux_test.go`, with trees of `fakesensors`: chips of one name ordered by the
+- [x] Add `internal/hwmonchips/chips_linux_test.go`, with trees of `fakesensors`: chips of one name ordered by the
   device path whose numbers N are in the opposite order, two chips with one device path ordered by N, a chip without
   `device` after those with one, two chips without `device` by N, a chip of another name left out, a directory such
   as `hwmonX` left out, and no `class/hwmon` giving nothing (R15)
-- [ ] Add `internal/hwmonchips/chips.go` with `Chip` and `Named`, as the choices above say (R15)
-- [ ] Make `entriesNamed` of `internal/linuxsensors/hwmon.go` give the chips of `hwmonchips.Named` that have a device,
+- [x] Add `internal/hwmonchips/chips.go` with `Chip` and `Named`, as the choices above say (R15)
+- [x] Make `entriesNamed` of `internal/linuxsensors/hwmon.go` give the chips of `hwmonchips.Named` that have a device,
   replacing `entry` with `hwmonchips.Chip`, with no change to the tests of `linuxsensors` (R15)
-- [ ] Run the suite, check that the tests of `linuxsensors` and the end-to-end tests pass unchanged, and commit:
+- [x] Run the suite, check that the tests of `linuxsensors` and the end-to-end tests pass unchanged, and commit:
   `feature-0024 Share the lookup of hwmon chips by name`
 
 ### 2. No console window for a child process on Windows

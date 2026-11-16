@@ -12,50 +12,20 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/norareit/sensordeck/internal/hwmonchips"
 	"github.com/norareit/sensordeck/internal/sensors"
 )
 
-// entry is a hwmon device that is kept: one whose name and device can be read.
-type entry struct {
-	number int    // N of hwmonN
-	name   string // the content of name, without the trailing newline
-	path   string // <sysfs root>/class/hwmon/hwmonN
-	device string // <entry>/device resolved to its final path
-}
-
-// entriesNamed gives the entries with the driver name, ordered by the resolved device path and, between equal paths,
-// by the hwmon number. The numbers follow the order in which the drivers load and can change after a reboot, and the
-// device paths follow the hardware, which is what keeps numbered metrics stable.
-func entriesNamed(sysfsRoot, driver string) []entry {
-	directory := filepath.Join(sysfsRoot, "class", "hwmon")
-	listed, err := os.ReadDir(directory)
-	if err != nil {
-		return nil
+// entriesNamed gives the chips with the driver name that have a device, ordered by the resolved device path and,
+// between equal paths, by the hwmon number. The numbers follow the order in which the drivers load and can change
+// after a reboot, and the device paths follow the hardware, which is what keeps numbered metrics stable.
+func entriesNamed(sysfsRoot, driver string) []hwmonchips.Chip {
+	var entries []hwmonchips.Chip
+	for _, chip := range hwmonchips.Named(sysfsRoot, driver) {
+		if chip.Device != "" {
+			entries = append(entries, chip)
+		}
 	}
-	var entries []entry
-	for _, each := range listed {
-		digits, found := strings.CutPrefix(each.Name(), "hwmon")
-		number, err := strconv.Atoi(digits)
-		if !found || !isDigits(digits) || err != nil {
-			continue
-		}
-		path := filepath.Join(directory, each.Name())
-		name, err := os.ReadFile(filepath.Join(path, "name"))
-		if err != nil || strings.TrimSuffix(string(name), "\n") != driver {
-			continue
-		}
-		device, err := filepath.EvalSymlinks(filepath.Join(path, "device"))
-		if err != nil {
-			continue
-		}
-		entries = append(entries, entry{number: number, name: driver, path: path, device: device})
-	}
-	slices.SortFunc(entries, func(first, second entry) int {
-		if byDevice := strings.Compare(first.device, second.device); byDevice != 0 {
-			return byDevice
-		}
-		return first.number - second.number
-	})
 	return entries
 }
 
@@ -139,7 +109,7 @@ func (source cpuTemperatures) Read(stop context.Context, wanted func(name string
 	var haveControl bool
 	ccds := map[int]float64{}
 	seen := map[string]bool{}
-	for _, sensor := range labelledSensors(entries[0].path) {
+	for _, sensor := range labelledSensors(entries[0].Path) {
 		// The sensor with the lower number counts, even when its input cannot be read.
 		if seen[sensor.label] {
 			continue
@@ -151,7 +121,7 @@ func (source cpuTemperatures) Read(stop context.Context, wanted func(name string
 		if !isControl && !isCCD {
 			continue
 		}
-		value, ok := readTemperature(inputPath(entries[0].path, sensor.number))
+		value, ok := readTemperature(inputPath(entries[0].Path, sensor.number))
 		if !ok {
 			continue
 		}
@@ -193,7 +163,7 @@ func (source numberedTemperatures) Read(stop context.Context, wanted func(name s
 		if !wanted(name) {
 			continue
 		}
-		if value, ok := readTemperature(source.input(each.path)); ok {
+		if value, ok := readTemperature(source.input(each.Path)); ok {
 			readings = append(readings, sensors.Reading{Name: name, Value: value})
 		}
 	}
