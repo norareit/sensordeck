@@ -1,6 +1,6 @@
 ---
 kind: task
-status: draft
+status: approved
 timestamp: 2026-11-16T20:16:20Z
 ---
 
@@ -185,6 +185,7 @@ The five commands of the suite in `AGENTS.md` succeed.
   compiler refuse; the tests of the backgrounds, the compilations and the preview images go through one table of the
   built-in themes. The tags file follows from R18 of unit 0011; the Go toolchain of the project could not be run on
   the host, so it was derived and not compiled here. The status is `draft`
+- 2026-11-16T20:17:26Z [human] approved the record. The status is `approved`
 
 ## Amendments
 - 2026-11-16T20:17:25Z [Claude Code, anthropic/claude-opus-5-5] read the record under the delegation in `AGENTS.md`: the theme is the
