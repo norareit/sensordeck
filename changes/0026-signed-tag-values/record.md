@@ -26,6 +26,15 @@ supersedes: 0004-linux-sensors-and-run
   more than a couple of steps, so it has a plan. The status stays `approved`
 - 2026-11-17T00:05:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, began the work from the plan. The status is
   `in-progress`
+- 2026-11-17T00:40:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, built every task of the plan. Not in the plan and added to it:
+  `TestValuesAreSentAsTheScreenTakesThem` in `internal/custommetrics/number_test.go` called `ToValue` and did not
+  compile with the new type, so it now wants -5 for -5 and 32767 for 70000. The commits differ from the commit points:
+  `parseValue` and its tests went into the first commit with the encoding, and the move to `compileTheme` and the new
+  end-to-end test went into one commit, so the move was not a commit of its own. On `4bacbc3`, `go test ./...` (the
+  end-to-end suite included), `go vet ./...`, `gofmt -l .`, and `go build` and `go vet` for `GOOS=windows GOARCH=amd64`
+  all passed and reported nothing. The grep of `README.md` and `docs/` for "unsigned" and "65535" finds only the
+  observation of 65535 in `docs/protocol.md` and the raw range in the README. The check on the device of a negative
+  custom metric is not made, and is the human's. The status stays `in-progress`
 
 ## Amendments
 - 2026-11-16T23:47:45Z [Claude Code, anthropic/claude-opus-5-5] read the spec under the delegation in `AGENTS.md`: its facts are the

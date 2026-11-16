@@ -82,16 +82,16 @@ names the others in its spec.
 
 ### The `values` command
 
-- [ ] In `internal/cli/arguments_test.go`, add to `TestParseValues` the cases of R12 with the `int16` that R5 gives:
+- [x] In `internal/cli/arguments_test.go`, add to `TestParseValues` the cases of R12 with the `int16` that R5 gives:
   `1=-1` gives -1, `1=-32768`, `1=-0x8000`, `1=32768` and `1=0x8000` give -32768, `1=65535` and `1=0xFFFF` give -1,
   `1=-0` gives 0, `1=32767` gives 32767; and the existing `0x1F=0XFFFF` now wants `Value: -1`. Add a test that
   `parseValues([]string{"1=-1", "2=32767"})` encoded with `smartmonitor.EncodeValues` gives
   `02 02 01 FF FF 02 7F FF` followed by `0x00`, and that `1=65535` gives the same bytes as `1=-1` (R5, R12)
-- [ ] In `TestParseValuesErrors`, give the four existing cases of the range the text
+- [x] In `TestParseValuesErrors`, give the four existing cases of the range the text
   `the value is outside -32768 to 65535`, and add: `1=-32769`, `1=-0x8001`, `1=65536` and `1=-` followed by thirty
   `9`s, and `1=-18446744073709551616`, both negative numbers too large for 64 bits, refused with that error; `1=-`, `1=--1`, `1=+1`, `1=- 1` and `1=-0x` refused
   with `want <tag>=<value>`. Keep `-1=1` refused with `want <tag>=<value>` (R4, R5, R12, D3)
-- [ ] In `internal/cli/arguments.go`, add `parseValue(text string) (value int16, isNumber, inRange bool)`, with a
+- [x] In `internal/cli/arguments.go`, add `parseValue(text string) (value int16, isNumber, inRange bool)`, with a
   comment, that cuts one leading `-`, reads the rest with `parseNumber`, gives not a number when the rest is not one,
   and refuses a magnitude above 32768 with a `-` or above 65535 without one. `parseValues` uses it for the value and
   `parseNumber` for the tag, and the error is
@@ -100,57 +100,57 @@ names the others in its spec.
 
 ### End-to-end
 
-- [ ] In `e2e/commands_test.go`, add `TestValuesWithANegativeValue`: `values 1=-1 2=32767` against a fake screen gives
+- [x] In `e2e/commands_test.go`, add `TestValuesWithANegativeValue`: `values 1=-1 2=32767` against a fake screen gives
   exit status 0, `values sent: 2, reports written: 1` and the 65 bytes `00 02 02 01 FF FF 02 7F FF` followed by 56
   bytes of `0x00`; and `TestValuesOutsideTheRangeWithNoScreen`: `values 1=65536` with no screen gives exit status 1,
   no standard output, and
   `sensordeck: invalid argument "1=65536": the value is outside -32768 to 65535` on standard error (R6, R13)
-- [ ] In `e2e/custom_metrics_test.go`, move the compiling of the theme folder, the reading of the tags file with
+- [x] In `e2e/custom_metrics_test.go`, move the compiling of the theme folder, the reading of the tags file with
   `tagOf` and the reading of the compiled file out of `TestRunSendsCustomMetricsToTheTagsOfTheTheme` into a helper,
   such as `compileTheme(test, setup, folder) (compiled []byte, tagOf func(string) uint8)`, with no change of what the
   test checks, and run the suite (R13)
-- [ ] Add `TestRunSendsNegativeAndClampedCustomMetrics`: a setup whose config has two file metrics, `below` reading a
+- [x] Add `TestRunSendsNegativeAndClampedCustomMetrics`: a setup whose config has two file metrics, `below` reading a
   file that holds `-5` and `above` reading one that holds `40000`, and a theme folder with a number widget for each;
   after the upload, a value report holds the tag of `below` with the pattern `0xFFFB` and the tag of `above` with
   `0x7FFF`, as `valuePairs` decodes them (R3, R13)
 
 ### The documents
 
-- [ ] In `docs/protocol.md`, the table of the value update says the value is 16 bits signed, two's complement, -32768
+- [x] In `docs/protocol.md`, the table of the value update says the value is 16 bits signed, two's complement, -32768
   to 32767, high byte first; add the example of tag 1 with the value -1, `02 01 01 FF FF`, beside the example of
   `0x1234` and `0x0001`, which stays; add the observations of 2026-11-17 as the table of the spec gives them, the five
   values sent with their bytes and what the screen showed, that the screen draws the minus sign with the `-` glyph of
   the number record, and that the box of a widget can clip it (R7)
-- [ ] In `README.md` at the paragraph of line 295, say that values are sent as whole numbers, rounded and clamped to
+- [x] In `README.md` at the paragraph of line 295, say that values are sent as whole numbers, rounded and clamped to
   -32768 to 32767, that a negative value shows with its minus sign, and that a reading above 32767, such as a network
   rate of 40000 KiB/s, shows 32767 while `sensordeck sensors` shows the reading (R8)
-- [ ] In `README.md` at line 419, say that the screen shows whole numbers from -32768 to 32767, as for every metric,
+- [x] In `README.md` at line 419, say that the screen shows whole numbers from -32768 to 32767, as for every metric,
   so that `run` rounds the value, a negative value shows with its minus sign, and tenths are shown by a `scale` ten
   times larger, and remove that a negative value shows 0 (R9)
-- [ ] In `README.md`, after the block of commands of `## Commands`, add a paragraph on what `sensordeck values` takes:
+- [x] In `README.md`, after the block of commands of `## Commands`, add a paragraph on what `sensordeck values` takes:
   `<tag>=<value>` with a tag of 0 to 255, a value in decimal or in hexadecimal with `0x`, optionally after a `-`, of
   -32768 to 32767 for the number the screen shows, and of 32768 to 65535 as the raw 16-bit pattern, which the screen
   shows as that value minus 65536, so `-1` and `65535` send the same bytes (R10, D2)
-- [ ] Run `grep -rn "unsigned\|65535" README.md docs/` and confirm that no remaining text says that a value is
+- [x] Run `grep -rn "unsigned\|65535" README.md docs/` and confirm that no remaining text says that a value is
   unsigned or that its range is 0 to 65535, apart from the observation of 65535 in `docs/protocol.md` and the raw
   range of `values`; the tables of metrics stay as they are (R10)
 
 ## Verification
 
-- [ ] `go test ./...` passes
-- [ ] `go vet ./...` reports nothing
-- [ ] `gofmt -l .` prints no file name
-- [ ] `GOOS=windows GOARCH=amd64 go build ./...` succeeds and reports nothing
-- [ ] `GOOS=windows GOARCH=amd64 go vet ./...` succeeds and reports nothing
-- [ ] `npm run check-changes` passes after the last commit
+- [x] `go test ./...` passes
+- [x] `go vet ./...` reports nothing
+- [x] `gofmt -l .` prints no file name
+- [x] `GOOS=windows GOARCH=amd64 go build ./...` succeeds and reports nothing
+- [x] `GOOS=windows GOARCH=amd64 go vet ./...` succeeds and reports nothing
+- [x] `npm run check-changes` passes after the last commit
 
 ## Commit Points
 
-- [ ] `bugfix-0026 Send the value of a reading as a signed 16-bit number`: the tasks of "The value of a reading and
+- [x] `bugfix-0026 Send the value of a reading as a signed 16-bit number`: the tasks of "The value of a reading and
   its encoding"
-- [ ] `bugfix-0026 Take negative values in values`: the tasks of "The `values` command" and the first task of
+- [x] `bugfix-0026 Take negative values in values`: the tasks of "The `values` command" and the first task of
   "End-to-end"
-- [ ] `bugfix-0026 Share the compiling of a theme in the tests of custom metrics`: the move to the helper alone, with
+- [x] `bugfix-0026 Share the compiling of a theme in the tests of custom metrics`: the move to the helper alone, with
   no change of behavior
-- [ ] `bugfix-0026 Test a negative and a clamped custom metric end to end`: the last task of "End-to-end"
-- [ ] `bugfix-0026 Say in the documents that the value is signed`: the tasks of "The documents"
+- [x] `bugfix-0026 Test a negative and a clamped custom metric end to end`: the last task of "End-to-end"
+- [x] `bugfix-0026 Say in the documents that the value is signed`: the tasks of "The documents"
