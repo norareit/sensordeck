@@ -49,6 +49,12 @@ timestamp: 2026-11-16T20:28:31Z
   `.reviews/0024-custom-metrics/review-round-1.md`. The five required commands, the change check, an uncached full
   test run and the custom-metrics race tests passed. Windows runtime behavior and the physical screen were not
   verified. The status stays `in-progress`
+- 2026-11-16T22:40:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, applied finding S1 of the review
+  round 1, accepted by the definition of the orchestrator and not as a decision of the human: the first line of
+  standard error of a failed command is now the text up to the first line feed, with only a trailing carriage return
+  removed, so an empty first line gives no line and an indented one keeps its indentation. The regression test failed
+  before the fix and passes after it. The five commands of the suite passed on `da6cd3b`, the commit of the fix. The status
+  stays `in-progress`
 
 ## Amendments
 - 2026-11-16T20:31:31Z [Claude Code, anthropic/claude-opus-5-5] read the spec under the delegation in `AGENTS.md`: the three sources
