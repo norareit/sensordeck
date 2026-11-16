@@ -50,3 +50,11 @@ supersedes: 0020-recover-hung-screen
 - 2026-11-16T15:50:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, ran the five commands of the suite and
   `npm run check-changes` on `4983afb`: `go test ./...` passes, `go vet ./...` and `gofmt -l .` report nothing, and the
   two Windows commands succeed and report nothing. The status stays `in-progress` until the review of the unit
+- 2026-11-16T15:05:57Z [OpenCode, openai/gpt-6.1-sol] as the reviewer, made a full review of
+  `0021-restart-boot-hung-screen` at `bc5304f65b222a2314dcc1c402969dc7dc2b8ea9`, against merge base
+  `d8c0be89bd1ed391c30f838f9deb2223f496cacb` with `origin/master`. No findings on spec conformance, plan fidelity
+  or code quality. Saved the review in `.reviews/0021-restart-boot-hung-screen/review-20261116T150557Z.md`.
+  Independently ran the five commands of the suite, `npm run check-changes`, the diff whitespace check and an
+  uncached run of `./e2e`, `./internal/hidraw` and `./internal/cli`; all passed. The tests-first intermediate failures
+  could not be verified from the final tree. The physical cold-boot recovery and real ioctl were not checked, by
+  D13, and no Windows runtime check was made. The status stays `in-progress`
