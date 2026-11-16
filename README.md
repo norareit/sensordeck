@@ -6,7 +6,7 @@ On Linux, sensordeck drives the screen with the low-level commands (`devices`, `
 and `raw`), shows live hardware readings with `sensordeck run`, lists them with `sensordeck sensors`, and runs `run` as
 a systemd user service with `sensordeck service`. It also reads the temperature probes of a Corsair iCUE Commander Core
 XT. `sensordeck theme` works with themes and needs no screen: `use` sets the theme of the config file, which `run`
-uploads when it is not on the screen, `compile` turns a theme, by name or folder, into a theme file, `preview` draws a
+uploads at its start, `compile` turns a theme, by name or folder, into a theme file, `preview` draws a
 theme as a PNG, `dump` reads a theme file and `list` lists the themes. The built-in theme `minimal-dark` is there.
 
 On Windows the screen and the Commander Core XT work with the commands that open a device, with `sensors` and with
@@ -31,7 +31,7 @@ replacement that works on Linux:
 - Show live hardware readings: CPU and GPU temperature and load, VRAM and RAM usage, NVMe temperatures, the
   temperature probes of a Corsair iCUE Commander Core XT, network rates and a clock, as the table of metrics lists.
 - Use themes that are plain folders (a `theme.yaml` layout, images and any TTF font). sensordeck compiles a theme into
-  the device's format and uploads it. It uploads again only when the theme changes.
+  the device's format and uploads it. `run` uploads the theme at each start, and again when a reload changes it.
 - Let you preview a theme as a PNG on your PC, so you can design without flashing the device each time.
 - Run in the background as a service (a systemd user service on Linux, a startup task of the Task Scheduler on Windows).
 - Ship as a single executable with nothing else to install. Built-in themes are included.
@@ -115,8 +115,8 @@ says, and the first step is for Linux only.
 2. Set the theme: `sensordeck theme use minimal-dark`. It writes the key `theme` into the config file, which it creates
    when there is none, at the path that [Showing sensor values on the screen](#showing-sensor-values-on-the-screen)
    names
-3. Start `sensordeck run`. At its first start it uploads the theme to the screen, which takes about 10 seconds and
-   reboots the screen, and then it sends the values. A later start finds the theme on the screen and uploads nothing
+3. Start `sensordeck run`. It uploads the theme to the screen at each start, which takes about 10 seconds and reboots
+   the screen, and it sends the values after that
 
 The tiles show the CPU temperature and load, the GPU temperature and load, the share of RAM in use and the GiB used, the
 VRAM used and its total in MiB, the temperature of the first NVMe drive, the network rates up and down in KiB/s, and the
@@ -236,7 +236,7 @@ theme: minimal-dark
 ```
 
 `run` compiles the theme, takes the tags that the compiler assigned to the metrics of its number widgets, and uploads the
-theme to the screen when it is not there, as [Writing a theme](#writing-a-theme) says. The key `theme` excludes the key
+theme to the screen at its start, as [Writing a theme](#writing-a-theme) says. The key `theme` excludes the key
 `tags`, because the theme decides the tags, and a file that holds both is refused. A theme that fails to compile ends
 `run` before it opens the screen.
 
@@ -427,8 +427,10 @@ moved or replaced executable, or another `--config`. A change of the unit is mad
 The log is the journal of the user: `journalctl --user -u sensordeck`, with `-f` to follow it. It holds the lines that
 `run` writes to standard output and standard error.
 
-`sensordeck theme use` and edits of the config file reach the running service within a round, by the reload of `run`.
-A change of `interval`, `commander_interval` or `commander_color` needs
+Each start of the service, at the login, at boot with lingering, and at each restart after an error, uploads the theme of
+the config, so the values appear about 10 seconds after the start and the screen reboots once.
+`sensordeck theme use` and edits of the config file reach the running service within a round, by the reload of `run`,
+and a new theme is uploaded then. A change of `interval`, `commander_interval` or `commander_color` needs
 `systemctl --user restart sensordeck.service`.
 
 The service is restarted 10 seconds after it ended with an error, as when no screen was found at its start, and there is
@@ -470,8 +472,10 @@ most 1 MiB each, `run.log` and the older `run.log.1`.
 
 Running `sensordeck service install` again stops the running `run`, replaces the task and starts it again. That is how to
 apply a moved or replaced executable, another `--config`, or a change of `interval`, `commander_interval` or
-`commander_color`. `sensordeck theme use` and edits of the config file reach the running `run` within a round, by the
-reload of `run`.
+`commander_color`. Each start of the task, at each logon and at each restart after an error, uploads the theme of the
+config, so the values appear about 10 seconds after the start and the screen reboots once. `sensordeck theme use` and
+edits of the config file reach the running `run` within a round, by the reload of `run`, and a new theme is uploaded
+then.
 
 `sensordeck service status` writes four lines: `installed: yes, <task file>`, `enabled:` with `enabled`, `disabled` or
 `unknown`, `active:` with `running`, `stopped` or `unknown`, and `log:` with the path of the log. The task is seen in the
@@ -549,24 +553,21 @@ and it creates the file when there is none. It writes the absolute path for a fo
 `tags`, one that is not valid and one whose root is written in the flow style of YAML, and changes none of them. A
 running `sensordeck run` applies the new theme within a round.
 
-`run` uploads the theme only when it is not on the screen. It keeps the SHA-256 of the compiled theme file that each
-screen holds in a state file, by the serial of the screen, and uploads when the hash of the compiled theme differs from
-the one stored for the screen. The upload takes about 10 seconds and reboots the screen, and `run` sends no value and no
-clock until it is done. It compiles the theme in memory and keeps no compiled file. The state file is
-`$XDG_CACHE_HOME/sensordeck/uploaded-themes.json`, or `~/.cache/sensordeck/uploaded-themes.json`, on Linux and
-`%LocalAppData%\sensordeck\uploaded-themes.json` on Windows. The check is made at the start, after a reload that
-changes the theme and after the screen came back, so a restart of `run` or of the machine uploads nothing. A theme whose
-upload failed is tried again after 10 seconds, and then after longer waits, up to 5 minutes.
+`run` uploads the theme of the config at each start. The upload takes about 10 seconds and reboots the screen, and `run`
+sends no value and no clock until it is done. It compiles the theme in memory and keeps no compiled file.
 
-* Running `sensordeck theme use` again after you edited a theme folder puts the edit on the screen, because writing the
-  config file again makes `run` compile the theme again, and the hash of the new file differs
-* `sensordeck upload` keeps the state file true too. It removes the entry of the screen before it uploads and records the
-  hash of the file it uploaded, so after you uploaded another file by hand, `run` puts its own theme back at its next
-  start or reload
-* A theme that other software, such as the vendor's, put on the screen is not known to `run`. Delete the state file to
-  make the next start upload the theme of the config file. The same holds for a screen with no serial, or one that
-  shares its serial with another: they have one entry, so a different screen in the place of the first one is taken to
-  hold its theme
+* Within one `run` the theme is uploaded again only when a reload gives a compiled theme that differs from the one it
+  uploaded, so running `sensordeck theme use` again after you edited a theme folder puts the edit on the screen
+* `run` uploads nothing when the screen is plugged in again or restarted after a hang, because the screen keeps its theme
+  in its flash
+* A theme whose upload failed is tried again after 10 seconds, and then after longer waits, up to 5 minutes
+* A theme that other software, such as the vendor's, `sensordeck upload`, the other operating system of a dual-boot
+  machine or another computer put on the screen is replaced at the next start of `run`
+* A screen that received another theme while it was unplugged from a running `run` keeps it until `run` is started
+  again
+* Earlier releases kept the file `uploaded-themes.json` in the cache directory, at
+  `$XDG_CACHE_HOME/sensordeck/uploaded-themes.json` or `~/.cache/sensordeck/uploaded-themes.json` on Linux and at
+  `%LocalAppData%\sensordeck\uploaded-themes.json` on Windows. It is no longer used and may be deleted
 
 The folder format, the tags and the limits are described in [docs/theme-folder.md](docs/theme-folder.md).
 

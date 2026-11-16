@@ -204,20 +204,20 @@ the moment of each upload attempt, as `uploadStarts` in `runtheme_test.go` does 
 
 ### 5. The README
 
-- [ ] In the opening paragraph, say that `theme use` sets the theme of the config file, which `run` uploads at its
+- [x] In the opening paragraph, say that `theme use` sets the theme of the config file, which `run` uploads at its
   start, in place of "which `run` uploads when it is not on the screen". In the list of what sensordeck does, replace
   "It uploads again only when the theme changes." by a sentence that `run` uploads the theme at each start and when a
   reload changes it (R13)
-- [ ] In step 3 of the quick start, say that `run` uploads the theme to the screen at each start, which takes about 10
+- [x] In step 3 of the quick start, say that `run` uploads the theme to the screen at each start, which takes about 10
   seconds and reboots the screen, and sends the values after that, and remove the sentence on a later start (R14)
-- [ ] In "Showing sensor values on the screen", replace "uploads the theme to the screen when it is not there" by
+- [x] In "Showing sensor values on the screen", replace "uploads the theme to the screen when it is not there" by
   "uploads the theme to the screen at its start", keeping the link to "Writing a theme" (R13)
-- [ ] In "Running as a service", in the Linux section beside the paragraph on `theme use` and in the Windows section
+- [x] In "Running as a service", in the Linux section beside the paragraph on `theme use` and in the Windows section
   beside the same sentence, say that each start of the service, at the login or logon, at boot with lingering on Linux,
   and at each restart after an error, uploads the theme of the config, so that the values appear about 10 seconds after
   the start and the screen reboots once, and that a new theme set by `theme use` or an edit is uploaded when it reaches
   the running service within a round (R15)
-- [ ] In "Writing a theme", replace the paragraph that begins "`run` uploads the theme only when it is not on the
+- [x] In "Writing a theme", replace the paragraph that begins "`run` uploads the theme only when it is not on the
   screen" and its three bullets by text that says every item of R16, in its order: the upload at each start with its 10
   seconds, its reboot and no value or clock before it ends, and the compilation in memory with no compiled file kept;
   the upload within one `run` only for a reload that compiles to another file, with `theme use` again after an edit of
@@ -228,21 +228,21 @@ the moment of each upload attempt, as `uploadStarts` in `runtheme_test.go` does 
   `uploaded-themes.json` of earlier releases, at `$XDG_CACHE_HOME/sensordeck/uploaded-themes.json` or
   `~/.cache/sensordeck/uploaded-themes.json` on Linux and `%LocalAppData%\sensordeck\uploaded-themes.json` on Windows,
   no longer used and safe to delete (R16)
-- [ ] Search `README.md` and `docs/` for `state file`, `uploaded-themes`, `is on the screen`, `not on the screen`,
+- [x] Search `README.md` and `docs/` for `state file`, `uploaded-themes`, `is on the screen`, `not on the screen`,
   `only when`, `uploads nothing`, `SHA-256` and `hash`, and leave none that says `run` keeps a state file, uploads on a
   change only, or checks whether the theme is on the screen, except the sentence of R16 on the file of earlier releases
   (R13, R17)
-- [ ] Run the five commands of the suite (R20)
-- [ ] Commit: `bugfix-0022 Document the upload of the theme at every start`
+- [x] Run the five commands of the suite (R20)
+- [x] Commit: `bugfix-0022 Document the upload of the theme at every start`
 
 ## Verification
 
-- [ ] `go test ./...` passes
-- [ ] `go vet ./...` reports nothing
-- [ ] `gofmt -l .` prints no file name
-- [ ] `GOOS=windows GOARCH=amd64 go build ./...` succeeds and reports nothing
-- [ ] `GOOS=windows GOARCH=amd64 go vet ./...` succeeds and reports nothing
-- [ ] `npm run check-changes` passes on the committed branch
+- [x] `go test ./...` passes
+- [x] `go vet ./...` reports nothing
+- [x] `gofmt -l .` prints no file name
+- [x] `GOOS=windows GOARCH=amd64 go build ./...` succeeds and reports nothing
+- [x] `GOOS=windows GOARCH=amd64 go vet ./...` succeeds and reports nothing
+- [x] `npm run check-changes` passes on the committed branch
 
 ## Commit Points
 
@@ -250,7 +250,7 @@ the moment of each upload attempt, as `uploadStarts` in `runtheme_test.go` does 
 - [x] `bugfix-0022 Upload a theme file without the state file and remove the state file` (task 2)
 - [x] `bugfix-0022 Remove the serial of the open transport` (task 3)
 - [x] `bugfix-0022 Upload at once after a restart that recovered the screen` (task 4)
-- [ ] `bugfix-0022 Document the upload of the theme at every start` (task 5)
+- [x] `bugfix-0022 Document the upload of the theme at every start` (task 5)
 
 ## Trace
 
