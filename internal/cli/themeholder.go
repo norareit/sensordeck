@@ -79,3 +79,12 @@ func (holder *themeHolder) setTheme(theme *configTheme) {
 	}
 	holder.due = !bytes.Equal(theme.file, holder.last)
 }
+
+// restartRecovered makes an upload that is due be made in the round that opened the screen, without the wait that the
+// failure of the attempt before set: a restart that made a hung screen leave the bus is new evidence that the next
+// attempt can succeed. The wait after a failure of that upload is the one that doubling had reached.
+func (holder *themeHolder) restartRecovered() {
+	if holder.due {
+		holder.next = time.Time{}
+	}
+}

@@ -114,6 +114,73 @@ func TestRunUploadsNothingAfterTheRestartOfAHungScreen(test *testing.T) {
 	}
 }
 
+// uploadAfterAFailedStart runs a theme config whose upload of the start fails at its first write, as the harness says, and
+// gives the moments, since the start of the run, at which the uploads that began after it did. The failed first write is
+// not recorded.
+func uploadAfterAFailedStart(test *testing.T, hung *hungRun) []time.Duration {
+	test.Helper()
+	hung.harness.transport.ackWhenEmpty = true
+	written := stampWrites(hung.harness, startOfTheRun())
+	hung.run(test, themeConfig(test, writeThemeFolder(test, compiledTheme)))
+	return uploadStarts(*written)
+}
+
+func TestRunMakesTheUploadInTheRoundOfARestartThatRecoveredTheScreen(test *testing.T) {
+	hung := newHungRun(test, []bool{true}, 8, openedAt33)
+	starts := uploadAfterAFailedStart(test, hung)
+	if len(starts) != 1 || starts[0] >= 10*time.Second {
+		test.Fatalf("uploads began at %v", starts)
+	}
+	if got := themeKinds(hung.harness.transport.writes); !strings.HasPrefix(got, "UCV") {
+		test.Errorf("writes %s", got)
+	}
+}
+
+func TestRunMakesTheUploadInTheRoundThatOpenedTheScreenAfterItsRestart(test *testing.T) {
+	hung := newHungRun(test, []bool{true}, 10, notOpenedAt33)
+	hung.harness.transport.reopenResults = []error{errFake, nil}
+	starts := uploadAfterAFailedStart(test, hung)
+	if len(starts) != 1 || starts[0] >= 10*time.Second || len(hung.restarter.began) != 1 {
+		test.Fatalf("uploads began at %v, %d restarts", starts, len(hung.restarter.began))
+	}
+	if got := themeKinds(hung.harness.transport.writes); !strings.HasPrefix(got, "UCV") {
+		test.Errorf("writes %s", got)
+	}
+}
+
+func TestRunWaitsTenSecondsForTheUploadWhenNoRestartRecoveredTheScreen(test *testing.T) {
+	cases := []struct {
+		name    string
+		outcome restartResult
+		failure error
+	}{
+		{"did not restart", didNotRestart, timeoutError},
+		{"restart not possible", notPossibleNow, timeoutError},
+		{"failed write without a hang", openedAt33, errFake},
+	}
+	for _, each := range cases {
+		hung := newHungRun(test, []bool{true}, 14, each.outcome)
+		hung.harness.transport.failErr = each.failure
+		starts := uploadAfterAFailedStart(test, hung)
+		if len(starts) != 1 || starts[0] < 10*time.Second {
+			test.Errorf("%s: uploads began at %v", each.name, starts)
+		}
+	}
+}
+
+func TestRunWaitsTwentySecondsAfterTheUploadMadeAtOnceFailsToo(test *testing.T) {
+	// the first upload fails, and so does the one made at once after the restart
+	hung := newHungRun(test, []bool{true, true}, 40, openedAt33)
+	starts := uploadAfterAFailedStart(test, hung)
+	if len(hung.restarter.began) != 1 || len(starts) != 1 {
+		test.Fatalf("%d restarts, uploads began at %v", len(hung.restarter.began), starts)
+	}
+	recovered := hung.restarter.began[0].Sub(startOfTheRun()) + hung.restarter.duration
+	if starts[0] < recovered+20*time.Second {
+		test.Errorf("the upload began at %v, the screen was recovered at %v", starts[0], recovered)
+	}
+}
+
 func TestRunWritesTheLineOfARestartThatDidNotHelpOnceAndTriesAgainAfterAMinute(test *testing.T) {
 	failures := make([]bool, 200)
 	for position := range failures {

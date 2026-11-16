@@ -200,3 +200,34 @@ func TestHolderGivesTheErrorOfAFailedUploadWhichWrapsTheErrorOfTheWrite(test *te
 		test.Errorf("ready %v uploaded %v failure %v", ready, uploaded, failure)
 	}
 }
+
+func TestHolderMakesAnUploadDueAtOnceAfterARestartThatRecoveredTheScreenAndDoublesTheWaitAfterItsFailure(test *testing.T) {
+	fixture := newHolderFixture(test, aTheme("theme one"))
+	fixture.fake.ackWhenEmpty = false
+	fixture.fake.queue = []readResult{{report: reportOf(0x43)}}
+	fixture.ensure()
+	if ready, _, _ := fixture.ensure(); ready || len(fixture.fake.writes) == 0 {
+		test.Fatal("the failed upload was not waiting")
+	}
+	writes := len(fixture.fake.writes)
+	if ready, _, failure := fixture.ensure(); ready || failure != nil || len(fixture.fake.writes) != writes {
+		test.Fatal("an upload was made before the wait had passed")
+	}
+	fixture.holder.restartRecovered()
+	fixture.fake.queue = []readResult{{report: reportOf(0x43)}}
+	if _, _, failure := fixture.ensure(); failure == nil || len(fixture.fake.writes) == writes {
+		test.Fatal("no upload was made after the restart")
+	}
+	if want := fixture.clock.now().Add(20 * time.Second); !fixture.holder.next.Equal(want) {
+		test.Errorf("the next attempt is at %v, want %v", fixture.holder.next, want)
+	}
+}
+
+func TestHolderChangesNothingWhenARestartRecoveredTheScreenWithNoUploadDue(test *testing.T) {
+	fixture := newHolderFixture(test, aTheme("theme one"))
+	fixture.ensure()
+	fixture.holder.restartRecovered()
+	if ready, uploaded, _ := fixture.ensure(); !ready || uploaded || !fixture.holder.next.IsZero() || fixture.holder.wait != firstRetry {
+		test.Errorf("ready %v uploaded %v next %v wait %v", ready, uploaded, fixture.holder.next, fixture.holder.wait)
+	}
+}

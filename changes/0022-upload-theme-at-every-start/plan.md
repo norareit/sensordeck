@@ -184,23 +184,23 @@ Each test below runs with `newHungRun` and a theme config, with `ackWhenEmpty` s
 fails by a timed-out write (an entry `true` in `failWrites`, `failErr` being `timeoutError`), and the fake clock gives
 the moment of each upload attempt, as `uploadStarts` in `runtheme_test.go` does for the reset report.
 
-- [ ] In `internal/cli/themeholder_test.go`, test `restartRecovered`: with an upload due and a wait not passed, the next
+- [x] In `internal/cli/themeholder_test.go`, test `restartRecovered`: with an upload due and a wait not passed, the next
   `ensure` uploads; with no upload due, it changes nothing; and after it, a failure of the upload made at once sets the
   next attempt the doubled wait later, 20 seconds after the first failure of 10 (R21, R22)
-- [ ] In `internal/cli/runhang_linux_test.go`, add a test with `openedAt33` in which the upload is made again in the
+- [x] In `internal/cli/runhang_linux_test.go`, add a test with `openedAt33` in which the upload is made again in the
   round of the restart, before the 10 seconds after the failed attempt have passed, followed by the clock and the
   values, and a test with `notOpenedAt33` in which it is made in the later round that opens the screen (R7, R21, R22)
-- [ ] In `runhang_linux_test.go`, add one test with three cases, `didNotRestart`, `notPossibleNow`, and a first upload
+- [x] In `runhang_linux_test.go`, add one test with three cases, `didNotRestart`, `notPossibleNow`, and a first upload
   that fails with `errFake` rather than a timeout so that no hang begins, in each of which the second upload attempt
   begins no earlier than 10 seconds after the first (R21, R22)
-- [ ] In `runhang_linux_test.go`, add a test in which the upload made at once after `openedAt33` fails too, by a write
+- [x] In `runhang_linux_test.go`, add a test in which the upload made at once after `openedAt33` fails too, by a write
   that times out, and the attempt after it begins no earlier than 20 seconds after that failure (R21, R22)
-- [ ] In `internal/cli/themeholder.go`, add `restartRecovered()` as "The theme holder after this unit" says (R21)
-- [ ] In `internal/cli/run.go`, give `recoverHung` and `restartScreen` the results `(open, recovered bool)` as "The
+- [x] In `internal/cli/themeholder.go`, add `restartRecovered()` as "The theme holder after this unit" says (R21)
+- [x] In `internal/cli/run.go`, give `recoverHung` and `restartScreen` the results `(open, recovered bool)` as "The
   feeder" says, and have `reopen` call `feeding.holder.restartRecovered()` when `recovered` is true. Update the comments
   of `reopen`, `recoverHung` and `restartScreen` (R21)
-- [ ] Run the five commands of the suite (R20)
-- [ ] Commit: `bugfix-0022 Upload at once after a restart that recovered the screen`
+- [x] Run the five commands of the suite (R20)
+- [x] Commit: `bugfix-0022 Upload at once after a restart that recovered the screen`
 
 ### 5. The README
 
@@ -249,7 +249,7 @@ the moment of each upload attempt, as `uploadStarts` in `runtheme_test.go` does 
 - [x] `bugfix-0022 Upload the theme at every start of run and decide reloads in memory` (task 1)
 - [x] `bugfix-0022 Upload a theme file without the state file and remove the state file` (task 2)
 - [x] `bugfix-0022 Remove the serial of the open transport` (task 3)
-- [ ] `bugfix-0022 Upload at once after a restart that recovered the screen` (task 4)
+- [x] `bugfix-0022 Upload at once after a restart that recovered the screen` (task 4)
 - [ ] `bugfix-0022 Document the upload of the theme at every start` (task 5)
 
 ## Trace

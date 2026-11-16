@@ -293,11 +293,16 @@ func (feeding *feeder) round(stop context.Context, start time.Time) error {
 
 // reopen opens the node of a lost screen again and tells whether it is open. A screen that is hung is restarted first,
 // when it is time for one. It is back the same way in both cases, and says so unless it was hung, which says "screen
-// recovered" at its first write that succeeds.
+// recovered" at its first write that succeeds. The screen keeps its theme in its flash, so a return makes no upload
+// due, except that a restart that recovered a hung screen lets an upload that is due be made at once.
 func (feeding *feeder) reopen(stop context.Context) bool {
 	if feeding.hang.active {
-		if !feeding.recoverHung(stop) {
+		open, recovered := feeding.recoverHung(stop)
+		if !open {
 			return false
+		}
+		if recovered {
+			feeding.holder.restartRecovered()
 		}
 	} else {
 		if feeding.transport.Reopen() != nil {
@@ -311,49 +316,50 @@ func (feeding *feeder) reopen(stop context.Context) bool {
 }
 
 // recoverHung opens the node of a hung screen again, after a restart of the screen when no restart began in the last
-// minute, and tells whether the node is open. A round that makes no restart reopens the node as for a lost screen, so
-// that a screen that was unplugged is taken up at once.
-func (feeding *feeder) recoverHung(stop context.Context) bool {
+// minute, and tells whether the node is open, and whether a restart that made the screen leave the bus recovered it. A
+// round that makes no restart reopens the node as for a lost screen, so that a screen that was unplugged is taken up at
+// once, and that is no recovery.
+func (feeding *feeder) recoverHung(stop context.Context) (open, recovered bool) {
 	if feeding.hang.awaitingOpen {
 		if feeding.transport.Reopen() != nil {
-			return false
+			return false, false
 		}
 		feeding.hang.awaitingOpen = false
-		return true
+		return true, true
 	}
 	if !feeding.lastRestart.IsZero() && feeding.now().Sub(feeding.lastRestart) < restartInterval {
-		return feeding.transport.Reopen() == nil
+		return feeding.transport.Reopen() == nil, false
 	}
 	return feeding.restartScreen(stop)
 }
 
-// restartScreen restarts the screen and tells whether the node is open again. A restart that is not possible sent
-// nothing, so it does not count for restartInterval and the next round tries again, which uses a rule applied while run
-// runs.
-func (feeding *feeder) restartScreen(stop context.Context) bool {
+// restartScreen restarts the screen and tells whether the node is open again, and whether the restart recovered it,
+// which is so when the screen left the bus and the node was opened again. A restart that is not possible sent nothing,
+// so it does not count for restartInterval and the next round tries again, which uses a rule applied while run runs.
+func (feeding *feeder) restartScreen(stop context.Context) (open, recovered bool) {
 	feeding.sayOnce(&feeding.hang.restartingSaid, restartingLine)
 	began := feeding.now()
 	result := feeding.restarter.restart(stop)
 	if stop.Err() != nil {
-		return false
+		return false, false
 	}
 	switch result.outcome {
 	case restartNotPossible:
 		feeding.sayOnce(&feeding.hang.cannotRestartSaid, hungText+fmt.Sprintf(cannotRestartFormat, result.err))
-		return feeding.transport.Reopen() == nil
+		return feeding.transport.Reopen() == nil, false
 	case notRestarted:
 		feeding.lastRestart = began
 		feeding.sayOnce(&feeding.hang.notRestartedSaid, notRestartedLine)
-		return feeding.transport.Reopen() == nil
+		return feeding.transport.Reopen() == nil, false
 	}
 	feeding.lastRestart = began
 	feeding.hang.restarted = true
 	_, _ = fmt.Fprintf(feeding.stderr, restartedFormat+"\n", result.index)
 	if result.outcome == restartedNotOpen {
 		feeding.hang.awaitingOpen = true
-		return false
+		return false, false
 	}
-	return true
+	return true, true
 }
 
 // sayOnce writes the line to standard error unless it was written in this hang, which the flag records.
