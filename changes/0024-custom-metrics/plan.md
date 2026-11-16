@@ -244,38 +244,38 @@ What the tree on `feature-0024-custom-metrics` holds, and what the plan builds o
 
 ### 6. The reading of custom metrics
 
-- [ ] Add `internal/custommetrics/number_test.go`: `42000\n`, `temp: 41.5 C`, `-3`, `+7`, `.5` giving 5, `1.2.3`
+- [x] Add `internal/custommetrics/number_test.go`: `42000\n`, `temp: 41.5 C`, `-3`, `+7`, `.5` giving 5, `1.2.3`
   giving 1.2, `12 34` giving 12, `1e3` giving 1, `1,5` giving 1, `NaN`, `Inf` and the empty text giving none, and
   a run of 400 digits giving none; and the value of R12 with `scale` 0.001, a negative `offset`, and values of
   -5, 0.4, 51.5 and 70000 sent by `sensors.ToValue` as 0, 0, 52 and 65535 (R11, R12, R34)
-- [ ] Add `internal/custommetrics/read_linux_test.go`: a `file` metric over a temporary file, one that is missing and
+- [x] Add `internal/custommetrics/read_linux_test.go`: a `file` metric over a temporary file, one that is missing and
   one that holds no number, with their causes; `hwmon` metrics over a tree of `fakesensors` with inputs written as
   files of the chip, as `fan2_input`, read again after the chip changed its number; two `amdgpu` chips whose numbers
   are in the opposite order of their device paths, read with `index` 1, 2 and without the key; `index` 3 with two
   chips and with none, with the causes `2 hwmon chips named amdgpu, fewer than index 3` and
   `0 hwmon chips named amdgpu, fewer than index 3`; a chip without `device` read after one with it; an input that is
   missing (R14, R15, R23, R34)
-- [ ] Add `internal/custommetrics/command_linux_test.go`, with fake commands written as shell scripts in temporary
+- [x] Add `internal/custommetrics/command_linux_test.go`, with fake commands written as shell scripts in temporary
   directories: a value; a nonzero exit with and without a line on standard error; an exit of 0 with no number; a
   command that runs in the directory given, checked with `pwd`; a pipeline; a run past a limit of 300 milliseconds
   that starts a child with `(sleep 2; : > <marker>) &` and holds its output, which ends within the limit and a
   second, after which the marker is not there 2.5 seconds later; a `stop` done during a run giving false; a missing
   directory giving the cause of a command that could not start (R16, R17, R18, R34)
-- [ ] Add `internal/custommetrics/streak_test.go`: one line at the first failure, none at the second, one line at the
+- [x] Add `internal/custommetrics/streak_test.go`: one line at the first failure, none at the second, one line at the
   value after, none at the next value, and a new streak after that (R23, R34)
-- [ ] Add `internal/custommetrics/set_linux_test.go`, with a fake clock: a read that does not wait for a command that
+- [x] Add `internal/custommetrics/set_linux_test.go`, with a fake clock: a read that does not wait for a command that
   sleeps 5 seconds and gives no value, then the value once the run finished; no second run within `every` and one
   after it; no second run while one is in progress; a failed run that clears the value with its line; a metric that
   is not wanted not read and its command not started; `Replace` keeping the value, the streak and the run of an
   unchanged definition, starting a changed one with no value and no streak, and killing the run of a changed and of a
   removed one, whose outcome is not taken; `Close` killing a run in progress and returning within a second (R19, R21,
   R22, R23, R28, R34)
-- [ ] Add `internal/custommetrics/once_linux_test.go`: the three forms read in the order of the file with their units,
+- [x] Add `internal/custommetrics/once_linux_test.go`: the three forms read in the order of the file with their units,
   each command waited for, a failing metric giving its cause, and a stop done during a run giving nothing (R20, R24)
-- [ ] Add `internal/custommetrics/shell_windows_test.go`, which checks the program, the `CmdLine` and the flag of
+- [x] Add `internal/custommetrics/shell_windows_test.go`, which checks the program, the `CmdLine` and the flag of
   `shellCommand` with `ComSpec` set and unset. It is built by `GOOS=windows go vet` and run on Windows only (R16, R30)
-- [ ] Add the files of `internal/custommetrics` as the choices above say (R11 to R23, R28, R30)
-- [ ] Run the suite and commit: `feature-0024 Read custom metrics from a file, a chip or a command`
+- [x] Add the files of `internal/custommetrics` as the choices above say (R11 to R23, R28, R30)
+- [x] Run the suite and commit: `feature-0024 Read custom metrics from a file, a chip or a command`
 
 ### 7. Custom metrics in run
 
