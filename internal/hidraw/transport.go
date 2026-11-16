@@ -25,76 +25,88 @@ var errNoNode = errors.New("no node is open")
 
 // Transport reads and writes the hidraw node of a screen. It is not safe for use from several goroutines.
 type Transport struct {
-	open   func() (*os.File, string, error) // the way it was opened first, used again by Reopen; gives the serial too
-	file   *os.File                         // nil while no node is open
-	serial string                           // HID_UNIQ of the node opened last
+	open   func() (opened, error) // the way it was opened first, used again by Reopen
+	file   *os.File               // nil while no node is open
+	serial string                 // HID_UNIQ of the node opened last
+	node   string                 // the path of the node opened last
+}
+
+// opened is a node that an opening gave, with what is known of its entry.
+type opened struct {
+	file   *os.File
+	node   string
+	serial string
 }
 
 // OpenDiscovered opens the node of the one supported screen under the roots. A Reopen does the discovery anew.
 func OpenDiscovered(sysfsRoot, devRoot string) (*Transport, error) {
-	return openWith(func() (*os.File, string, error) { return openDiscovered(sysfsRoot, devRoot) })
+	return openWith(func() (opened, error) { return openDiscovered(sysfsRoot, devRoot) })
 }
 
 // OpenPath opens the node at the path as it is. A Reopen opens the same path. Its serial is that of the entry under
 // the roots whose node is the same file as the path, and empty when no entry is.
 func OpenPath(sysfsRoot, devRoot, path string) (*Transport, error) {
-	return openWith(func() (*os.File, string, error) {
+	return openWith(func() (opened, error) {
 		file, err := openNode(path)
 		if err != nil {
-			return nil, "", err
+			return opened{}, err
 		}
-		return file, serialOfNode(sysfsRoot, devRoot, path), nil
+		entry, _ := entryOfNode(sysfsRoot, devRoot, path)
+		return opened{file: file, node: path, serial: entry.Serial}, nil
 	})
 }
 
-func openWith(open func() (*os.File, string, error)) (*Transport, error) {
-	file, serial, err := open()
+func openWith(open func() (opened, error)) (*Transport, error) {
+	node, err := open()
 	if err != nil {
 		return nil, err
 	}
-	return &Transport{open: open, file: file, serial: serial}, nil
+	return &Transport{open: open, file: node.file, serial: node.serial, node: node.node}, nil
 }
 
-func openDiscovered(sysfsRoot, devRoot string) (*os.File, string, error) {
+func openDiscovered(sysfsRoot, devRoot string) (opened, error) {
 	screens, err := Discover(sysfsRoot, devRoot)
 	if err != nil {
-		return nil, "", err
+		return opened{}, err
 	}
 	switch len(screens) {
 	case 0:
-		return nil, "", errors.New(screenlist.NoneFound)
+		return opened{}, errors.New(screenlist.NoneFound)
 	case 1:
 		file, err := openNode(screens[0].Node)
-		return file, screens[0].Serial, err
+		return opened{file: file, node: screens[0].Node, serial: screens[0].Serial}, err
 	}
 	lines := make([]string, len(screens))
 	for position, screen := range screens {
 		lines[position] = screen.Line()
 	}
-	return nil, "", screenlist.Several(lines)
+	return opened{}, screenlist.Several(lines)
 }
 
-// serialOfNode gives the HID_UNIQ of the entry whose node is the same file as the path, and the empty text when no
-// entry is, or when the listing or a stat fails. os.SameFile follows the links of the fake screen and of udev alike.
-func serialOfNode(sysfsRoot, devRoot, path string) string {
+// entryOfNode gives the entry whose node is the same file as the path, and false when no entry is, or when the listing
+// or a stat fails. os.SameFile follows the links of the fake screen and of udev alike.
+func entryOfNode(sysfsRoot, devRoot, path string) (Entry, bool) {
 	wanted, err := os.Stat(path)
 	if err != nil {
-		return ""
+		return Entry{}, false
 	}
 	entries, err := List(sysfsRoot, devRoot)
 	if err != nil {
-		return ""
+		return Entry{}, false
 	}
 	for _, entry := range entries {
 		if candidate, err := os.Stat(entry.Node); err == nil && os.SameFile(wanted, candidate) {
-			return entry.Serial
+			return entry, true
 		}
 	}
-	return ""
+	return Entry{}, false
 }
 
 // Serial is the serial of the node opened last, which is empty when the entry of the node has none.
 func (transport *Transport) Serial() string { return transport.serial }
+
+// Node is the path of the node opened last. A Reopen that failed leaves it as it was.
+func (transport *Transport) Node() string { return transport.node }
 
 // OpenNode opens the node for reading and writing, without making it the controlling terminal, and checks that it
 // takes a time limit for reading, so that no read waits without one. O_NOCTTY matters only for the node of a fake
@@ -191,11 +203,11 @@ func (transport *Transport) Reopen() error {
 		_ = transport.file.Close()
 		transport.file = nil
 	}
-	file, serial, err := transport.open()
+	node, err := transport.open()
 	if err != nil {
 		return err
 	}
-	transport.file, transport.serial = file, serial
+	transport.file, transport.serial, transport.node = node.file, node.serial, node.node
 	return nil
 }
 

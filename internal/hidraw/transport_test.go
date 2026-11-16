@@ -304,3 +304,27 @@ func TestSerialAfterAReopenIsThatOfTheNodeOpenedThen(test *testing.T) {
 		test.Errorf("Serial = %q", got)
 	}
 }
+
+func TestNodeIsTheNodeOpenedLast(test *testing.T) {
+	fake := fakescreen.New(test)
+	screen := fake.Add(3, "name", "")
+	discovered := openFake(test, fake)
+	if discovered.Node() != screen.Node() {
+		test.Errorf("after OpenDiscovered: got %q", discovered.Node())
+	}
+	byPath, err := OpenPath(fake.SysfsRoot, fake.DevRoot, screen.Node())
+	if err != nil {
+		test.Fatal(err)
+	}
+	defer byPath.Close()
+	if byPath.Node() != screen.Node() {
+		test.Errorf("after OpenPath: got %q", byPath.Node())
+	}
+	screen.Move(7)
+	if err := discovered.Reopen(); err != nil {
+		test.Fatal(err)
+	}
+	if discovered.Node() != screen.Node() || discovered.Node() == byPath.Node() {
+		test.Errorf("after Reopen: got %q", discovered.Node())
+	}
+}

@@ -72,12 +72,12 @@ plain directory, has no such ancestor, so the end-to-end tests see a recovery th
 
 ### 2. The Linux side: timeout, USB device, power files
 
-- [ ] Write `internal/fakeusb/fakeusb.go` with the package comment that it is test support, as `internal/fakescreen`
+- [x] Write `internal/fakeusb/fakeusb.go` with the package comment that it is test support, as `internal/fakescreen`
   says of itself, and the build tag `linux`. `New` builds the tree of "Layout of the sysfs tree the code reads" under the
   roots, with `uevent` files for the HID device (the `HID_ID`, `HID_NAME` and `HID_UNIQ` of a screen, so that `List`
   and `Discover` find it), the interface and the USB device, and `power/control` `auto`,
   `power/autosuspend_delay_ms` `2000` and `power/runtime_status` `active` (R20)
-- [ ] In `internal/hidraw/power_test.go`, with `fakeusb`, write tests that fail before the code exists:
+- [x] In `internal/hidraw/power_test.go`, with `fakeusb`, write tests that fail before the code exists:
     - `USBDevice` gives the directory `1-4` for the node of a screen that `Discover` found, and for a `--device` path
       that is a symbolic link to that node in another directory (R3, R20)
     - `USBDevice` gives false for a node with no entry, and for the flat entry of `writeEntry` in `discover_test.go`,
@@ -89,19 +89,19 @@ plain directory, has no such ancestor, so the end-to-end tests see a recovery th
     - `TimedOut` is true for `&os.PathError{Op: "write", Path: "/dev/hidraw3", Err: syscall.ETIMEDOUT}` and for an
       error that wraps it with `fmt.Errorf("...: %w", ...)`, and false for the same with `syscall.EIO` and for `nil` (R2,
       R20)
-- [ ] Write `internal/hidraw/power.go` (build tag `linux`) with the four functions of "Names fixed by this plan".
+- [x] Write `internal/hidraw/power.go` (build tag `linux`) with the four functions of "Names fixed by this plan".
   `USBDevice` finds the entry whose node is the same file as the path, by the lookup that `serialOfNode` makes today,
   which moves into a function `entryOfNode(sysfsRoot, devRoot, path string) (Entry, bool)` that both use. `Recovery`
   trims white space, requires `control` to be `auto`, and parses the delay with `strconv.Atoi`, requiring 0 or more.
   `TimedOut` is `errors.Is(err, syscall.ETIMEDOUT)`. None of them writes a file (R2, R3, R14)
-- [ ] In `internal/hidraw/transport_test.go`, add a test that `Node` is the discovered node after `OpenDiscovered`,
+- [x] In `internal/hidraw/transport_test.go`, add a test that `Node` is the discovered node after `OpenDiscovered`,
   the given path after `OpenPath`, and the new node after a `Reopen` that found the screen under another number, as
   `TestReopenFindsTheScreenUnderAnotherNumber` moves it (R3)
-- [ ] In `internal/hidraw/transport.go`, have the opening function give the path of the node with the file and the
+- [x] In `internal/hidraw/transport.go`, have the opening function give the path of the node with the file and the
   serial, keep it in a field of `Transport`, and add `Node`. A `Reopen` that fails leaves the field as it was, since a
   later `Reopen` sets it again (R3)
-- [ ] Run `go test ./internal/hidraw/...` and the five commands of the suite
-- [ ] Commit: `bugfix-0020 Read the USB power state of the screen's node`
+- [x] Run `go test ./internal/hidraw/...` and the five commands of the suite
+- [x] Commit: `bugfix-0020 Read the USB power state of the screen's node`
 
 ### 3. The seam of the command line and the one-shot commands
 
