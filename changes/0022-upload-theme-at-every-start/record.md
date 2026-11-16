@@ -28,3 +28,9 @@ supersedes: 0013-theme-key-and-upload-on-change
   restart that recovered the screen, which is one in which the screen left the bus and its node was opened again,
   since the first write that succeeds is the upload itself. R6, R7, D8, a non-goal and item 1 were changed to match.
   Items 2 and 3 are declined and stay in the list. The status stays `draft`
+- 2026-11-16T20:00:51Z [Claude Code, anthropic/claude-opus-5-5] read the spec under the delegation in `AGENTS.md`: it implements the
+  human's choice of an upload at every start of `run`, removes the state file and its code, keeps an upload within
+  one run only for a changed theme, and every requirement can be tested in the sandbox with the fake screen. Item 1 of
+  "Beyond the request" was taken, because the screen hangs at every cold boot and the retry wait would otherwise add
+  its seconds to every boot, and the spec was amended for it; items 2 and 3 are declined. The device check is the
+  human's and the unit does not depend on it. The approval that follows is made under that delegation
