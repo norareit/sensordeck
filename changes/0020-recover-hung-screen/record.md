@@ -30,3 +30,7 @@ supersedes: 0004-linux-sensors-and-run
   of `0004-linux-sensors-and-run` itself when it merges this unit. Items 1 and 2 are declined. The approval that
   follows is made under that delegation
 - 2026-11-16T13:28:22Z [human] approved the spec. The status is `approved`
+- 2026-11-16T13:31:57Z [Claude Code, anthropic/claude-opus-5-5] as the planner, wrote `plan.md` against the tree of the
+  branch: five commits, for the udev rule, the reading of the USB power state in the Linux transport, the seam of the
+  command line with the one-shot commands, the recovery of `run`, and the documents, with each requirement traced to
+  its tasks. The status stays `approved`
