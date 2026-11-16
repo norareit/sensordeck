@@ -20,3 +20,11 @@ supersedes: 0020-recover-hung-screen
   of a hang and then at most once a minute, writes the index the screen left at, and writes each line of a failure
   once in a hang; the one-shot commands restart and end with an error, and do not write again; no end-to-end test. Not
   reproduced by the specifier: the observations are the sessions' on the device. The status is `draft`
+- 2026-11-16T14:52:50Z [Claude Code, anthropic/claude-opus-5-5] read the spec under the delegation in `AGENTS.md`: its facts are those
+  observed on the human's machine on 2026-11-16 by this session and another session of the human's, what was observed
+  once or is not established is marked as such, the restart uses only GET_DESCRIPTOR requests and never a USB reset,
+  and every requirement can be tested in the sandbox with a fake usbfs seam and temporary sysfs and dev trees. The
+  removal of the suspend recovery of unit 0020 is accepted for the reasons of D4. Items 1 and 3 of "Beyond the
+  request" are declined. Item 2 is not taken into the unit: the orchestrating session adds the amendment to the record
+  of `0020-recover-hung-screen` itself when it merges this unit. The device check is the human's and the unit does
+  not depend on it. The approval that follows is made under that delegation
