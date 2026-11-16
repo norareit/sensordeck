@@ -30,6 +30,22 @@ tags:
   ram.util: 11
 `
 
+const minimalDarkProbesTagsFile = `# Paste this block into the config file of sensordeck run.
+tags:
+  commander.1.temp: 1
+  commander.2.temp: 2
+  cpu.temp: 3
+  cpu.util: 4
+  gpu.mem.used: 5
+  gpu.temp: 6
+  gpu.util: 7
+  net.down: 8
+  net.up: 9
+  nvme.2.temp: 10
+  ram.used: 11
+  ram.util: 12
+`
+
 // configHome gives a temporary config directory, the variable that makes it the one of the executable, and the themes
 // directory in it, which is not created.
 func configHome(test *testing.T) (variables []string, themes string) {
@@ -59,26 +75,39 @@ func TestThemeListShowsTheBuiltInAndTheInstalledThemes(test *testing.T) {
 		}
 		return got.stdout
 	}
-	if got := listed(); got != "minimal-dark\tbuilt-in\n" {
+	if got := listed(); got != "minimal-dark\tbuilt-in\nminimal-dark-probes\tbuilt-in\n" {
 		test.Errorf("no themes directory: %q", got)
 	}
 	installFolder(test, filepath.Join(themes, "night"))
-	want := "minimal-dark\tbuilt-in\nnight\tinstalled\t" + filepath.Join(themes, "night") + "\n"
+	want := "minimal-dark\tbuilt-in\nminimal-dark-probes\tbuilt-in\nnight\tinstalled\t" + filepath.Join(themes, "night") + "\n"
 	if got := listed(); got != want {
 		test.Errorf("an installed theme: %q", got)
 	}
 	installFolder(test, filepath.Join(themes, "minimal-dark"))
-	want = "minimal-dark\tinstalled, overrides built-in\t" + filepath.Join(themes, "minimal-dark") + "\nnight\tinstalled\t" + filepath.Join(themes, "night") + "\n"
+	want = "minimal-dark\tinstalled, overrides built-in\t" + filepath.Join(themes, "minimal-dark") + "\nminimal-dark-probes\tbuilt-in\nnight\tinstalled\t" + filepath.Join(themes, "night") + "\n"
 	if got := listed(); got != want {
 		test.Errorf("an installed theme that replaces the built-in one: %q", got)
 	}
 }
 
 func TestThemeCompileAndPreviewTheBuiltInTheme(test *testing.T) {
+	themes := []struct{ name, tagsFile string }{
+		{"minimal-dark", minimalDarkTagsFile},
+		{"minimal-dark-probes", minimalDarkProbesTagsFile},
+	}
+	for _, each := range themes {
+		test.Run(each.name, func(test *testing.T) {
+			compileAndPreviewByName(test, each.name, each.tagsFile)
+		})
+	}
+}
+
+func compileAndPreviewByName(test *testing.T, name, wantTagsFile string) {
+	test.Helper()
 	variables, _ := configHome(test)
 	directory := test.TempDir()
 	out := filepath.Join(directory, "img.dat")
-	got := runWith(test, fakescreen.New(test), variables, "theme", "compile", "minimal-dark", out)
+	got := runWith(test, fakescreen.New(test), variables, "theme", "compile", name, out)
 	content, err := os.ReadFile(out)
 	if err != nil {
 		test.Fatal(err)
@@ -91,12 +120,12 @@ func TestThemeCompileAndPreviewTheBuiltInTheme(test *testing.T) {
 	if err != nil || len(warnings) != 0 {
 		test.Fatalf("%v, %v", err, warnings)
 	}
-	if tags, err := os.ReadFile(tagsFile); err != nil || string(tags) != minimalDarkTagsFile {
+	if tags, err := os.ReadFile(tagsFile); err != nil || string(tags) != wantTagsFile {
 		test.Errorf("tags %q, %v", tags, err)
 	}
 
 	preview := filepath.Join(directory, "preview.png")
-	got = runWith(test, fakescreen.New(test), variables, "theme", "preview", "minimal-dark", preview)
+	got = runWith(test, fakescreen.New(test), variables, "theme", "preview", name, preview)
 	if got.status != 0 || got.stdout != "wrote "+preview+"\n" || got.stderr != "" {
 		test.Fatalf("preview: status %d, stdout %q, stderr %q", got.status, got.stdout, got.stderr)
 	}

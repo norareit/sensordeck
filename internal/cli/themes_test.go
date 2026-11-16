@@ -295,7 +295,7 @@ func TestThemeListLinesAreSortedByName(test *testing.T) {
 
 func TestThemeListShowsWhatTheLookupFinds(test *testing.T) {
 	harness, themes := themesHarness(test)
-	if status := harness.run("theme", "list"); status != 0 || harness.stdout.String() != "minimal-dark\tbuilt-in\n" {
+	if status := harness.run("theme", "list"); status != 0 || harness.stdout.String() != "minimal-dark\tbuilt-in\nminimal-dark-probes\tbuilt-in\n" {
 		test.Fatalf("no themes directory: status %d, stdout %q", status, harness.stdout.String())
 	}
 
@@ -308,7 +308,7 @@ func TestThemeListShowsWhatTheLookupFinds(test *testing.T) {
 		linked = ""
 	}
 	override := installTheme(test, themes, "minimal-dark", compiledTheme)
-	want := "linked\tinstalled\t" + linked + "\nminimal-dark\tinstalled, overrides built-in\t" + override + "\nnight\tinstalled\t" + night + "\n"
+	want := "linked\tinstalled\t" + linked + "\nminimal-dark\tinstalled, overrides built-in\t" + override + "\nminimal-dark-probes\tbuilt-in\nnight\tinstalled\t" + night + "\n"
 	if linked == "" {
 		want = strings.SplitN(want, "\n", 2)[1]
 	}
