@@ -16,7 +16,6 @@ var errNoDevice = errors.New("no device is open")
 type Transport struct {
 	open   func() (*Device, error) // the way it was opened first, used again by Reopen
 	device *Device                 // nil while none is open
-	serial string                  // that of the collection opened last
 }
 
 // OpenDiscovered opens the one supported screen. A Reopen does the discovery anew.
@@ -35,7 +34,7 @@ func openWith(open func() (*Device, error)) (*Transport, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Transport{open: open, device: device, serial: device.Serial()}, nil
+	return &Transport{open: open, device: device}, nil
 }
 
 func openDiscovered(seam Seam) (*Device, error) {
@@ -102,12 +101,9 @@ func (transport *Transport) Reopen() error {
 	if err != nil {
 		return err
 	}
-	transport.device, transport.serial = device, device.Serial()
+	transport.device = device
 	return nil
 }
-
-// Serial is the serial of the collection opened last, empty when it has none.
-func (transport *Transport) Serial() string { return transport.serial }
 
 // Close closes the collection. A second Close does nothing.
 func (transport *Transport) Close() error {

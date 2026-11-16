@@ -36,12 +36,8 @@ func TestOpenDiscoveredBesideANearMissOpensTheScreenAndNamesNothing(test *testin
 	near := screen("a", "")
 	near.Caps = winhid.Caps{InputLength: 64, OutputLength: 64}
 	fake := fakehid.New(near, screen("b", "S"))
-	transport, err := winhid.OpenDiscovered(fake)
-	if err != nil {
+	if _, err := winhid.OpenDiscovered(fake); err != nil {
 		test.Fatal(err)
-	}
-	if transport.Serial() != "S" {
-		test.Errorf("serial %q", transport.Serial())
 	}
 	for _, opening := range fake.Openings() {
 		if opening.ReadWrite && opening.Path != "b" {
@@ -62,8 +58,8 @@ func TestOpenDiscoveredWithTwoScreensListsThem(test *testing.T) {
 func TestOpenPathOpensWhateverTheIDsAreWhenTheLengthsAreRight(test *testing.T) {
 	other := fakehid.Collection{Path: "p", Vendor: 9, Product: 9, Caps: screenCaps, Serial: "X"}
 	transport, err := winhid.OpenPath(fakehid.New(other), "p")
-	if err != nil || transport.Serial() != "X" {
-		test.Fatalf("got %v, %q", err, transport.Serial())
+	if err != nil || transport == nil {
+		test.Fatalf("got %v, %v", err, transport)
 	}
 }
 
@@ -133,9 +129,6 @@ func TestReopenDoesTheDiscoveryAnew(test *testing.T) {
 	if err := transport.Reopen(); err != nil {
 		test.Fatal(err)
 	}
-	if transport.Serial() != "B" {
-		test.Errorf("serial %q", transport.Serial())
-	}
 	if err := transport.Write(smartmonitor.Report{}); err != nil {
 		test.Error(err)
 	}
@@ -180,12 +173,5 @@ func TestCloseTwiceDoesNothing(test *testing.T) {
 	}
 	if err := transport.Close(); err != nil {
 		test.Fatal(err)
-	}
-}
-
-func TestTheSerialIsEmptyWhenTheCollectionHasNone(test *testing.T) {
-	transport, _ := winhid.OpenPath(fakehid.New(screen("a", "")), "a")
-	if transport.Serial() != "" {
-		test.Errorf("serial %q", transport.Serial())
 	}
 }

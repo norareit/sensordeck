@@ -27,7 +27,7 @@ func openTransport(sysfsRoot, devRoot, device string) (transport, screenRestarte
 	var opened *hidraw.Transport
 	var err error
 	if device != "" {
-		opened, err = hidraw.OpenPath(sysfsRoot, devRoot, device)
+		opened, err = hidraw.OpenPath(device)
 	} else {
 		opened, err = hidraw.OpenDiscovered(sysfsRoot, devRoot)
 	}

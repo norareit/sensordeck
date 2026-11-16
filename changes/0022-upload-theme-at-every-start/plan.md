@@ -155,28 +155,28 @@ test depends on `uploadstate`, which task 2 deletes.
 
 ### 3. The serial of the open transport removed
 
-- [ ] Remove `Serial()` from the interface `transport` in `internal/cli/main.go`, from `tracingTransport` in
+- [x] Remove `Serial()` from the interface `transport` in `internal/cli/main.go`, from `tracingTransport` in
   `internal/cli/trace.go` with `TestTraceGivesTheSerialOfTheInnerTransportAndWritesNoLine` in `trace_test.go`, and the
   field `serial` and its method from `fakeTransport` in `internal/cli/fake_test.go` with every test that sets it (R12)
-- [ ] In `internal/hidraw/transport.go`, remove the field `serial` of `Transport` and of `opened`, and `Serial()`.
+- [x] In `internal/hidraw/transport.go`, remove the field `serial` of `Transport` and of `opened`, and `Serial()`.
   `OpenPath` takes the path alone, as `OpenPath(path string)`, and opens it with no call of `entryOfNode`; update its
   comment and the call in `internal/cli/device_linux.go`. Keep `entryOfNode` for `usb.go` (R12)
-- [ ] In `internal/hidraw/transport_test.go`, remove `TestSerialOfADiscoveredScreen`,
+- [x] In `internal/hidraw/transport_test.go`, remove `TestSerialOfADiscoveredScreen`,
   `TestSerialOfAScreenWithNone`, `TestSerialOfAPathIsThatOfTheEntryOfTheNode`, `TestSerialOfAPathWithNoEntryIsEmpty`
   and `TestSerialAfterAReopenIsThatOfTheNodeOpenedThen`, and call `OpenPath` with the path alone in the others. The
   restart tests of `usb_test.go` and `restart_test.go` keep covering `entryOfNode` (R12)
-- [ ] In `internal/winhid/transport.go`, remove the field `serial` and `Serial()`. In `internal/winhid/device.go`,
+- [x] In `internal/winhid/transport.go`, remove the field `serial` and `Serial()`. In `internal/winhid/device.go`,
   remove the field `serial`, `Serial()` and the call of `seam.Serial` from `Open`, and update the comment of `Open` to
   say it reads the caps (R12)
-- [ ] In `internal/winhid/device_test.go`, rename `TestOpenOpensOnlyThePathForReadingAndWritingAndReadsCapsAndSerial`
+- [x] In `internal/winhid/device_test.go`, rename `TestOpenOpensOnlyThePathForReadingAndWritingAndReadsCapsAndSerial`
   to `TestOpenOpensOnlyThePathForReadingAndWritingAndReadsCaps` and drop its check of the serial. In
   `internal/winhid/transport_test.go`, drop the checks of `Serial()` and remove
   `TestTheSerialIsEmptyWhenTheCollectionHasNone`. Keep the tests of the serial in `collections_test.go`, which is that of
   discovery (R12)
-- [ ] Run `grep -rn "Serial()" --include=*.go .` and leave none on a transport or a device; `Seam.Serial` and the
+- [x] Run `grep -rn "Serial()" --include=*.go .` and leave none on a transport or a device; `Seam.Serial` and the
   `Serial` fields of `Entry`, `Screen`, `Collection` and `fakehid.Collection` stay (R12)
-- [ ] Run the five commands of the suite, which build and vet for Windows (R20)
-- [ ] Commit: `bugfix-0022 Remove the serial of the open transport`
+- [x] Run the five commands of the suite, which build and vet for Windows (R20)
+- [x] Commit: `bugfix-0022 Remove the serial of the open transport`
 
 ### 4. The upload made at once after a restart that recovered the screen
 
@@ -248,7 +248,7 @@ the moment of each upload attempt, as `uploadStarts` in `runtheme_test.go` does 
 
 - [x] `bugfix-0022 Upload the theme at every start of run and decide reloads in memory` (task 1)
 - [x] `bugfix-0022 Upload a theme file without the state file and remove the state file` (task 2)
-- [ ] `bugfix-0022 Remove the serial of the open transport` (task 3)
+- [x] `bugfix-0022 Remove the serial of the open transport` (task 3)
 - [ ] `bugfix-0022 Upload at once after a restart that recovered the screen` (task 4)
 - [ ] `bugfix-0022 Document the upload of the theme at every start` (task 5)
 

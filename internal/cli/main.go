@@ -21,8 +21,6 @@ import (
 // transport is what the commands need of a device: the transport of the protocol and a close.
 type transport interface {
 	smartmonitor.Transport
-	// Serial is the serial of the node opened last, empty when it has none.
-	Serial() string
 	Close() error
 }
 

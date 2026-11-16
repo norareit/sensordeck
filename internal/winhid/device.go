@@ -14,12 +14,11 @@ type Device struct {
 	seam   Seam
 	handle Handle
 	caps   Caps
-	serial string
 	closed bool
 }
 
-// Open opens the path for reading and writing, shared and overlapped, and reads its caps and its serial string. A
-// serial string that cannot be read is empty. The handle is closed when the caps cannot be read.
+// Open opens the path for reading and writing, shared and overlapped, and reads its caps. The handle is closed when
+// the caps cannot be read.
 func Open(seam Seam, path string) (*Device, error) {
 	handle, err := seam.OpenReadWrite(path)
 	if err != nil {
@@ -30,18 +29,11 @@ func Open(seam Seam, path string) (*Device, error) {
 		_ = seam.Close(handle)
 		return nil, fmt.Errorf("cannot open %s: its caps cannot be read: %w", path, err)
 	}
-	serial, err := seam.Serial(handle)
-	if err != nil {
-		serial = ""
-	}
-	return &Device{seam: seam, handle: handle, caps: caps, serial: serial}, nil
+	return &Device{seam: seam, handle: handle, caps: caps}, nil
 }
 
 // Caps gives the caps of the collection as read at the opening.
 func (device *Device) Caps() Caps { return device.caps }
-
-// Serial gives the serial string of the collection, which is empty when it has none.
-func (device *Device) Serial() string { return device.serial }
 
 // WriteReport writes one output report: the report ID byte 0x00, the payload, and zeros up to the output length of
 // the caps, which a write must have exactly.

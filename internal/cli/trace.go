@@ -55,9 +55,6 @@ func (tracing *tracingTransport) Read(timeout time.Duration) (smartmonitor.Repor
 	return report, nil
 }
 
-// Serial passes through and writes no line, because it is no call on the device.
-func (tracing *tracingTransport) Serial() string { return tracing.inner.Serial() }
-
 func (tracing *tracingTransport) Reopen() error {
 	err := tracing.inner.Reopen()
 	if err != nil {

@@ -22,7 +22,7 @@ func openFake(test *testing.T, collection fakehid.Collection) (*fakehid.Fake, *w
 	return fake, device
 }
 
-func TestOpenOpensOnlyThePathForReadingAndWritingAndReadsCapsAndSerial(test *testing.T) {
+func TestOpenOpensOnlyThePathForReadingAndWritingAndReadsCaps(test *testing.T) {
 	fake := fakehid.New(screen("a", ""), screen("b", "S1"))
 	device, err := winhid.Open(fake, "b")
 	if err != nil {
@@ -31,8 +31,8 @@ func TestOpenOpensOnlyThePathForReadingAndWritingAndReadsCapsAndSerial(test *tes
 	if openings := fake.Openings(); len(openings) != 1 || openings[0].Path != "b" || !openings[0].ReadWrite {
 		test.Errorf("openings %v", openings)
 	}
-	if device.Caps() != screenCaps || device.Serial() != "S1" {
-		test.Errorf("caps %v serial %q", device.Caps(), device.Serial())
+	if device.Caps() != screenCaps {
+		test.Errorf("caps %v", device.Caps())
 	}
 }
 

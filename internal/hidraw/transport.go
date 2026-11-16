@@ -25,17 +25,15 @@ var errNoNode = errors.New("no node is open")
 
 // Transport reads and writes the hidraw node of a screen. It is not safe for use from several goroutines.
 type Transport struct {
-	open   func() (opened, error) // the way it was opened first, used again by Reopen
-	file   *os.File               // nil while no node is open
-	serial string                 // HID_UNIQ of the node opened last
-	node   string                 // the path of the node opened last
+	open func() (opened, error) // the way it was opened first, used again by Reopen
+	file *os.File               // nil while no node is open
+	node string                 // the path of the node opened last
 }
 
-// opened is a node that an opening gave, with what is known of its entry.
+// opened is a node that an opening gave.
 type opened struct {
-	file   *os.File
-	node   string
-	serial string
+	file *os.File
+	node string
 }
 
 // OpenDiscovered opens the node of the one supported screen under the roots. A Reopen does the discovery anew.
@@ -43,16 +41,14 @@ func OpenDiscovered(sysfsRoot, devRoot string) (*Transport, error) {
 	return openWith(func() (opened, error) { return openDiscovered(sysfsRoot, devRoot) })
 }
 
-// OpenPath opens the node at the path as it is. A Reopen opens the same path. Its serial is that of the entry under
-// the roots whose node is the same file as the path, and empty when no entry is.
-func OpenPath(sysfsRoot, devRoot, path string) (*Transport, error) {
+// OpenPath opens the node at the path as it is. A Reopen opens the same path.
+func OpenPath(path string) (*Transport, error) {
 	return openWith(func() (opened, error) {
 		file, err := openNode(path)
 		if err != nil {
 			return opened{}, err
 		}
-		entry, _ := entryOfNode(sysfsRoot, devRoot, path)
-		return opened{file: file, node: path, serial: entry.Serial}, nil
+		return opened{file: file, node: path}, nil
 	})
 }
 
@@ -61,7 +57,7 @@ func openWith(open func() (opened, error)) (*Transport, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Transport{open: open, file: node.file, serial: node.serial, node: node.node}, nil
+	return &Transport{open: open, file: node.file, node: node.node}, nil
 }
 
 func openDiscovered(sysfsRoot, devRoot string) (opened, error) {
@@ -74,7 +70,7 @@ func openDiscovered(sysfsRoot, devRoot string) (opened, error) {
 		return opened{}, errors.New(screenlist.NoneFound)
 	case 1:
 		file, err := openNode(screens[0].Node)
-		return opened{file: file, node: screens[0].Node, serial: screens[0].Serial}, err
+		return opened{file: file, node: screens[0].Node}, err
 	}
 	lines := make([]string, len(screens))
 	for position, screen := range screens {
@@ -101,9 +97,6 @@ func entryOfNode(sysfsRoot, devRoot, path string) (Entry, bool) {
 	}
 	return Entry{}, false
 }
-
-// Serial is the serial of the node opened last, which is empty when the entry of the node has none.
-func (transport *Transport) Serial() string { return transport.serial }
 
 // Node is the path of the node opened last. A Reopen that failed leaves it as it was.
 func (transport *Transport) Node() string { return transport.node }
@@ -207,7 +200,7 @@ func (transport *Transport) Reopen() error {
 	if err != nil {
 		return err
 	}
-	transport.file, transport.serial, transport.node = node.file, node.serial, node.node
+	transport.file, transport.node = node.file, node.node
 	return nil
 }
 
