@@ -64,6 +64,32 @@ func IsName(name string) bool {
 	return found
 }
 
+// IsWellFormedName tells whether name has the form of a custom metric name: one or more segments joined by single
+// dots, each of one or more of a to z, 0 to 9, _ and -, the name beginning with a letter. Every built-in name has it.
+func IsWellFormedName(name string) bool {
+	if name == "" || name[0] < 'a' || name[0] > 'z' {
+		return false
+	}
+	previousWasDot := false
+	for index := 0; index < len(name); index++ {
+		character := name[index]
+		if character == '.' {
+			if previousWasDot || index == len(name)-1 {
+				return false
+			}
+			previousWasDot = true
+			continue
+		}
+		previousWasDot = false
+		isSegmentCharacter := character >= 'a' && character <= 'z' || character >= '0' && character <= '9' ||
+			character == '_' || character == '-'
+		if !isSegmentCharacter {
+			return false
+		}
+	}
+	return true
+}
+
 // Unit gives the unit of a metric name. For a string that is no metric name it gives the empty string.
 func Unit(name string) string {
 	unit, _ := unitOf(name)

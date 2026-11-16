@@ -113,3 +113,30 @@ func TestInTableOrderKeepsTheOrderOfEqualReadings(test *testing.T) {
 		test.Errorf("got %v", got)
 	}
 }
+
+func TestIsWellFormedName(test *testing.T) {
+	for _, name := range []string{"water.temp", "gpu.amd.temp", "fan.pump", "a", "x1.y_2.z-3", "nvme.0.temp"} {
+		if !IsWellFormedName(name) {
+			test.Errorf("%q is refused", name)
+		}
+	}
+	for _, name := range []string{"", "1abc", "_a", ".a", "a.", "a..b", "A.b", "a.B", "a b", "a/b", "a.°c"} {
+		if IsWellFormedName(name) {
+			test.Errorf("%q is accepted", name)
+		}
+	}
+}
+
+func TestEveryNameOfTheTableIsWellFormed(test *testing.T) {
+	for _, kind := range metricKinds {
+		names := []string{kind.prefix}
+		if kind.numbered {
+			names = []string{kind.prefix + "1" + kind.suffix, kind.prefix + "10" + kind.suffix}
+		}
+		for _, name := range names {
+			if !IsName(name) || !IsWellFormedName(name) {
+				test.Errorf("%q: IsName %v, IsWellFormedName %v", name, IsName(name), IsWellFormedName(name))
+			}
+		}
+	}
+}

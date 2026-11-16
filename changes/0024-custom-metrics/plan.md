@@ -212,12 +212,12 @@ What the tree on `feature-0024-custom-metrics` holds, and what the plan builds o
 
 ### 3. The name rule
 
-- [ ] In `internal/sensors/metrics_test.go`, add `TestIsWellFormedName`: accepted `water.temp`, `gpu.amd.temp`,
+- [x] In `internal/sensors/metrics_test.go`, add `TestIsWellFormedName`: accepted `water.temp`, `gpu.amd.temp`,
   `fan.pump`, `a`, `x1.y_2.z-3`, `nvme.0.temp`; refused the empty name, `1abc`, `_a`, `.a`, `a.`, `a..b`, `A.b`,
   `a.B`, `a b`, `a/b`, `a.°c`. Add `TestEveryNameOfTheTableIsWellFormed`, over a name of each row as
   `TestUnitOfEachRow` makes them, numbered rows with 1 and 10 (R2, R34)
-- [ ] Add `IsWellFormedName` to `internal/sensors/metrics.go` (R2)
-- [ ] Run the suite and commit: `feature-0024 Add the rule of a well-formed metric name`
+- [x] Add `IsWellFormedName` to `internal/sensors/metrics.go` (R2)
+- [x] Run the suite and commit: `feature-0024 Add the rule of a well-formed metric name`
 
 ### 4. The theme compiler takes a custom metric
 
