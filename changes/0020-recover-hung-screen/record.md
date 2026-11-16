@@ -36,3 +36,12 @@ supersedes: 0004-linux-sensors-and-run
   its tasks. The status stays `approved`
 - 2026-11-16T13:40:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, began the work. The status is
   `in-progress`
+- 2026-11-16T14:20:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, built the five tasks of `plan.md` in
+  five commits and ticked each as it was done. The `screenPower` seam stands as planned. The theme holder needed no
+  handing of the wrapper, since `ensure` takes the transport at each call and the feeder passes its observed wrapper.
+  The tests of `run` use `linuxPower` on a `fakeusb` tree, as planned. The tests of the hang were written after the code
+  of the same commit and not before it, so none of them was seen to fail first. Decided during the work: the feeder
+  reads `suspended` before the first wait, so that a device already suspended is not waited for. On `7bdfb2e`, the five
+  commands of the suite were run and reported nothing but passes: `go test ./...` passed, `go vet ./...`, `gofmt -l .`,
+  and the Windows build and vet printed nothing. Not checked: the behaviour on the device, which is the human's under
+  D13 of the spec, and the claim of the spec that an open node keeps the device resumed. The status stays `in-progress`
