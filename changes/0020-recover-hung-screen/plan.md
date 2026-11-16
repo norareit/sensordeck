@@ -138,7 +138,7 @@ plain directory, has no such ancestor, so the end-to-end tests see a recovery th
   error, and add one that a failed upload gives the error of the upload, which wraps the error of the write
 - [x] Change `themeHolder.ensure` to give `failure error` in place of `failed bool`, the error of `upload`, still after
   the line `theme upload failed: ` that `upload` writes (R4)
-- [x] In `internal/cli/runhang_linux_test.go` (build tag `linux`), with the harness of `run_test.go`, `failWrites`
+- [x] (written after the code, and validated afterwards by disabling the classification of a timeout in the feeder, under which 11 of these tests failed, see `record.md`) In `internal/cli/runhang_linux_test.go` (build tag `linux`), with the harness of `run_test.go`, `failWrites`
   and `failErr` set to the `ETIMEDOUT` error, a `linuxPower` on a `fakeusb` tree, and `onWait` to change
   `runtime_status` and to stop, write tests that fail before the code exists. Each checks the whole of standard error,
   and the counts `closed` and `reopens` of the fake transport:

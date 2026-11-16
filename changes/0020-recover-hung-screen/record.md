@@ -51,3 +51,17 @@ supersedes: 0004-linux-sensors-and-run
   checks, a fresh `go test -count=1 ./...` including end-to-end tests, `npm run check-changes` and
   `git diff --check`; all passed. Could not verify the physical screen's recovery, resume on opening or healthy
   operation with autosuspend enabled, or Windows runtime behavior. The status stays `in-progress`
+- 2026-11-16T14:40:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, answered finding P1 of
+  `.reviews/0020-recover-hung-screen/review-round-1.md`. Accepted by the definition of the orchestrator, for the part
+  that is mine to apply: the tests of the hang were validated retrospectively. With `failed` of the feeder made to
+  ignore a timeout, so that a timed-out write is the screen lost as before the unit, 11 tests of `run` failed
+  (`TestRunRecoversAHungScreenBySuspendingAndReopeningIt`, `TestRunChecksTheThemeAfterTheRecoveryOfAHungScreen`,
+  `TestRunOpensTheNodeAfterTheLimitWhenTheDeviceNeverSuspends`, `TestRunWritesTheLinesOfARecoveryThatDoesNotHelpOnce`,
+  `TestRunSaysThatTheDeviceDidNotSuspendOnceOverTwoRecoveries`, `TestRunReopensAHungScreenPlainlyWhenNoRecoveryIsPossible`,
+  `TestRunReadsThePowerFilesAtEachRoundOfAHang`, `TestRunWritesThatAnUploadFailedBeforeThatTheScreenHung`,
+  `TestRunStopsDuringTheWaitForTheSuspend`, `TestRunEndsAHangWithoutALineWhenAnotherFailureFollows`,
+  `TestRunWritesTheLinesOfASecondHangAgain`), and the change was then reverted, so the tree has the final code. The
+  tests of `hangError` and of `hidraw` were not validated this way. The plan task is annotated as written after the
+  code. This is retrospective validation and not test-first execution. Proposed decline, for the human: the rule
+  that the test comes first was broken, and the exception the review asks for is the human's to record, so none is
+  recorded here. The status stays `in-progress`
