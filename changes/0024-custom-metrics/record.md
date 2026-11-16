@@ -33,6 +33,16 @@ timestamp: 2026-11-16T20:28:31Z
   requirement traces to a task. The status stays `approved`
 - 2026-11-16T20:45:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, began the work. The status is
   `in-progress`
+- 2026-11-16T22:10:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, built tasks 1 to 10 of the plan in ten commits and
+  ran the five commands of the suite on the final tree `8f15b26` plus this record: `go test ./...` (the unit tests
+  and the end-to-end tests), `go vet ./...`, `gofmt -l .`, `GOOS=windows GOARCH=amd64 go build ./...` and
+  `GOOS=windows GOARCH=amd64 go vet ./...` all reported nothing and passed. The tests of `custommetrics` also passed under
+  `-race`. Deviations from the plan, all small: `runCommand` returns the number unscaled and the scale is applied by
+  `scaled` in `outcome.go`, which the plan left open; the value of a number that overflows after the scale and the offset
+  has no value with a cause of its own, a case the spec does not cover; `ReadOnce` runs the commands concurrently, so that
+  several slow commands do not add up. Not checked: Windows, so the `shell_windows_test.go` and `nowindow_windows_test.go`
+  tests are built by `go vet` and not run, and the three items under "Unverified until the human runs it". No review was
+  run by this step, so the status stays `in-progress`
 
 ## Amendments
 - 2026-11-16T20:31:31Z [Claude Code, anthropic/claude-opus-5-5] read the spec under the delegation in `AGENTS.md`: the three sources

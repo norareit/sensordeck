@@ -335,26 +335,26 @@ What the tree on `feature-0024-custom-metrics` holds, and what the plan builds o
 
 ### 11. The suite
 
-- [ ] Run the five commands of `AGENTS.md` and check that each succeeds (R36)
+- [x] Run the five commands of `AGENTS.md` and check that each succeeds (R36)
 
 ## Verification
 
-- [ ] `go test ./...` passes
-- [ ] `go vet ./...` reports nothing
-- [ ] `gofmt -l .` prints no file name
-- [ ] `GOOS=windows GOARCH=amd64 go build ./...` succeeds and reports nothing
-- [ ] `GOOS=windows GOARCH=amd64 go vet ./...` succeeds and reports nothing
-- [ ] `npm run check-changes` passes
+- [x] `go test ./...` passes
+- [x] `go vet ./...` reports nothing
+- [x] `gofmt -l .` prints no file name
+- [x] `GOOS=windows GOARCH=amd64 go build ./...` succeeds and reports nothing
+- [x] `GOOS=windows GOARCH=amd64 go vet ./...` succeeds and reports nothing
+- [x] `npm run check-changes` passes
 
 ## Commit Points
 
-- [ ] `feature-0024 Share the lookup of hwmon chips by name`
-- [ ] `feature-0024 Start nvidia-smi with no console window on Windows`
-- [ ] `feature-0024 Add the rule of a well-formed metric name`
-- [ ] `feature-0024 Let the theme compiler take a well-formed metric name`
-- [ ] `feature-0024 Read the key metrics of the config file`
-- [ ] `feature-0024 Read custom metrics from a file, a chip or a command`
-- [ ] `feature-0024 Send custom metrics in run`
-- [ ] `feature-0024 List custom metrics in sensors`
-- [ ] `feature-0024 Cover custom metrics end to end`
-- [ ] `feature-0024 Document custom metrics`
+- [x] `feature-0024 Share the lookup of hwmon chips by name`
+- [x] `feature-0024 Start nvidia-smi with no console window on Windows`
+- [x] `feature-0024 Add the rule of a well-formed metric name`
+- [x] `feature-0024 Let the theme compiler take a well-formed metric name`
+- [x] `feature-0024 Read the key metrics of the config file`
+- [x] `feature-0024 Read custom metrics from a file, a chip or a command`
+- [x] `feature-0024 Send custom metrics in run`
+- [x] `feature-0024 List custom metrics in sensors`
+- [x] `feature-0024 Cover custom metrics end to end`
+- [x] `feature-0024 Document custom metrics`
