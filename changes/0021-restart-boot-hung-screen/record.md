@@ -1,6 +1,6 @@
 ---
 kind: bug
-status: in-progress
+status: implemented
 timestamp: 2026-11-16T14:50:42Z
 supersedes: 0020-recover-hung-screen
 ---
@@ -38,16 +38,16 @@ supersedes: 0020-recover-hung-screen
   restart makes its first restart only once the minute has passed, and the line `restarting the screen to recover it`
   is written with the first restart the hang makes rather than at a round that makes none. The one-shot commands keep
   the default handling of Ctrl+C, which ends the restart with the process, as R5 asks. The status stays `approved`
-- 2026-11-16T15:05:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, began the work on the branch. The status is
+- 2026-11-16T14:59:07Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, began the work on the branch. The status is
   `in-progress`
-- 2026-11-16T15:40:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, built tasks 1 to 5 of `plan.md` in four
+- 2026-11-16T15:03:27Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, built tasks 1 to 5 of `plan.md` in four
   commits. Two deviations from the plan, both in `plan.md` as built: the interface that `Restart` takes for the
   transport is named `Reopenable` and not `Screen`, since `Screen` is already the type that discovery gives in
   `internal/hidraw`; and the fake restarter of the tests of `internal/cli` is in `hang_test.go` with the tests of
   `restartAfterHang`, as the plan has it, and its constructor sets it on the harness. No end-to-end test was added, by
   D10. The restart against a real screen and the real ioctl `USBDEVFS_CONTROL` were not run: only the number of the
   ioctl is tested, on amd64, and the device check is the human's, by D13
-- 2026-11-16T15:50:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, ran the five commands of the suite and
+- 2026-11-16T15:03:31Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, ran the five commands of the suite and
   `npm run check-changes` on `4983afb`: `go test ./...` passes, `go vet ./...` and `gofmt -l .` report nothing, and the
   two Windows commands succeed and report nothing. The status stays `in-progress` until the review of the unit
 - 2026-11-16T15:05:57Z [OpenCode, openai/gpt-6.1-sol] as the reviewer, made a full review of
@@ -58,3 +58,8 @@ supersedes: 0020-recover-hung-screen
   uncached run of `./e2e`, `./internal/hidraw` and `./internal/cli`; all passed. The tests-first intermediate failures
   could not be verified from the final tree. The physical cold-boot recovery and real ioctl were not checked, by
   D13, and no Windows runtime check was made. The status stays `in-progress`
+- 2026-11-16T15:07:57Z [Claude Code, anthropic/claude-opus-5-5] under the delegation in `AGENTS.md`, decided the findings: round 1
+  returned none, so no blocking finding is open. The timestamps of three entries of the implementer, which did not
+  match their commits, were corrected to the times of the commits that added them. Every task of `plan.md` is
+  ticked, and the five commands of the suite passed on the branch. The restart on the device, at a cold boot with the
+  new udev rule installed, is the human's check and follows the merge. The status is `implemented`
