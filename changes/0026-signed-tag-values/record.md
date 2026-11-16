@@ -9,7 +9,7 @@ supersedes: 0004-linux-sensors-and-run
 
 ## Log
 
-- 2026-11-16T23:47:09Z [Claude Code, anthropic/claude-opus-5-5] as the specifier, wrote the spec from the report of
+- 2026-11-16T23:47:15Z [Claude Code, anthropic/claude-opus-5-5] as the specifier, wrote the spec from the report of
   the orchestrating session of the values that the human's screen showed on 2026-11-17 for 65535, 40000, 32768, 32767
   and 0 sent with `values`, which establish that the screen reads the value of a tag as a 16-bit two's complement
   number, against `docs/protocol.md`, the README, `sensors.ToValue`, the arguments of `values` and their tests, and the
