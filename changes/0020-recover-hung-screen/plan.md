@@ -134,11 +134,11 @@ plain directory, has no such ancestor, so the end-to-end tests see a recovery th
 
 ### 4. The recovery of `run`
 
-- [ ] In `internal/cli/themeholder_test.go`, change the tests that read the third result of `ensure` to read an
+- [x] In `internal/cli/themeholder_test.go`, change the tests that read the third result of `ensure` to read an
   error, and add one that a failed upload gives the error of the upload, which wraps the error of the write
-- [ ] Change `themeHolder.ensure` to give `failure error` in place of `failed bool`, the error of `upload`, still after
+- [x] Change `themeHolder.ensure` to give `failure error` in place of `failed bool`, the error of `upload`, still after
   the line `theme upload failed: ` that `upload` writes (R4)
-- [ ] In `internal/cli/runhang_linux_test.go` (build tag `linux`), with the harness of `run_test.go`, `failWrites`
+- [x] In `internal/cli/runhang_linux_test.go` (build tag `linux`), with the harness of `run_test.go`, `failWrites`
   and `failErr` set to the `ETIMEDOUT` error, a `linuxPower` on a `fakeusb` tree, and `onWait` to change
   `runtime_status` and to stop, write tests that fail before the code exists. Each checks the whole of standard error,
   and the counts `closed` and `reopens` of the fake transport:
@@ -172,9 +172,9 @@ plain directory, has no such ancestor, so the end-to-end tests see a recovery th
     - ticks during a hang, with an interval of 5 seconds: no write between the timed-out write and the round that
       recovers (R4, R21)
     - a second hang after `screen recovered`: its lines are written again (R9)
-- [ ] In `run_test.go`, check that the tests of the lost screen still pass unchanged with `noScreenPower`, which is the
+- [x] In `run_test.go`, check that the tests of the lost screen still pass unchanged with `noScreenPower`, which is the
   path of every write failure on Windows (R12)
-- [ ] In `hang.go`, write `observedTransport`, which embeds `transport` and calls a function after every `Write` that
+- [x] In `hang.go`, write `observedTransport`, which embeds `transport` and calls a function after every `Write` that
   succeeded. In `run.go`, give the feeder the power and a hang state beside `lost`: a flag that a hang is in progress,
   and the flags of the lines said once in it (the line of R5, of R6 and of R7). Then:
     - the feeder writes through an `observedTransport` of its transport, and gives it to the holder as well; its
@@ -190,9 +190,9 @@ plain directory, has no such ancestor, so the end-to-end tests see a recovery th
       before each wait of 100 milliseconds made with `feeding.wait`, until it reads true or the time from the close
       reaches the delay plus 5 seconds, then writes the line of R6 once in the hang if it did not read true, and
       reopens. A wait that the stop ended gives false at once, with no reopening (R5, R6, R7, R11, R14)
-- [ ] Update the comment of `feeder` to say how it handles a hang
-- [ ] Run the five commands of the suite
-- [ ] Commit: `bugfix-0020 Recover a hung screen in run by a suspend and a resume`
+- [x] Update the comment of `feeder` to say how it handles a hang
+- [x] Run the five commands of the suite
+- [x] Commit: `bugfix-0020 Recover a hung screen in run by a suspend and a resume`
 
 ### 5. The documents
 

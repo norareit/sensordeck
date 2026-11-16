@@ -34,25 +34,25 @@ func newThemeHolder(theme *configTheme, state stateFile, pause func(time.Duratio
 }
 
 // ensure tells whether values may be sent, and whether an upload completed in this call. It reads the state file
-// when a check is due and uploads the theme when it is not on the screen and the wait has passed. failed is an upload
-// that returned an error, after which the screen is lost.
-func (holder *themeHolder) ensure(stop context.Context, opened transport) (ready, uploaded, failed bool) {
+// when a check is due and uploads the theme when it is not on the screen and the wait has passed. failure is the error
+// of an upload that failed, after which the screen is lost.
+func (holder *themeHolder) ensure(stop context.Context, opened transport) (ready, uploaded bool, failure error) {
 	if holder.theme == nil {
-		return true, false, false
+		return true, false, nil
 	}
 	if holder.checkDue {
 		holder.check(opened.Serial())
 	}
 	if !holder.due {
-		return true, false, false
+		return true, false, nil
 	}
 	if stop.Err() != nil || holder.now().Before(holder.next) {
-		return false, false, false
+		return false, false, nil
 	}
 	if err := holder.upload(opened); err != nil {
-		return false, false, true
+		return false, false, err
 	}
-	return true, true, false
+	return true, true, nil
 }
 
 // onScreen tells whether values may be sent now without a check or an upload, which only a round does.

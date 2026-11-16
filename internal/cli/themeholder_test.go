@@ -3,6 +3,7 @@ package cli
 import (
 	"bytes"
 	"context"
+	"errors"
 	"reflect"
 	"testing"
 	"time"
@@ -34,16 +35,16 @@ func aTheme(content string) *configTheme {
 	return &configTheme{value: "mine", file: []byte(content), hash: uploadstate.Hash([]byte(content))}
 }
 
-func (fixture *holderFixture) ensure() (ready, uploaded, failed bool) {
+func (fixture *holderFixture) ensure() (ready, uploaded bool, failure error) {
 	return fixture.holder.ensure(context.Background(), fixture.fake)
 }
 
 func TestHolderUploadsAtTheFirstCheckWithNoStateFile(test *testing.T) {
 	theme := aTheme("theme one")
 	fixture := newHolderFixture(test, theme)
-	ready, uploaded, failed := fixture.ensure()
-	if !ready || !uploaded || failed {
-		test.Fatalf("ready %v uploaded %v failed %v", ready, uploaded, failed)
+	ready, uploaded, failure := fixture.ensure()
+	if !ready || !uploaded || failure != nil {
+		test.Fatalf("ready %v uploaded %v failure %v", ready, uploaded, failure)
 	}
 	if want := []string{"uploading theme mine", "theme uploaded: 9 bytes"}; !reflect.DeepEqual(fixture.said, want) {
 		test.Errorf("said %v", fixture.said)
@@ -58,8 +59,8 @@ func TestHolderUploadsNothingWhenTheHashIsStoredForTheSerialAndSaysSoOnce(test *
 	fixture := newHolderFixture(test, theme)
 	writeEntries(test, fixture.state, map[string]string{"S1": theme.hash})
 	for range 2 {
-		if ready, uploaded, failed := fixture.ensure(); !ready || uploaded || failed {
-			test.Fatalf("ready %v uploaded %v failed %v", ready, uploaded, failed)
+		if ready, uploaded, failure := fixture.ensure(); !ready || uploaded || failure != nil {
+			test.Fatalf("ready %v uploaded %v failure %v", ready, uploaded, failure)
 		}
 	}
 	fixture.holder.screenBack()
@@ -99,8 +100,8 @@ func TestHolderUploadsWhenTheStoredHashDiffersOrIsOfAnotherSerialOrTheSerialIsEm
 
 func TestHolderWithNoThemeIsAlwaysReady(test *testing.T) {
 	fixture := newHolderFixture(test, nil)
-	if ready, uploaded, failed := fixture.ensure(); !ready || uploaded || failed || len(fixture.fake.writes) != 0 {
-		test.Errorf("ready %v uploaded %v failed %v", ready, uploaded, failed)
+	if ready, uploaded, failure := fixture.ensure(); !ready || uploaded || failure != nil || len(fixture.fake.writes) != 0 {
+		test.Errorf("ready %v uploaded %v failure %v", ready, uploaded, failure)
 	}
 }
 
@@ -111,13 +112,13 @@ func TestHolderRetriesAFailedUploadAfterTenSecondsDoublingToFiveMinutes(test *te
 	for attempt := range 6 {
 		// every read is a time out, which is no answer to the ymodem command
 		fixture.fake.queue = []readResult{{report: reportOf(0x43)}}
-		ready, uploaded, failed := fixture.ensure()
-		if ready || uploaded || !failed {
-			test.Fatalf("attempt %d: ready %v uploaded %v failed %v", attempt, ready, uploaded, failed)
+		ready, uploaded, failure := fixture.ensure()
+		if ready || uploaded || failure == nil {
+			test.Fatalf("attempt %d: ready %v uploaded %v failed %v", attempt, ready, uploaded, failure)
 		}
 		writes := len(fixture.fake.writes)
 		fixture.clock.current = fixture.clock.current.Add(wait - time.Millisecond)
-		if ready, _, failed := fixture.ensure(); ready || failed || len(fixture.fake.writes) != writes {
+		if ready, _, failure := fixture.ensure(); ready || failure != nil || len(fixture.fake.writes) != writes {
 			test.Fatalf("attempt %d: tried again before %v", attempt, wait)
 		}
 		fixture.clock.current = fixture.clock.current.Add(time.Millisecond)
@@ -166,8 +167,8 @@ func TestHolderClearedByNoThemeIsReadyAndUploadsNothing(test *testing.T) {
 	fixture.ensure()
 	fixture.holder.setTheme(nil)
 	writes := len(fixture.fake.writes)
-	if ready, uploaded, failed := fixture.ensure(); !ready || uploaded || failed || len(fixture.fake.writes) != writes {
-		test.Errorf("ready %v uploaded %v failed %v", ready, uploaded, failed)
+	if ready, uploaded, failure := fixture.ensure(); !ready || uploaded || failure != nil || len(fixture.fake.writes) != writes {
+		test.Errorf("ready %v uploaded %v failure %v", ready, uploaded, failure)
 	}
 }
 
@@ -175,8 +176,8 @@ func TestHolderStartsNoUploadOnceStopIsDone(test *testing.T) {
 	fixture := newHolderFixture(test, aTheme("theme one"))
 	stop, cancel := context.WithCancel(context.Background())
 	cancel()
-	if ready, uploaded, failed := fixture.holder.ensure(stop, fixture.fake); ready || uploaded || failed || len(fixture.fake.writes) != 0 {
-		test.Errorf("ready %v uploaded %v failed %v, %d reports", ready, uploaded, failed, len(fixture.fake.writes))
+	if ready, uploaded, failure := fixture.holder.ensure(stop, fixture.fake); ready || uploaded || failure != nil || len(fixture.fake.writes) != 0 {
+		test.Errorf("ready %v uploaded %v failure %v, %d reports", ready, uploaded, failure, len(fixture.fake.writes))
 	}
 }
 
@@ -213,5 +214,14 @@ func TestHolderOnScreenTellsWhetherValuesMayBeSentWithoutACheckOrAnUpload(test *
 	failing.ensure()
 	if failing.holder.onScreen() {
 		test.Error("on screen after an upload that failed")
+	}
+}
+
+func TestHolderGivesTheErrorOfAFailedUploadWhichWrapsTheErrorOfTheWrite(test *testing.T) {
+	fixture := newHolderFixture(test, aTheme("theme one"))
+	fixture.fake.failWrites, fixture.fake.failErr = []bool{true}, errFake
+	ready, uploaded, failure := fixture.ensure()
+	if ready || uploaded || !errors.Is(failure, errFake) {
+		test.Errorf("ready %v uploaded %v failure %v", ready, uploaded, failure)
 	}
 }

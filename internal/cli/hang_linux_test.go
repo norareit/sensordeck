@@ -22,7 +22,8 @@ func hungHarness(test *testing.T) (*harness, *fakeusb.Device) {
 	root := test.TempDir()
 	sysfsRoot, devRoot := filepath.Join(root, "sys"), filepath.Join(root, "dev")
 	device := fakeusb.New(test, sysfsRoot, devRoot, 3)
-	harness := newHarness()
+	harness := runWith(twoMetrics(), 1<<30)
+	harness.transport.failErr = timeoutError
 	harness.transport.writeErr = timeoutError
 	harness.power = linuxPower{sysfsRoot: sysfsRoot, devRoot: devRoot, node: func() string { return device.Node }}
 	return harness, device

@@ -92,8 +92,10 @@ func (current *session) serveRun(stop context.Context, prepared preparedRun, ope
 	settings := prepared.started.settings
 	sources := prepared.sources
 	current.say(fmt.Sprintf("running: %d metrics every %s", len(settings.Mappings), settings.Interval))
+	observed := &observedTransport{transport: opened}
 	feeding := &feeder{
-		transport:  opened,
+		transport:  observed,
+		power:      power,
 		others:     current.withMonitor(sources, settings.LibreHardwareMonitorURL),
 		controller: &periodicSource{source: sources.controller, period: settings.CommanderPeriod()},
 		config:     settings,
@@ -110,6 +112,7 @@ func (current *session) serveRun(stop context.Context, prepared preparedRun, ope
 		wait:   current.env.wait,
 		stderr: current.env.stderr,
 	}
+	observed.written = feeding.writeSucceeded
 	endKeeping := func() {}
 	if settings.CommanderColour != nil {
 		keeper := current.newKeeper(sources, settings, feeding.probesMapped)
@@ -189,9 +192,24 @@ func (locked *lockedWriter) Write(data []byte) (int, error) {
 	return locked.writer.Write(data)
 }
 
+// suspendPoll is how often the recovery of a hung screen reads whether the device is suspended, and suspendMargin is
+// what it waits for it beyond the autosuspend delay.
+const (
+	suspendPoll   = 100 * time.Millisecond
+	suspendMargin = 5 * time.Second
+)
+
+// hangState is the hang of a screen whose writes time out, from the first write that timed out to the first one that
+// succeeds, and the lines said in it, so that each is written once.
+type hangState struct {
+	active                                           bool
+	suspendingSaid, notSuspendedSaid, noRecoverySaid bool
+}
+
 // feeder sends the clock and the values of the mapped metrics to the screen in rounds, and the clock alone in ticks at
 // each whole second between them, and reopens the transport
-// when the screen is lost. Without commander_color it reads the controller at most once per period and sends the kept
+// when the screen is lost. A screen whose writes time out is hung, and the round recovers it by closing the node, waiting
+// for the USB device to suspend and opening the node again, with its lines written once in the hang. Without commander_color it reads the controller at most once per period and sends the kept
 // readings of its last reading in the other rounds. With it the controller is read through the keeper, which holds a
 // session of the controller, and a round with a probe mapped asks it for a reading of its own. The holder keeps the
 // theme of the config on the screen, and the watcher gives the config again when its file changed.
@@ -208,6 +226,8 @@ type feeder struct {
 	lastClock  time.Time
 	clockDue   bool // the clock is to be sent in the next round that sends anything, whatever its age
 	lost       bool
+	power      screenPower
+	hang       hangState
 }
 
 // probesMapped tells whether a metric of the controller is mapped now. The keeper asks it from the goroutine of the
@@ -257,18 +277,12 @@ func (feeding *feeder) feed(stop context.Context) error {
 // round does one round, which started at start.
 func (feeding *feeder) round(stop context.Context, start time.Time) error {
 	feeding.reload()
-	if feeding.lost {
-		if feeding.transport.Reopen() != nil {
-			return nil
-		}
-		feeding.lost = false
-		_, _ = fmt.Fprintln(feeding.stderr, "screen back")
-		feeding.holder.screenBack()
-		feeding.clockDue = true
+	if feeding.lost && !feeding.reopen(stop) {
+		return nil
 	}
-	ready, uploaded, failed := feeding.holder.ensure(stop, feeding.transport)
-	if failed {
-		feeding.lost = true
+	ready, uploaded, failure := feeding.holder.ensure(stop, feeding.transport)
+	if failure != nil {
+		feeding.failed(failure, false)
 	}
 	if !ready {
 		return nil
@@ -283,6 +297,88 @@ func (feeding *feeder) round(stop context.Context, start time.Time) error {
 		}
 	}
 	return nil
+}
+
+// reopen opens the node of a lost screen again and tells whether it is open. A screen that is hung is recovered by a
+// suspend first. It is back the same way in both cases, and says so unless it was hung, which says "screen recovered"
+// at its first write that succeeds.
+func (feeding *feeder) reopen(stop context.Context) bool {
+	if feeding.hang.active {
+		if !feeding.recoverHung(stop) {
+			return false
+		}
+	} else {
+		if feeding.transport.Reopen() != nil {
+			return false
+		}
+		_, _ = fmt.Fprintln(feeding.stderr, "screen back")
+	}
+	feeding.lost = false
+	feeding.holder.screenBack()
+	feeding.clockDue = true
+	return true
+}
+
+// recoverHung does the recovery of a hung screen instead of a plain reopening, and tells whether the node is open
+// again. It reads the power files anew, so that a rule applied while run runs is used. When the recovery is not
+// possible it reopens the node as for a lost screen, since another reopening is all there is to try.
+func (feeding *feeder) recoverHung(stop context.Context) bool {
+	recovery, possible := feeding.power.recovery()
+	if !possible {
+		feeding.sayOnce(&feeding.hang.noRecoverySaid, hungPrefix+hungNoRecover)
+		return feeding.transport.Reopen() == nil
+	}
+	feeding.sayOnce(&feeding.hang.suspendingSaid, hungSuspending)
+	_ = feeding.transport.Close()
+	limit := recovery.delay + suspendMargin
+	closedAt := feeding.now()
+	suspended := recovery.suspended()
+	for !suspended && feeding.now().Sub(closedAt) < limit {
+		if !feeding.wait(stop, suspendPoll) {
+			return false
+		}
+		suspended = recovery.suspended()
+	}
+	if !suspended {
+		feeding.sayOnce(&feeding.hang.notSuspendedSaid, fmt.Sprintf("the screen did not suspend within %s, another program may hold it open", limit))
+	}
+	// The node opens fine whether or not the device suspended, so the reopening is the same either way.
+	return feeding.transport.Reopen() == nil
+}
+
+// sayOnce writes the line to standard error unless it was written in this hang, which the flag records.
+func (feeding *feeder) sayOnce(said *bool, line string) {
+	if *said {
+		return
+	}
+	*said = true
+	_, _ = fmt.Fprintln(feeding.stderr, line)
+}
+
+// writeSucceeded ends a hang, which only a write that succeeds does: the node of a hung screen opens fine.
+func (feeding *feeder) writeSucceeded() {
+	if !feeding.hang.active {
+		return
+	}
+	feeding.hang = hangState{}
+	_, _ = fmt.Fprintln(feeding.stderr, "screen recovered")
+}
+
+// failed makes the screen lost after a failed write or upload. A timeout begins a hang, with its line once, and
+// another failure ends one. A failed write says that the screen is lost, and a failed upload has said it failed.
+func (feeding *feeder) failed(err error, write bool) {
+	feeding.lost = true
+	if feeding.power.timedOut(err) {
+		if !feeding.hang.active {
+			feeding.hang.active = true
+			_, _ = fmt.Fprintf(feeding.stderr, "screen hung: %v\n", err)
+		}
+		return
+	}
+	feeding.hang = hangState{}
+	if write {
+		_, _ = fmt.Fprintf(feeding.stderr, "screen lost: %v\n", err)
+	}
 }
 
 // tick writes the clock between the rounds, and nothing else. It leaves a lost screen and a theme that is not known
@@ -360,14 +456,13 @@ func (feeding *feeder) writeClock(stop context.Context) (bool, error) {
 	return feeding.write(stop, report), nil
 }
 
-// write writes one report. It writes nothing once stop is done, and a failure of the write is the screen lost.
+// write writes one report. It writes nothing once stop is done, and a failure of the write is the screen lost or hung.
 func (feeding *feeder) write(stop context.Context, report smartmonitor.Report) bool {
 	if stop.Err() != nil {
 		return false
 	}
 	if err := feeding.transport.Write(report); err != nil {
-		feeding.lost = true
-		_, _ = fmt.Fprintf(feeding.stderr, "screen lost: %v\n", err)
+		feeding.failed(err, true)
 		return false
 	}
 	return true
