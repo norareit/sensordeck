@@ -1,6 +1,6 @@
 ---
 kind: feature
-status: in-progress
+status: implemented
 timestamp: 2026-11-16T20:28:31Z
 ---
 
@@ -31,9 +31,9 @@ timestamp: 2026-11-16T20:28:31Z
   a console window from opening for `nvidia-smi` on Windows, then the name rule, the theme compiler, the key
   `metrics`, the package that reads custom metrics, `run`, `sensors`, the end-to-end tests and the documents. Every
   requirement traces to a task. The status stays `approved`
-- 2026-11-16T20:45:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, began the work. The status is
+- 2026-11-16T20:37:57Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, began the work. The status is
   `in-progress`
-- 2026-11-16T22:10:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, built tasks 1 to 10 of the plan in ten commits and
+- 2026-11-16T20:47:20Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, built tasks 1 to 10 of the plan in ten commits and
   ran the five commands of the suite on the final tree `8f15b26` plus this record: `go test ./...` (the unit tests
   and the end-to-end tests), `go vet ./...`, `gofmt -l .`, `GOOS=windows GOARCH=amd64 go build ./...` and
   `GOOS=windows GOARCH=amd64 go vet ./...` all reported nothing and passed. The tests of `custommetrics` also passed under
@@ -49,7 +49,7 @@ timestamp: 2026-11-16T20:28:31Z
   `.reviews/0024-custom-metrics/review-round-1.md`. The five required commands, the change check, an uncached full
   test run and the custom-metrics race tests passed. Windows runtime behavior and the physical screen were not
   verified. The status stays `in-progress`
-- 2026-11-16T22:40:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, applied finding S1 of the review
+- 2026-11-16T20:51:50Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, applied finding S1 of the review
   round 1, accepted by the definition of the orchestrator and not as a decision of the human: the first line of
   standard error of a failed command is now the text up to the first line feed, with only a trailing carriage return
   removed, so an empty first line gives no line and an indented one keeps its indentation. The regression test failed
@@ -70,3 +70,11 @@ timestamp: 2026-11-16T20:28:31Z
   desktop CPU has an `amdgpu` chip of its own beside an AMD card, and the spec was amended for it; items 2 to 6 are
   declined. What is open on Windows is the human's to check and the unit does not depend on it. The approval that
   follows is made under that delegation
+- 2026-11-16T20:55:01Z [Claude Code, anthropic/claude-opus-5-5] under the delegation in `AGENTS.md`, decided the findings: S1 of
+  round 1, the blocking one, was corrected, and round 2 returned none, so no blocking finding is open. The timestamps
+  of three entries of the implementer, which did not match their commits, were corrected to the times of the commits
+  that added them. Every task of `plan.md` is ticked, and the five commands of the suite passed on the branch. On the
+  host, `sensors --config` listed a `command` metric and a `file` metric, read the three `nvme` chips by `hwmon`
+  with `index` 1 to 3 in the order of the built-in `nvme.<n>.temp` and the chip of the network card, wrote the
+  failure line for an `amdgpu` chip this host does not have, and refused `cpu.temp` as a custom name. Windows is the
+  human's to check and follows the merge. The status is `implemented`
