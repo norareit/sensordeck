@@ -14,35 +14,45 @@ import (
 	"github.com/norareit/sensordeck/internal/themeimage"
 )
 
-const previewImagePath = "docs/minimal-dark.png"
+// previewImages is the table of the committed preview images, each the preview of the built-in theme of its row.
+var previewImages = []struct {
+	themeName string
+	path      string
+}{
+	{"minimal-dark", "docs/minimal-dark.png"},
+	{"minimal-dark-probes", "docs/minimal-dark-probes.png"},
+}
 
-const previewCommand = "sensordeck theme preview minimal-dark docs/minimal-dark.png"
-
-// TestThePreviewImageIsWhatTheCodeDrawsNow compares decoded pixels rather than bytes, so that another PNG encoder
+// TestThePreviewImagesAreWhatTheCodeDrawsNow compares decoded pixels rather than bytes, so that another PNG encoder
 // that compresses the same pixels differently does not fail it.
-func TestThePreviewImageIsWhatTheCodeDrawsNow(test *testing.T) {
-	folder, found := builtinthemes.Folder("minimal-dark")
-	if !found {
-		test.Fatal("the built-in theme minimal-dark is missing")
-	}
-	compiled, err := themecompile.Compile(folder)
-	if err != nil {
-		test.Fatal(err)
-	}
-	theme, _, err := themefile.Parse(compiled.File)
-	if err != nil {
-		test.Fatal(err)
-	}
-	want := themeimage.Preview(theme)
+func TestThePreviewImagesAreWhatTheCodeDrawsNow(test *testing.T) {
+	for _, preview := range previewImages {
+		test.Run(preview.themeName, func(test *testing.T) {
+			folder, found := builtinthemes.Folder(preview.themeName)
+			if !found {
+				test.Fatalf("the built-in theme %s is missing", preview.themeName)
+			}
+			compiled, err := themecompile.Compile(folder)
+			if err != nil {
+				test.Fatal(err)
+			}
+			theme, _, err := themefile.Parse(compiled.File)
+			if err != nil {
+				test.Fatal(err)
+			}
+			want := themeimage.Preview(theme)
 
-	if mismatch := compareWithImage(want); mismatch != "" {
-		test.Errorf("%s %s: write the image again with %q", previewImagePath, mismatch, previewCommand)
+			if mismatch := compareWithImage(preview.path, want); mismatch != "" {
+				test.Errorf("%s %s: write the image again with %q", preview.path, mismatch,
+					"sensordeck theme preview "+preview.themeName+" "+preview.path)
+			}
+		})
 	}
 }
 
-// compareWithImage gives what differs between the committed image and want, and nothing when they are the same.
-func compareWithImage(want image.Image) string {
-	file, err := os.Open(previewImagePath)
+// compareWithImage gives what differs between the committed image at path and want, and nothing when they are the same.
+func compareWithImage(path string, want image.Image) string {
+	file, err := os.Open(path)
 	if err != nil {
 		return err.Error()
 	}
