@@ -138,13 +138,13 @@ flags `notRestartedSaid`, `stillHungSaid` and `cannotRestartSaid`.
 
 ### 1. The udev rule
 
-- [ ] In `udev_test.go`, rename the test to `TestTheUdevRuleHoldsTheHidrawRulesAndTheUsbfsRule`, make its third
+- [x] In `udev_test.go`, rename the test to `TestTheUdevRuleHoldsTheHidrawRulesAndTheUsbfsRule`, make its third
   wanted line the line of R1, and add a check that no line holds `power/control` or `power/autosuspend_delay_ms`. Run
   it and see it fail (R23)
-- [ ] In `udev/70-sensordeck.rules`, replace the comment and the line of the third rule by a comment that says the rule
+- [x] In `udev/70-sensordeck.rules`, replace the comment and the line of the third rule by a comment that says the rule
   gives the user of the active session access to the screen's USB device node, through which sensordeck restarts the
   firmware of a hung screen, and the line of R1. The two hidraw rules and their comments stay as they are (R1, R2, D5)
-- [ ] Commit: `bugfix-0021 Give access to the usbfs node of the screen in the udev rule`
+- [x] Commit: `bugfix-0021 Give access to the usbfs node of the screen in the udev rule`
 
 ### 2. The restart in the Linux transport
 

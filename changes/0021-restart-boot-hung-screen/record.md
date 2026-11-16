@@ -1,6 +1,6 @@
 ---
 kind: bug
-status: approved
+status: in-progress
 timestamp: 2026-11-16T14:50:42Z
 supersedes: 0020-recover-hung-screen
 ---
@@ -38,3 +38,5 @@ supersedes: 0020-recover-hung-screen
   restart makes its first restart only once the minute has passed, and the line `restarting the screen to recover it`
   is written with the first restart the hang makes rather than at a round that makes none. The one-shot commands keep
   the default handling of Ctrl+C, which ends the restart with the process, as R5 asks. The status stays `approved`
+- 2026-11-16T15:05:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, began the work on the branch. The status is
+  `in-progress`
