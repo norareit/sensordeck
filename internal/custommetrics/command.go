@@ -68,6 +68,6 @@ func isOnlyAHeldPipe(command *exec.Cmd, err error) bool {
 }
 
 func firstLine(text string) string {
-	line, _, _ := strings.Cut(strings.TrimSpace(text), "\n")
+	line, _, _ := strings.Cut(text, "\n")
 	return strings.TrimSuffix(line, "\r")
 }

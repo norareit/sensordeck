@@ -41,6 +41,17 @@ func TestACommandThatExitsWithAStatus(test *testing.T) {
 	}
 }
 
+func TestTheFirstLineOfStandardErrorIsTheFirstLineEvenWhenItIsEmptyOrIndented(test *testing.T) {
+	got := runText(test, "printf '\\nsecond\\n' >&2; exit 3", test.TempDir(), 5*time.Second)
+	if got.cause != "the command exited with status 3" {
+		test.Errorf("cause %q", got.cause)
+	}
+	got = runText(test, "printf '  indented\\r\\nsecond\\n' >&2; exit 3", test.TempDir(), 5*time.Second)
+	if got.cause != "the command exited with status 3:   indented" {
+		test.Errorf("cause %q", got.cause)
+	}
+}
+
 func TestACommandWithNoNumber(test *testing.T) {
 	if got := runText(test, "echo none", test.TempDir(), 5*time.Second); got.cause != "no number in the output of the command" {
 		test.Errorf("cause %q", got.cause)
