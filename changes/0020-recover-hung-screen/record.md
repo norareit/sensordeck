@@ -69,3 +69,10 @@ supersedes: 0004-linux-sensors-and-run
   P1 of round 1: declined, and an exception to the order of tests first is recorded for the tests of the hang in
   `run`. The order cannot be restored after the fact, the record states it, and the implementer showed that 11 of
   the tests fail with the classification of timeouts disabled, so they guard the fix. P1 does not block
+- 2026-11-16T13:41:32Z [OpenCode, openai/gpt-6.1-sol] as the reviewer, made a delta review of unit
+  `0020-recover-hung-screen` at `c3bf07df6cad6209504427ce5dda037194eda1ae` from
+  `25a80dad65ccebabc0aaabe3dda9e80ee2c1b133`, saved in
+  `.reviews/0020-recover-hung-screen/review-round-2.md`. Checked the response to P1 and returned no new findings.
+  Ran fresh `go test -count=1 ./...` including end-to-end tests, both platform vet commands, the Windows build,
+  `gofmt -l .`, `npm run check-changes` and `git diff --check`; all passed. Could not independently verify the
+  historical mutation experiment, physical-device behavior or Windows runtime behavior. The status stays `in-progress`
