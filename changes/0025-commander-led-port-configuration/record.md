@@ -31,6 +31,15 @@ supersedes: 0009-commander-led-colour
   status stays `approved`
 - 2026-11-16T23:30:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, began the work on
   `bugfix-0025-commander-led-port-configuration`, from the approved spec and the plan. The status is `in-progress`
+- 2026-11-16T23:59:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, built the unit in the six tasks of
+  the plan, with the tests of each written before its code. Tasks 3 and 4 are one commit, since the new three results
+  of `Lighting.Start` break the build of `internal/cli` until the keeper takes them. The fake gained `UnavailableStatus`
+  and the stored and lighting configurations, the protocol `wantedConfiguration`, `portTypeProblem` and
+  `configurationCommand`, the session `repairConfiguration` and `writeConfiguration`, and the keeper `setupNotice`
+  and the two lines of R8. The suites were run on the tree of the commit that describes the documents:
+  `go test ./...`, `go vet ./...`, `gofmt -l .`, `GOOS=windows GOARCH=amd64 go build ./...` and
+  `GOOS=windows GOARCH=amd64 go vet ./...` all reported nothing but passing tests. Not checked: the device, and Windows,
+  which are the human's. No requirement was left out, and the plan needed no addition. The status stays `in-progress`
 
 ## Amendments
 - 2026-11-16T23:08:20Z [Claude Code, anthropic/claude-opus-5-5] read the spec under the delegation in `AGENTS.md`: its facts are those
