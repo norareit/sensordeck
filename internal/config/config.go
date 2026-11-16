@@ -54,6 +54,16 @@ type Config struct {
 	// LibreHardwareMonitorURL is the key librehardwaremonitor_url, never nil after Parse. Only Windows reads it.
 	LibreHardwareMonitorURL *url.URL
 	Mappings                []Mapping // ordered by tag, ascending; empty with a theme, whose tags the compiler assigns
+	Metrics                 []Metric  // the custom metrics, in the order of the file; empty without the key metrics
+}
+
+// IsMetric tells whether a name is a built-in metric or one defined under metrics.
+func (config Config) IsMetric(name string) bool {
+	return isMetric(name, config.Metrics)
+}
+
+func isMetric(name string, definitions []Metric) bool {
+	return sensors.IsName(name) || slices.ContainsFunc(definitions, func(each Metric) bool { return each.Name == name })
 }
 
 // CommanderPeriod is the shortest time between two readings of the controller in run.
@@ -75,7 +85,7 @@ func Parse(content []byte) (Config, error) {
 	if err != nil {
 		return Config{}, err
 	}
-	var themeNode, tagsNode, intervalNode, commanderIntervalNode, commanderColourNode, monitorURLNode *yaml.Node
+	var themeNode, tagsNode, metricsNode, intervalNode, commanderIntervalNode, commanderColourNode, monitorURLNode *yaml.Node
 	for position := 0; position+1 < len(root.Content); position += 2 {
 		key, value := root.Content[position], root.Content[position+1]
 		switch key.Value {
@@ -83,6 +93,8 @@ func Parse(content []byte) (Config, error) {
 			themeNode = value
 		case "tags":
 			tagsNode = value
+		case "metrics":
+			metricsNode = value
 		case "interval":
 			intervalNode = value
 		case "commander_interval":
@@ -92,10 +104,14 @@ func Parse(content []byte) (Config, error) {
 		case "librehardwaremonitor_url":
 			monitorURLNode = value
 		default:
-			return Config{}, fmt.Errorf("unknown key %q, the keys are commander_color, commander_interval, interval, librehardwaremonitor_url, tags and theme", key.Value)
+			return Config{}, fmt.Errorf("unknown key %q, the keys are commander_color, commander_interval, interval, librehardwaremonitor_url, metrics, tags and theme", key.Value)
 		}
 	}
-	theme, mappings, err := parseThemeOrTags(themeNode, tagsNode)
+	metrics, err := parseMetrics(metricsNode)
+	if err != nil {
+		return Config{}, err
+	}
+	theme, mappings, err := parseThemeOrTags(themeNode, tagsNode, metrics)
 	if err != nil {
 		return Config{}, err
 	}
@@ -119,10 +135,10 @@ func Parse(content []byte) (Config, error) {
 		return Config{}, err
 	}
 	return Config{Interval: interval, CommanderInterval: commanderInterval, CommanderColour: colour, Theme: theme,
-		LibreHardwareMonitorURL: monitorURL, Mappings: mappings}, nil
+		LibreHardwareMonitorURL: monitorURL, Mappings: mappings, Metrics: metrics}, nil
 }
 
-var errNotAMapping = errors.New("want a mapping with the keys commander_color, commander_interval, interval, librehardwaremonitor_url, tags and theme")
+var errNotAMapping = errors.New("want a mapping with the keys commander_color, commander_interval, interval, librehardwaremonitor_url, metrics, tags and theme")
 
 // rootMapping gives the mapping of the file, and refuses a key that is given twice. The parser reports that only when
 // a mapping is decoded into a map.
@@ -144,7 +160,7 @@ func refuseRepeatedKeys(mapping *yaml.Node) error {
 
 // parseThemeOrTags takes the key theme or the key tags, which exclude each other. A key counts as given when it is
 // present, whatever its value.
-func parseThemeOrTags(themeNode, tagsNode *yaml.Node) (string, []Mapping, error) {
+func parseThemeOrTags(themeNode, tagsNode *yaml.Node, metrics []Metric) (string, []Mapping, error) {
 	switch {
 	case themeNode != nil && tagsNode != nil:
 		return "", nil, errors.New("theme and tags cannot both be given, the theme gives the tags")
@@ -154,7 +170,7 @@ func parseThemeOrTags(themeNode, tagsNode *yaml.Node) (string, []Mapping, error)
 		theme, err := parseTheme(themeNode)
 		return theme, nil, err
 	}
-	mappings, err := parseTags(tagsNode)
+	mappings, err := parseTags(tagsNode, metrics)
 	return "", mappings, err
 }
 
@@ -175,7 +191,7 @@ func parseTheme(node *yaml.Node) (string, error) {
 
 const tagsProblem = "tags: want a mapping from metric name to tag, with at least one entry"
 
-func parseTags(node *yaml.Node) ([]Mapping, error) {
+func parseTags(node *yaml.Node, metrics []Metric) ([]Mapping, error) {
 	if node == nil || node.Kind != yaml.MappingNode || len(node.Content) == 0 {
 		return nil, errors.New(tagsProblem)
 	}
@@ -185,7 +201,7 @@ func parseTags(node *yaml.Node) ([]Mapping, error) {
 	mappings := make([]Mapping, 0, len(node.Content)/2)
 	for position := 0; position+1 < len(node.Content); position += 2 {
 		name := node.Content[position].Value
-		if !sensors.IsName(name) {
+		if !isMetric(name, metrics) {
 			return nil, fmt.Errorf("tags: %q is not a metric name", name)
 		}
 		tag, err := parseTag(name, node.Content[position+1])

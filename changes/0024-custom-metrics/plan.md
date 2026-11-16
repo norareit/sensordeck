@@ -229,7 +229,7 @@ What the tree on `feature-0024-custom-metrics` holds, and what the plan builds o
 
 ### 5. The key metrics
 
-- [ ] Add `internal/config/metrics_test.go`: a valid definition of each form with its defaults (`Scale` 1, `Offset` 0,
+- [x] Add `internal/config/metrics_test.go`: a valid definition of each form with its defaults (`Scale` 1, `Offset` 0,
   `Unit` empty, `Index` 1, `Every` 10 seconds) and with every key given; the order of the file kept; each error of
   the list in the choices above, with `nvme.9.temp` and `cpu.temp` refused as built in, `index` 0, `-1`, `1.5`,
   `"2"` and `index` without `hwmon`, `every` of `500ms` and of `x`, `scale` of `.inf`, `.nan` and `"1"`, a `unit`
@@ -237,10 +237,10 @@ What the tree on `feature-0024-custom-metrics` holds, and what the plan builds o
   a scalar. Add to `config_test.go` the new list of keys in the error of an unknown key and of a root that is not a
   mapping, `tags` taking a defined custom name and refusing an undefined one, and `IsMetric` for a built-in name, a
   defined one and an undefined one (R1 to R7, R10, R34)
-- [ ] Add `internal/config/metrics.go` with `Metric`, `DefaultEvery`, `MinimumEvery` and `parseMetrics`; in
+- [x] Add `internal/config/metrics.go` with `Metric`, `DefaultEvery`, `MinimumEvery` and `parseMetrics`; in
   `config.go` read the key `metrics` before `tags`, add it to both lists of keys, give `parseTags` the definitions,
   add `Metrics` to `Config` and `IsMetric` (R1 to R7, R10)
-- [ ] Run the suite and commit: `feature-0024 Read the key metrics of the config file`
+- [x] Run the suite and commit: `feature-0024 Read the key metrics of the config file`
 
 ### 6. The reading of custom metrics
 

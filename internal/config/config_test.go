@@ -61,10 +61,10 @@ func monitorURLProblem(text string) string {
 
 func TestParseErrors(test *testing.T) {
 	cases := []struct{ name, content, want string }{
-		{"empty", "", "want a mapping with the keys commander_color, commander_interval, interval, librehardwaremonitor_url, tags and theme"},
-		{"comment", "# nothing\n", "want a mapping with the keys commander_color, commander_interval, interval, librehardwaremonitor_url, tags and theme"},
-		{"list", "- tags\n", "want a mapping with the keys commander_color, commander_interval, interval, librehardwaremonitor_url, tags and theme"},
-		{"unknown key", "colour: red\ntags: {cpu.temp: 1}\n", `unknown key "colour", the keys are commander_color, commander_interval, interval, librehardwaremonitor_url, tags and theme`},
+		{"empty", "", "want a mapping with the keys commander_color, commander_interval, interval, librehardwaremonitor_url, metrics, tags and theme"},
+		{"comment", "# nothing\n", "want a mapping with the keys commander_color, commander_interval, interval, librehardwaremonitor_url, metrics, tags and theme"},
+		{"list", "- tags\n", "want a mapping with the keys commander_color, commander_interval, interval, librehardwaremonitor_url, metrics, tags and theme"},
+		{"unknown key", "colour: red\ntags: {cpu.temp: 1}\n", `unknown key "colour", the keys are commander_color, commander_interval, interval, librehardwaremonitor_url, metrics, tags and theme`},
 		{"neither theme nor tags", "interval: 1s\n", "one of theme and tags is needed"},
 		{"theme and tags", "theme: minimal-dark\ntags: {cpu.temp: 1}\n", "theme and tags cannot both be given, the theme gives the tags"},
 		{"theme and tags without value", "theme: minimal-dark\ntags:\n", "theme and tags cannot both be given, the theme gives the tags"},
