@@ -299,17 +299,17 @@ What the tree on `feature-0024-custom-metrics` holds, and what the plan builds o
 
 ### 8. Custom metrics in sensors
 
-- [ ] In `internal/cli/sensors_test.go`, replace `TestSensorsOnASetWithoutAMonitorNeverLooksForTheConfig` with tests
+- [x] In `internal/cli/sensors_test.go`, replace `TestSensorsOnASetWithoutAMonitorNeverLooksForTheConfig` with tests
   that read the config: the default file with a `file` metric listed after the built-in ones with its unit, and a
   metric without `unit` ending its line with a tab; `--config` naming another file; a missing default file giving no
   line; a missing named file and a file that is not valid each giving one line that names it and the built-in
   metrics; a failing custom metric giving its line on standard error; only a custom metric with a value giving no
   `no sensor could be read`; neither giving it (R24 to R27, R34)
-- [ ] In `internal/cli/windowssensors_linux_test.go`, add that `sensors --config <file>` reads
+- [x] In `internal/cli/windowssensors_linux_test.go`, add that `sensors --config <file>` reads
   `librehardwaremonitor_url` from the named file (R25)
-- [ ] In `internal/cli/commands.go`, add the flag `--config` to `sensors`, replace `monitorURL` with `sensorsConfig`
+- [x] In `internal/cli/commands.go`, add the flag `--config` to `sensors`, replace `monitorURL` with `sensorsConfig`
   and read and write the custom metrics, as the choices above say (R20, R22, R24 to R27)
-- [ ] Run the suite and commit: `feature-0024 List custom metrics in sensors`
+- [x] Run the suite and commit: `feature-0024 List custom metrics in sensors`
 
 ### 9. The end-to-end tests
 

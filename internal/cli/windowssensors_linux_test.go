@@ -370,3 +370,15 @@ func TestSensorsOnWindowsInterruptedWhileTheMonitorHoldsARequestWritesNoLine(tes
 	}()
 	harness.expectFailure(test, "interrupted", "sensors")
 }
+
+func TestSensorsOnWindowsReadsTheMonitorURLOfTheConfigNamedWithTheFlag(test *testing.T) {
+	harness, _ := windowsHarness(test)
+	served := newMonitor(test, noMonitorMetricDocument)
+	named := writeConfig(test, "librehardwaremonitor_url: "+served.url()+"\ntags: {cpu.temp: 1}\n")
+	if status := harness.run("sensors", "--config", named); status != 0 {
+		test.Fatalf("status %d, stderr %q", status, harness.stderr.String())
+	}
+	if served.requests.Load() == 0 {
+		test.Error("the monitor of the named config was not read")
+	}
+}

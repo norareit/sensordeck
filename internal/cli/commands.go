@@ -15,6 +15,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/norareit/sensordeck/internal/config"
+	"github.com/norareit/sensordeck/internal/custommetrics"
 	"github.com/norareit/sensordeck/internal/screenlist"
 	"github.com/norareit/sensordeck/internal/sensors"
 	"github.com/norareit/sensordeck/internal/smartmonitor"
@@ -284,32 +285,34 @@ func (outcome *monitorOutcome) say(stderr io.Writer) {
 	}
 }
 
-// monitorURL gives the URL that sensors reads the monitor at: the key of the config file at the place where run reads
-// it by default, or the default URL. A config file that cannot be read or is not valid does not stop sensors, which is
-// the command that is run while the config is written, so the problem is written as a line and the default is taken.
-func (current *session) monitorURL() *url.URL {
-	path, err := current.configPath("")
+// sensorsConfig reads the config file that sensors takes the custom metrics and the URL of the monitor from: the one
+// named with --config, or else the one at the place where run reads it by default. It has no settings for a default
+// file that does not exist, and for a file that cannot be read or is not valid, which sensors does not stop for, as it
+// is the command that is run while the config is written: the problem is written as a line.
+func (current *session) sensorsConfig(named string) (path string, settings config.Config, found bool) {
+	path, err := current.configPath(named)
 	if err != nil {
-		return config.DefaultMonitorURL()
+		return "", config.Config{}, false
 	}
 	content, err := readNamedFile("config file", path)
-	if errors.Is(err, fs.ErrNotExist) {
-		return config.DefaultMonitorURL()
+	if errors.Is(err, fs.ErrNotExist) && named == "" {
+		return path, config.Config{}, false
 	}
 	if err != nil {
 		_, _ = fmt.Fprintln(current.env.stderr, err)
-		return config.DefaultMonitorURL()
+		return path, config.Config{}, false
 	}
-	settings, err := config.Parse(content)
+	settings, err = config.Parse(content)
 	if err != nil {
 		_, _ = fmt.Fprintln(current.env.stderr, configFileError(path, err))
-		return config.DefaultMonitorURL()
+		return path, config.Config{}, false
 	}
-	return settings.LibreHardwareMonitorURL
+	return path, settings, true
 }
 
 func (current *session) sensorsCommand() *cobra.Command {
-	return &cobra.Command{
+	var configPath string
+	command := &cobra.Command{
 		Use:   "sensors",
 		Short: "List the sensor readings that can be read now",
 		Args:  cobra.NoArgs,
@@ -318,32 +321,59 @@ func (current *session) sensorsCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
+			path, settings, found := current.sensorsConfig(configPath)
 			var monitored monitorOutcome
 			if sources.monitor != nil {
-				address := current.monitorURL()
+				address := config.DefaultMonitorURL()
+				if found {
+					address = settings.LibreHardwareMonitorURL
+				}
 				sources.others = append(slices.Clip(sources.others), sources.monitor(address, monitored.keep))
 				monitored.address = address
 			}
 			stop, cancel := current.env.notifyStop(context.Background())
 			readings := sensors.InTableOrder(sensors.ReadAll(stop, sources.all(), func(string) bool { return true }))
+			custom := custommetrics.ReadOnce(stop, settings.Metrics, current.env.sysfsRoot, configDirectory(path))
 			interrupted := stop.Err() != nil
 			cancel()
 			if interrupted {
 				return errors.New("interrupted")
 			}
 			monitored.say(current.env.stderr)
-			if len(readings) == 0 {
-				if problem := sources.problem(); problem != nil {
-					_, _ = fmt.Fprintln(current.env.stderr, problem)
-				}
-				_, _ = fmt.Fprintln(current.env.stderr, noSensorMessage)
-				return nil
-			}
-			for _, reading := range readings {
-				value := strconv.FormatFloat(reading.Value, 'f', 1, 64)
-				current.say(reading.Name + "\t" + value + "\t" + sensors.Unit(reading.Name))
-			}
+			current.listReadings(sources, readings, custom)
 			return nil
 		},
 	}
+	command.Flags().StringVar(&configPath, "config", "", "read the config from this file instead of the default place")
+	return command
+}
+
+// listReadings writes the lines of the custom metrics that have no value to standard error, and the readings to
+// standard output, the custom ones after the built-in ones. With no value at all it says that no sensor can be read.
+func (current *session) listReadings(sources sourceSet, readings []sensors.Reading, custom []custommetrics.Result) {
+	var lines []string
+	for _, result := range custom {
+		if result.Cause != "" {
+			_, _ = fmt.Fprintf(current.env.stderr, "metric %s: %s\n", result.Name, result.Cause)
+			continue
+		}
+		lines = append(lines, formatReading(result.Name, result.Value, result.Unit))
+	}
+	if len(readings) == 0 && len(lines) == 0 {
+		if problem := sources.problem(); problem != nil {
+			_, _ = fmt.Fprintln(current.env.stderr, problem)
+		}
+		_, _ = fmt.Fprintln(current.env.stderr, noSensorMessage)
+		return
+	}
+	for _, reading := range readings {
+		current.say(formatReading(reading.Name, reading.Value, sensors.Unit(reading.Name)))
+	}
+	for _, line := range lines {
+		current.say(line)
+	}
+}
+
+func formatReading(name string, value float64, unit string) string {
+	return name + "\t" + strconv.FormatFloat(value, 'f', 1, 64) + "\t" + unit
 }

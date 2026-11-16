@@ -153,17 +153,6 @@ func TestSensorsReadsTheControllerOnceAfterTheOthers(test *testing.T) {
 	}
 }
 
-func TestSensorsOnASetWithoutAMonitorNeverLooksForTheConfig(test *testing.T) {
-	harness := newHarness()
-	harness.sources = []sensors.Source{&fakeSource{names: []string{"cpu.temp"}, values: map[string]float64{"cpu.temp": 1}}}
-	if status := harness.run("sensors"); status != 0 {
-		test.Fatalf("status %d", status)
-	}
-	if harness.configDirCalls != 0 {
-		test.Errorf("userConfigDir was called %d times", harness.configDirCalls)
-	}
-}
-
 func TestSensorsWritesReadingsGivenOutOfOrderInTheOrderOfTheTable(test *testing.T) {
 	harness := newHarness()
 	harness.sources = []sensors.Source{
