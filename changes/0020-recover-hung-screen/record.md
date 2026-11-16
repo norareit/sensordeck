@@ -21,3 +21,11 @@ supersedes: 0004-linux-sensors-and-run
   `screen recovered` at the first write that succeeds; without the rule, one line of what to do; the one-shot commands
   report and do not recover; no end-to-end test, because no write to the fake screen's terminal can time out. The
   status is `draft`
+- 2026-11-16T13:28:21Z [Claude Code, anthropic/claude-opus-5-5] read the spec under the delegation in `AGENTS.md`: its facts are those
+  the orchestrating session and the human observed on the device on 2026-11-16, what was observed once or inferred is
+  marked as such, sensordeck sends no USB reset and writes no sysfs, and every requirement can be tested in the
+  sandbox with a temporary sysfs tree and a fake transport. That opening the node resumes the device, and that a
+  healthy screen suspends harmlessly, go to the human's check after the next cold boot; the unit does not depend on it.
+  Item 3 of "Beyond the request" is not taken into the unit: the orchestrating session adds the amendment to the record
+  of `0004-linux-sensors-and-run` itself when it merges this unit. Items 1 and 2 are declined. The approval that
+  follows is made under that delegation
