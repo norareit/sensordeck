@@ -40,3 +40,10 @@ supersedes: 0020-recover-hung-screen
   the default handling of Ctrl+C, which ends the restart with the process, as R5 asks. The status stays `approved`
 - 2026-11-16T15:05:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, began the work on the branch. The status is
   `in-progress`
+- 2026-11-16T15:40:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, built tasks 1 to 5 of `plan.md` in four
+  commits. Two deviations from the plan, both in `plan.md` as built: the interface that `Restart` takes for the
+  transport is named `Reopenable` and not `Screen`, since `Screen` is already the type that discovery gives in
+  `internal/hidraw`; and the fake restarter of the tests of `internal/cli` is in `hang_test.go` with the tests of
+  `restartAfterHang`, as the plan has it, and its constructor sets it on the harness. No end-to-end test was added, by
+  D10. The restart against a real screen and the real ioctl `USBDEVFS_CONTROL` were not run: only the number of the
+  ioctl is tested, on amd64, and the device check is the human's, by D13

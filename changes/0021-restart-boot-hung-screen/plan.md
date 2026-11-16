@@ -261,7 +261,7 @@ The tree does not build between the first step of this task and the end of task 
 
 ### 5. The documents
 
-- [ ] In `docs/protocol.md`, replace the section `## Hang after a USB reset` by a section `## Hangs of the firmware`
+- [x] In `docs/protocol.md`, replace the section `## Hang after a USB reset` by a section `## Hangs of the firmware`
   with the subsections `### The reset hang`, `### The boot hang`, `### The restart` and `### How sensordeck restarts the
   screen`, holding what R18 lists: facts 1 to 3 of unit 0020 with the date, the report descriptor, `bmAttributes`
   `0x80` and no `power/wakeup`, and that the suspend and resume cleared the reset hang once; the symptom of the boot
@@ -273,25 +273,25 @@ The tree does not build between the first step of this task and the end of task 
   through the HID handle and that sensordeck does not use it. Keep every item of `## Unknown`, with the item on Windows
   reworded as whether either hang happens on Windows. Remove the paragraphs on the kernel not suspending a busy device
   and on how sensordeck recovered by a suspend (R18, R22)
-- [ ] In the README's section "Linux: access to the screen", show the three rules of the file after task 1; replace the
+- [x] In the README's section "Linux: access to the screen", show the three rules of the file after task 1; replace the
   paragraph of the third rule by one that says it gives the user of the session access to the screen's USB device
   node, which `run` and the commands that write use to restart a hung screen, linking
   `docs/protocol.md#hangs-of-the-firmware`; that a rule file without that line is old and is installed again, and that
   one with a line that sets `power/control` is the old rule of the version before; that
   `grep 'SUBSYSTEM=="usb".*uaccess' /etc/udev/rules.d/70-sensordeck.rules` prints nothing for an old rule; and that a
   replug applies the rule (R19)
-- [ ] In the README, replace the paragraph on how `run` recovers a hung screen by one that says that on Linux `run`
+- [x] In the README, replace the paragraph on how `run` recovers a hung screen by one that says that on Linux `run`
   restarts a hung screen at the first round of a hang and at most once a minute after, with the lines `screen hung: `,
   `restarting the screen to recover it`, `screen restarted at string descriptor <index>` and `screen recovered`, and
   that it writes one line that says to install the current rule when it cannot restart it (R20)
-- [ ] In the README's entry "The screen shows its theme but no values after boot", say that the screen hung because the
+- [x] In the README's entry "The screen shows its theme but no values after boot", say that the screen hung because the
   firmware of the PC set it up before Linux, that `run` restarts it with the current udev rule, what the lines of R11
   and R12 mean, and that unplugging it once recovers it, with no USB reset at boot named as the cause (R21)
-- [ ] Search `README.md` and `docs/` for `suspend`, `power/control` and `Hang after a USB reset`, and leave none that
+- [x] Search `README.md` and `docs/` for `suspend`, `power/control` and `Hang after a USB reset`, and leave none that
   claims a suspend and resume recovers a hung screen in general, that sensordeck relies on one, or that links the old
   section (R22)
-- [ ] Run the five commands of the suite (R27)
-- [ ] Commit: `bugfix-0021 Document the hangs of the screen and its restart`
+- [x] Run the five commands of the suite (R27)
+- [x] Commit: `bugfix-0021 Document the hangs of the screen and its restart`
 
 ## Trace
 
