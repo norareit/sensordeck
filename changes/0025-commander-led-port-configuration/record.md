@@ -1,6 +1,6 @@
 ---
 kind: bug
-status: in-progress
+status: implemented
 timestamp: 2026-11-16T23:06:16Z
 supersedes: 0009-commander-led-colour
 ---
@@ -29,9 +29,9 @@ supersedes: 0009-commander-led-colour
   did with the configuration beside the session and the error; the keeper writes the lines of R8 from a notice of its
   own; the end-to-end tests; the documents. Every requirement has a task, and every task traces to a requirement. The
   status stays `approved`
-- 2026-11-16T23:30:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, began the work on
+- 2026-11-16T23:14:58Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, began the work on
   `bugfix-0025-commander-led-port-configuration`, from the approved spec and the plan. The status is `in-progress`
-- 2026-11-16T23:59:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, built the unit in the six tasks of
+- 2026-11-16T23:18:45Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, built the unit in the six tasks of
   the plan, with the tests of each written before its code. Tasks 3 and 4 are one commit, since the new three results
   of `Lighting.Start` break the build of `internal/cli` until the keeper takes them. The fake gained `UnavailableStatus`
   and the stored and lighting configurations, the protocol `wantedConfiguration`, `portTypeProblem` and
@@ -56,3 +56,8 @@ supersedes: 0009-commander-led-colour
   LEDs, and a user who wants to keep iCUE's configuration leaves out `commander_color`, without which sensordeck does
   not touch it. The device check is the human's and the unit does not depend on it. The approval that follows is made
   under that delegation
+- 2026-11-16T23:22:48Z [Claude Code, anthropic/claude-opus-5-5] under the delegation in `AGENTS.md`, decided the findings: round 1
+  returned none, so no blocking finding is open. The timestamps of two entries of the implementer, which did not match
+  their commits, were corrected to the times of the commits that added them. Every task of `plan.md` is ticked, and
+  the five commands of the suite passed on the branch. The repair on the device, after iCUE has rewritten 0x1E, is the
+  human's check and follows the merge. The status is `implemented`
