@@ -1,6 +1,6 @@
 ---
 kind: bug
-status: in-progress
+status: implemented
 timestamp: 2026-11-16T23:45:33Z
 supersedes: 0004-linux-sensors-and-run
 ---
@@ -24,9 +24,9 @@ supersedes: 0004-linux-sensors-and-run
   branch: `smartmonitor.Value` takes an `int16` written as its 16-bit pattern, `sensors.ToValue` clamps to the signed
   range, `values` reads an optional `-` with a parser of its own, and the tests and documents follow. The fix takes
   more than a couple of steps, so it has a plan. The status stays `approved`
-- 2026-11-17T00:05:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, began the work from the plan. The status is
+- 2026-11-16T23:50:49Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, began the work from the plan. The status is
   `in-progress`
-- 2026-11-17T00:40:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, built every task of the plan. Not in the plan and added to it:
+- 2026-11-16T23:52:05Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, built every task of the plan. Not in the plan and added to it:
   `TestValuesAreSentAsTheScreenTakesThem` in `internal/custommetrics/number_test.go` called `ToValue` and did not
   compile with the new type, so it now wants -5 for -5 and 32767 for 70000. The commits differ from the commit points:
   `parseValue` and its tests went into the first commit with the encoding, and the move to `compileTheme` and the new
@@ -41,7 +41,7 @@ supersedes: 0004-linux-sensors-and-run
   `.reviews/0026-signed-tag-values/review-round-1.md`. Independently ran the five required Go checks, the uncached
   end-to-end suite and `npm run check-changes`, all successfully. The physical-device check and Windows runtime
   behavior were not verified. The status stays `in-progress`
-- 2026-11-17T01:10:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, read `review-round-1.md`. It has one
+- 2026-11-16T23:55:25Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, read `review-round-1.md`. It has one
   finding, C1, blocking: the move of the compiling of the theme into `compileTheme` and the new end-to-end test share
   a commit, against the rule that a commit does not change both structure and behavior. Proposed decline, not a
   decision: the move leaves what `TestRunSendsCustomMetricsToTheTagsOfTheTheme` checks unchanged, and that test passes
@@ -67,3 +67,8 @@ supersedes: 0004-linux-sensors-and-run
   C1 of round 1: declined, and an exception to the separation of refactoring and behaviour is recorded for that commit.
   Splitting it would rewrite commits that later ones build on for no change in the tree, the record states the
   departure, and the tests that check the extracted code pass on the final tree. C1 does not block
+- 2026-11-16T23:58:59Z [Claude Code, anthropic/claude-opus-5-5] under the delegation in `AGENTS.md`, decided the findings: C1 of
+  round 1 was declined with its exception recorded above, and round 2 returned none, so no blocking finding is open.
+  The timestamps of three entries of the implementer, which did not match their commits, were corrected to the times
+  of the commits that added them. Every task of `plan.md` is ticked, and the five commands of the suite passed on the
+  branch. The device check of a negative value is the human's and follows the merge. The status is `implemented`
