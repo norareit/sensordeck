@@ -27,3 +27,10 @@ timestamp: 2026-11-16T20:28:31Z
   cover the key. The status stays `draft`
 
 ## Amendments
+- 2026-11-16T20:31:31Z [Claude Code, anthropic/claude-opus-5-5] read the spec under the delegation in `AGENTS.md`: the three sources
+  are defined with their failures and limits, a custom name can never change the meaning of a built-in one, the
+  console flag for child processes on Windows covers `nvidia-smi` too, and every requirement can be tested in the
+  sandbox with temporary files and fake commands. Item 1 of "Beyond the request" was taken, because every recent Ryzen
+  desktop CPU has an `amdgpu` chip of its own beside an AMD card, and the spec was amended for it; items 2 to 6 are
+  declined. What is open on Windows is the human's to check and the unit does not depend on it. The approval that
+  follows is made under that delegation
