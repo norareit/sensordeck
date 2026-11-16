@@ -45,3 +45,9 @@ supersedes: 0004-linux-sensors-and-run
   commands of the suite were run and reported nothing but passes: `go test ./...` passed, `go vet ./...`, `gofmt -l .`,
   and the Windows build and vet printed nothing. Not checked: the behaviour on the device, which is the human's under
   D13 of the spec, and the claim of the spec that an open node keeps the device resumed. The status stays `in-progress`
+- 2026-11-16T13:39:09Z [OpenCode, openai/gpt-6.1-sol] as the reviewer, made a full review of unit
+  `0020-recover-hung-screen` at `25a80dad65ccebabc0aaabe3dda9e80ee2c1b133`, against the merge base with
+  `origin/master`. Returned P1 in `.reviews/0020-recover-hung-screen/review-round-1.md`. Ran all five required
+  checks, a fresh `go test -count=1 ./...` including end-to-end tests, `npm run check-changes` and
+  `git diff --check`; all passed. Could not verify the physical screen's recovery, resume on opening or healthy
+  operation with autosuspend enabled, or Windows runtime behavior. The status stays `in-progress`
