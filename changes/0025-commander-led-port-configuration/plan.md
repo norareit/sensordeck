@@ -138,7 +138,7 @@ run.
 
 ### 2. The protocol
 
-- [ ] In `protocol_test.go`, write the tests first (R13):
+- [x] In `protocol_test.go`, write the tests first (R13):
     - `wantedConfiguration` of the answer of the host, built with `portsAnswer`, gives
       `0D 00 07 00 00 00 01 03 01 03 01 03 01 03`, and `configurationCommand` of it gives 96 bytes that start with
       `08 06 01 0E 00 00 00 0D 00 07 00 00 00 01 03 01 03 01 03 01 03` and are zero after (R1, R2)
@@ -150,22 +150,22 @@ run.
     - `stepName` gives `write of the LED port configuration` for a configuration write, `command 08 15 01` for
       `08 15 01`, and `read of endpoint 0x1e on channel 1`, `open of endpoint 0x1e on channel 1` and
       `close of endpoint 0x1e on channel 1` for the commands of `0x1E` (R7)
-- [ ] In `protocol.go`, add the constants `portConfigurationEndpoint byte = 0x1E` and `knownLEDCount = 4`, and the
+- [x] In `protocol.go`, add the constants `portConfigurationEndpoint byte = 0x1E` and `knownLEDCount = 4`, and the
   variables `portConfigurationDataType = []byte{0x0D, 0x00}`, `ledPortType = []byte{0x01, 0x03}` and
   `afterPortConfiguration = []byte{0x08, 0x15, 0x01}`, with a comment that its meaning is unknown and that it follows
   the write because every setup that lit the LEDs sent it (D7)
-- [ ] Add `entryName(position int) string`, `EXT` for 0 and `port <position>` otherwise, and `hasLEDs(entry []byte)`,
+- [x] Add `entryName(position int) string`, `EXT` for 0 and `port <position>` otherwise, and `hasLEDs(entry []byte)`,
   mode 2 and an LED count other than 0. Use `hasLEDs` where `ledCount` sums, so that both decide "connected" in one
   place (R1, D6)
-- [ ] Add `wantedConfiguration(answer []byte) []byte` for an answer of `0x20` that `ledCount` accepted: the data type,
+- [x] Add `wantedConfiguration(answer []byte) []byte` for an answer of `0x20` that `ledCount` accepted: the data type,
   the count *c*, and for each entry `01 03` or `00` (R1)
-- [ ] Add `portTypeProblem(answer []byte) (name string, leds int)` for an answer that `ledCount` accepted: the name and
+- [x] Add `portTypeProblem(answer []byte) (name string, leds int)` for an answer that `ledCount` accepted: the name and
   count of the first entry that has LEDs and a count other than 4, or the empty name (R3)
-- [ ] Add `configurationCommand(configuration []byte) []byte`, 96 bytes: `08 06 01`, the length low byte first, `00 00`,
+- [x] Add `configurationCommand(configuration []byte) []byte`, 96 bytes: `08 06 01`, the length low byte first, `00 00`,
   the configuration from byte 7 and zeros (R2)
-- [ ] In `stepName`, add before the case of `08 06 00` the case of the prefix `08 06 01`, named
+- [x] In `stepName`, add before the case of `08 06 00` the case of the prefix `08 06 01`, named
   `write of the LED port configuration`. `08 15 01` keeps the fallback (R7)
-- [ ] Commit: `bugfix-0025 Build the LED port configuration from the answer of the ports`
+- [x] Commit: `bugfix-0025 Build the LED port configuration from the answer of the ports`
 
 ### 3. The setup
 
@@ -300,7 +300,7 @@ The sandbox runs the suite here, and the Windows build and vet of `AGENTS.md` co
 ## Commit Points
 
 - [x] After task 1: the fake controller
-- [ ] After task 2: the protocol
+- [x] After task 2: the protocol
 - [ ] After task 3: the setup
 - [ ] After task 4: the lines of run
 - [ ] After task 5: the end-to-end tests

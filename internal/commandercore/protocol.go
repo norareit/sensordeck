@@ -41,8 +41,13 @@ var steps = [8][]byte{
 const (
 	channelZero, channelOne byte = 0x00, 0x01
 
-	ledEndpoint   byte = 0x22
-	portsEndpoint byte = 0x20
+	ledEndpoint               byte = 0x22
+	portsEndpoint             byte = 0x20
+	portConfigurationEndpoint byte = 0x1E
+
+	// knownLEDCount is the LED count of the one kind of fan that the type of the LED port configuration was observed
+	// with.
+	knownLEDCount = 4
 
 	// maxLEDs is the count of triples that fit into a write of 97 bytes: 9 + 3·29 = 96.
 	maxLEDs = (answerSize - colourHeaderSize) / 3
@@ -60,6 +65,13 @@ var (
 	returnHardware = []byte{0x08, 0x01, 0x03, 0x00, 0x01}
 	portsDataType  = []byte{0x0F, 0x00}
 	colourDataType = []byte{0x12, 0x00}
+
+	portConfigurationDataType = []byte{0x0D, 0x00}
+	// ledPortType is the entry of a port with LEDs in the LED port configuration.
+	ledPortType = []byte{0x01, 0x03}
+	// afterPortConfiguration follows the write of the LED port configuration. Its meaning is unknown, and it is sent
+	// because every setup that lit the LEDs after a configuration write sent it.
+	afterPortConfiguration = []byte{0x08, 0x15, 0x01}
 )
 
 // openCommand opens the endpoint on the channel.
@@ -85,7 +97,7 @@ func ledCount(answer []byte) (int, error) {
 	total := 0
 	for position := range entries {
 		entry := answer[portsHeaderSize+portSize*position:]
-		if mode := int(entry[0]) | int(entry[1])<<8; mode == connectedMode {
+		if hasLEDs(entry) {
 			total += int(entry[2]) | int(entry[3])<<8
 		}
 	}
@@ -93,6 +105,58 @@ func ledCount(answer []byte) (int, error) {
 		return 0, fmt.Errorf("LED count %d is outside 1 to %d", total, maxLEDs)
 	}
 	return total, nil
+}
+
+// entryName names the entry of the endpoint 0x20 at the position: EXT, then the ports from 1.
+func entryName(position int) string {
+	if position == 0 {
+		return "EXT"
+	}
+	return fmt.Sprintf("port %d", position)
+}
+
+// entryLEDs gives the LED count of an entry of the endpoint 0x20.
+func entryLEDs(entry []byte) int { return int(entry[2]) | int(entry[3])<<8 }
+
+// hasLEDs tells whether an entry of the endpoint 0x20 is of the connected mode with an LED count other than 0.
+func hasLEDs(entry []byte) bool {
+	return int(entry[0])|int(entry[1])<<8 == connectedMode && entryLEDs(entry) != 0
+}
+
+// wantedConfiguration gives the LED port configuration that enables exactly the ports with LEDs, for an answer of the
+// endpoint 0x20 that ledCount accepted: the data type, the count of entries and one entry for each.
+func wantedConfiguration(answer []byte) []byte {
+	entries := int(answer[5])
+	configuration := append(bytes.Clone(portConfigurationDataType), byte(entries))
+	for position := range entries {
+		if hasLEDs(answer[portsHeaderSize+portSize*position:]) {
+			configuration = append(configuration, ledPortType...)
+		} else {
+			configuration = append(configuration, 0x00)
+		}
+	}
+	return configuration
+}
+
+// portTypeProblem gives the name and the LED count of the first entry with LEDs whose count is not the one that the
+// type of the configuration is known for, or the empty name when there is none. The answer is one that ledCount
+// accepted.
+func portTypeProblem(answer []byte) (name string, leds int) {
+	for position := range int(answer[5]) {
+		entry := answer[portsHeaderSize+portSize*position:]
+		if hasLEDs(entry) && entryLEDs(entry) != knownLEDCount {
+			return entryName(position), entryLEDs(entry)
+		}
+	}
+	return "", 0
+}
+
+// configurationCommand gives the 96 data bytes of the write of the LED port configuration.
+func configurationCommand(configuration []byte) []byte {
+	command := make([]byte, answerSize)
+	copy(command, []byte{0x08, 0x06, 0x01, byte(len(configuration)), byte(len(configuration) >> 8), 0x00, 0x00})
+	copy(command[7:], configuration)
+	return command
 }
 
 // colourCommand gives the 96 data bytes of the colour write that gives every one of count LEDs the colour.
@@ -114,6 +178,8 @@ func stepName(command []byte) string {
 		return "enter software mode"
 	case bytes.Equal(command, returnHardware):
 		return "return to hardware mode"
+	case bytes.HasPrefix(command, []byte{0x08, 0x06, 0x01}):
+		return "write of the LED port configuration"
 	case bytes.HasPrefix(command, []byte{0x08, 0x06, 0x00}):
 		return "colour write"
 	case bytes.HasPrefix(command, []byte{0x08, 0x05, 0x01}):

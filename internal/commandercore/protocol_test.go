@@ -219,3 +219,71 @@ func TestLedCount(test *testing.T) {
 		}
 	}
 }
+
+func hostPorts() []byte {
+	return portsAnswer([2]uint16{0, 0}, [2]uint16{3, 0}, [2]uint16{3, 0}, [2]uint16{2, 4}, [2]uint16{2, 4}, [2]uint16{2, 4}, [2]uint16{2, 4})
+}
+
+func TestWantedConfigurationAndTheConfigurationWrite(test *testing.T) {
+	for _, testCase := range []struct {
+		name   string
+		answer []byte
+		want   []byte
+	}{
+		{"the host", hostPorts(), []byte{0x0D, 0x00, 0x07, 0x00, 0x00, 0x00, 0x01, 0x03, 0x01, 0x03, 0x01, 0x03, 0x01, 0x03}},
+		{
+			"LEDs on EXT and the ports 1 and 2",
+			portsAnswer([2]uint16{2, 4}, [2]uint16{2, 4}, [2]uint16{2, 4}, [2]uint16{0, 0}, [2]uint16{0, 0}, [2]uint16{0, 0}, [2]uint16{0, 0}),
+			[]byte{0x0D, 0x00, 0x07, 0x01, 0x03, 0x01, 0x03, 0x01, 0x03, 0x00, 0x00, 0x00, 0x00},
+		},
+		{"mode 2 with 0 LEDs and mode 3 with 4 LEDs", portsAnswer([2]uint16{2, 0}, [2]uint16{3, 4}), []byte{0x0D, 0x00, 0x02, 0x00, 0x00}},
+	} {
+		test.Run(testCase.name, func(test *testing.T) {
+			got := wantedConfiguration(testCase.answer)
+			if !bytes.Equal(got, testCase.want) {
+				test.Fatalf("wanted: % x", got)
+			}
+			command := configurationCommand(got)
+			head := append([]byte{0x08, 0x06, 0x01, byte(len(got)), 0x00, 0x00, 0x00}, got...)
+			if len(command) != 96 || !bytes.Equal(command[:len(head)], head) || !bytes.Equal(command[len(head):], make([]byte, 96-len(head))) {
+				test.Fatalf("write: % x", command)
+			}
+		})
+	}
+	host := configurationCommand(wantedConfiguration(hostPorts()))
+	trace := []byte{0x08, 0x06, 0x01, 0x0E, 0x00, 0x00, 0x00, 0x0D, 0x00, 0x07, 0x00, 0x00, 0x00, 0x01, 0x03, 0x01, 0x03, 0x01, 0x03, 0x01, 0x03}
+	if !bytes.HasPrefix(host, trace) {
+		test.Errorf("the write of the host: % x", host)
+	}
+}
+
+func TestPortTypeProblemNamesTheFirstEntryWithLEDsOtherThanFour(test *testing.T) {
+	if name, leds := portTypeProblem(hostPorts()); name != "" || leds != 0 {
+		test.Errorf("host: %q, %d", name, leds)
+	}
+	eight := portsAnswer([2]uint16{0, 0}, [2]uint16{2, 4}, [2]uint16{2, 8}, [2]uint16{2, 6})
+	if name, leds := portTypeProblem(eight); name != "port 2" || leds != 8 {
+		test.Errorf("8 LEDs: %q, %d", name, leds)
+	}
+	if name, leds := portTypeProblem(portsAnswer([2]uint16{2, 29})); name != "EXT" || leds != 29 {
+		test.Errorf("EXT: %q, %d", name, leds)
+	}
+	if name, _ := portTypeProblem(portsAnswer([2]uint16{3, 8})); name != "" {
+		test.Errorf("a port of mode 3 has no LEDs: %q", name)
+	}
+}
+
+func TestStepNameOfTheEndpointOfTheConfiguration(test *testing.T) {
+	cases := map[string][]byte{
+		"write of the LED port configuration": configurationCommand(wantedConfiguration(hostPorts())),
+		"command 08 15 01":                    afterPortConfiguration,
+		"read of endpoint 0x1e on channel 1":  readCommand(channelOne, portConfigurationEndpoint),
+		"open of endpoint 0x1e on channel 1":  openCommand(channelOne, portConfigurationEndpoint),
+		"close of endpoint 0x1e on channel 1": closeCommand(channelOne, portConfigurationEndpoint),
+	}
+	for want, command := range cases {
+		if got := stepName(command); got != want {
+			test.Errorf("got %q, want %q", got, want)
+		}
+	}
+}
