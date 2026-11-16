@@ -20,6 +20,10 @@ supersedes: 0004-linux-sensors-and-run
   The check on the device of a negative custom metric is the human's, and the unit does not wait for it. The status is
   `draft`
 - 2026-11-16T23:47:46Z [human] approved the spec. The status is `approved`
+- 2026-11-16T23:49:49Z [Claude Code, anthropic/claude-opus-5-5] as the planner, wrote the plan against the tree of the
+  branch: `smartmonitor.Value` takes an `int16` written as its 16-bit pattern, `sensors.ToValue` clamps to the signed
+  range, `values` reads an optional `-` with a parser of its own, and the tests and documents follow. The fix takes
+  more than a couple of steps, so it has a plan. The status stays `approved`
 
 ## Amendments
 - 2026-11-16T23:47:45Z [Claude Code, anthropic/claude-opus-5-5] read the spec under the delegation in `AGENTS.md`: its facts are the
