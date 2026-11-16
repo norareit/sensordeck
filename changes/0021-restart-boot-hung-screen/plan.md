@@ -43,8 +43,8 @@ that is not possible and, since no write of theirs times out, never make one.
     * `type ControlRequest struct { RequestType, Request uint8; Value, Index, Length uint16; Timeout time.Duration }`
     * `type Usbfs interface { Open(path string) (UsbfsNode, error) }` and
       `type UsbfsNode interface { Control(request ControlRequest) error; Close() error }`
-    * `type Screen interface { Close() error; Reopen() error }`, which `*Transport` satisfies
-    * `type Restart struct { SysfsRoot, DevRoot, Node string; Usbfs Usbfs; Screen Screen; Now func() time.Time;
+    * `type Reopenable interface { Close() error; Reopen() error }`, which `*Transport` satisfies (named so, since `Screen` is the type that discovery gives)
+    * `type Restart struct { SysfsRoot, DevRoot, Node string; Usbfs Usbfs; Screen Reopenable; Now func() time.Time;
       Wait func(stop context.Context, duration time.Duration) bool }` and its method
       `Run(stop context.Context) RestartResult`
     * the constants `firstMissingString = 4`, `lastStringIndex = 255`, `requestTimeout = time.Second`,
@@ -148,10 +148,10 @@ flags `notRestartedSaid`, `stillHungSaid` and `cannotRestartSaid`.
 
 ### 2. The restart in the Linux transport
 
-- [ ] In `internal/fakeusb/fakeusb.go`, add `busnum` and `devnum` to the USB device, the stored roots and number,
+- [x] In `internal/fakeusb/fakeusb.go`, add `busnum` and `devnum` to the USB device, the stored roots and number,
   `SetDevnum` and `Unplug`, as "Names fixed by this plan" says. Keep `Set` and `Remove` for now, since the tests of
   unit 0020 use them until task 3 (R24)
-- [ ] In `internal/hidraw/restart_test.go` (build tag `linux`), write tests with `fakeusb`, a fake `Usbfs` that records
+- [x] In `internal/hidraw/restart_test.go` (build tag `linux`), write tests with `fakeusb`, a fake `Usbfs` that records
   each path opened and each request, answers each request by a function of the test, and moves a fake clock by a
   duration of the test for each request, a fake `Screen` that counts its closes and whose `Reopen` succeeds when
   `Discover` under the roots finds a screen and records its node, and a `Wait` that moves the clock and counts. They
@@ -175,14 +175,14 @@ flags `notRestartedSaid`, `stillHungSaid` and `cannotRestartSaid`.
       the outcome is `RestartedNotOpen` after waits adding up to 10 seconds (R3, R24, D7, D8)
     - a stop: the test ends the stop context in the answer of index 6, and no request for 7 is sent; and in the first
       wait after the screen left, and no `Reopen` follows (R5, R24)
-- [ ] Write `internal/hidraw/restart.go` with the names and the steps of "The steps of `Restart.Run`". It sends nothing
+- [x] Write `internal/hidraw/restart.go` with the names and the steps of "The steps of `Restart.Run`". It sends nothing
   but those requests, and writes no file (R3, R4, R5)
-- [ ] In `internal/hidraw/usbfs_test.go` (build tag `linux`), test that on `amd64` and `arm64` `usbdevfsControl` is
+- [x] In `internal/hidraw/usbfs_test.go` (build tag `linux`), test that on `amd64` and `arm64` `usbdevfsControl` is
   `0xc0185500`, and that `SystemUsbfs{}.Open` of a path that does not exist gives an error that holds the path (R3)
-- [ ] Write `internal/hidraw/usbfs.go` (build tag `linux`) with `SystemUsbfs` as "Names fixed by this plan" says, with
+- [x] Write `internal/hidraw/usbfs.go` (build tag `linux`) with `SystemUsbfs` as "Names fixed by this plan" says, with
   the ioctl made by `unix.Syscall(unix.SYS_IOCTL, ...)` of `golang.org/x/sys/unix`. It makes no other ioctl (R3, R4)
-- [ ] Run `go test ./internal/hidraw/...` and the five commands of the suite
-- [ ] Commit: `bugfix-0021 Restart the screen by asking for string descriptors it lacks`
+- [x] Run `go test ./internal/hidraw/...` and the five commands of the suite
+- [x] Commit: `bugfix-0021 Restart the screen by asking for string descriptors it lacks`
 
 ### 3. The seam of the command line and the one-shot commands
 

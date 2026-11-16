@@ -24,11 +24,14 @@ type Device struct {
 	Node string // <dev root>/hidraw<n>
 
 	powerDirectory string
+	usbDevice      string
+	sysfsRoot      string
+	hidrawName     string
 	test           testing.TB
 }
 
-// New builds the tree under the roots with power/control at auto, power/autosuspend_delay_ms at 2000 and
-// power/runtime_status at active, and makes the node.
+// New builds the tree under the roots with busnum 1 and devnum 5 as the kernel writes them, power/control at auto,
+// power/autosuspend_delay_ms at 2000 and power/runtime_status at active, and makes the node.
 func New(test testing.TB, sysfsRoot, devRoot string, number int) *Device {
 	test.Helper()
 	name := "hidraw" + strconv.Itoa(number)
@@ -36,7 +39,14 @@ func New(test testing.TB, sysfsRoot, devRoot string, number int) *Device {
 	usbInterface := filepath.Join(usbDevice, "1-4:1.0")
 	hidDevice := filepath.Join(usbInterface, "0003:0483:0065.0001")
 	entry := filepath.Join(hidDevice, "hidraw", name)
-	device := &Device{Node: filepath.Join(devRoot, name), powerDirectory: filepath.Join(usbDevice, "power"), test: test}
+	device := &Device{
+		Node:           filepath.Join(devRoot, name),
+		powerDirectory: filepath.Join(usbDevice, "power"),
+		usbDevice:      usbDevice,
+		sysfsRoot:      sysfsRoot,
+		hidrawName:     name,
+		test:           test,
+	}
 
 	for _, directory := range []string{entry, device.powerDirectory, filepath.Join(sysfsRoot, "class", "hidraw"), devRoot} {
 		device.must(os.MkdirAll(directory, 0o755))
@@ -46,6 +56,8 @@ func New(test testing.TB, sysfsRoot, devRoot string, number int) *Device {
 	device.must(os.WriteFile(filepath.Join(usbDevice, "uevent"), []byte(deviceUevent), 0o644))
 	device.must(os.Symlink("../..", filepath.Join(entry, "device")))
 	device.must(os.Symlink(entry, filepath.Join(sysfsRoot, "class", "hidraw", name)))
+	device.must(os.WriteFile(filepath.Join(usbDevice, "busnum"), []byte("1\n"), 0o644))
+	device.must(os.WriteFile(filepath.Join(usbDevice, "devnum"), []byte("5\n"), 0o644))
 	device.must(os.WriteFile(device.Node, nil, 0o644))
 	device.Set("control", "auto\n")
 	device.Set("autosuspend_delay_ms", "2000\n")
@@ -63,6 +75,22 @@ func (device *Device) Set(name, content string) {
 func (device *Device) Remove(name string) {
 	device.test.Helper()
 	device.must(os.Remove(filepath.Join(device.powerDirectory, name)))
+}
+
+// SetDevnum rewrites devnum of the USB device with the content, as the kernel holds it after the device enumerated
+// again.
+func (device *Device) SetDevnum(content string) {
+	device.test.Helper()
+	device.must(os.WriteFile(filepath.Join(device.usbDevice, "devnum"), []byte(content), 0o644))
+}
+
+// Unplug removes the USB device from the tree, the entry of the hidraw node and the node, as the kernel does when the
+// device leaves the bus.
+func (device *Device) Unplug() {
+	device.test.Helper()
+	device.must(os.RemoveAll(filepath.Join(device.sysfsRoot, "devices", "pci0000:00")))
+	device.must(os.Remove(filepath.Join(device.sysfsRoot, "class", "hidraw", device.hidrawName)))
+	device.must(os.Remove(device.Node))
 }
 
 func (device *Device) must(err error) {
