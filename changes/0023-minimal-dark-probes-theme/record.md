@@ -186,6 +186,10 @@ The five commands of the suite in `AGENTS.md` succeed.
   built-in themes. The tags file follows from R18 of unit 0011; the Go toolchain of the project could not be run on
   the host, so it was derived and not compiled here. The status is `draft`
 - 2026-11-16T20:17:26Z [human] approved the record. The status is `approved`
+- 2026-11-16T20:19:06Z [Claude Code, anthropic/claude-opus-5-5] as the planner, wrote `plan.md` against the tree of the
+  unit's branch, with the record's statements numbered R1 to R15 in the plan so that each task can name them. Compiled
+  the record's theme from a copy of the folder outside the tree, which gave exactly the tags file of the record. The
+  status stays `approved`
 
 ## Amendments
 - 2026-11-16T20:17:25Z [Claude Code, anthropic/claude-opus-5-5] read the record under the delegation in `AGENTS.md`: the theme is the
