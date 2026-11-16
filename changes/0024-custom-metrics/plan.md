@@ -204,11 +204,11 @@ What the tree on `feature-0024-custom-metrics` holds, and what the plan builds o
 
 ### 2. No console window for a child process on Windows
 
-- [ ] Add `internal/childprocess` with `NoWindow` as the choices above say, and `nowindow_windows_test.go`, which
+- [x] Add `internal/childprocess` with `NoWindow` as the choices above say, and `nowindow_windows_test.go`, which
   checks that `NoWindow` sets the flag on a command with no `SysProcAttr` and keeps the flags that one already has.
   It is built by `GOOS=windows go vet` and run on Windows only (R30)
-- [ ] Call `childprocess.NoWindow` on the command of `nvidia-smi` in `internal/nvidiasmi/source.go` (R30)
-- [ ] Run the suite and commit: `feature-0024 Start nvidia-smi with no console window on Windows`
+- [x] Call `childprocess.NoWindow` on the command of `nvidia-smi` in `internal/nvidiasmi/source.go` (R30)
+- [x] Run the suite and commit: `feature-0024 Start nvidia-smi with no console window on Windows`
 
 ### 3. The name rule
 

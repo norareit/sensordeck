@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/norareit/sensordeck/internal/childprocess"
 	"github.com/norareit/sensordeck/internal/sensors"
 )
 
@@ -44,6 +45,7 @@ func (source Source) Read(stop context.Context, wanted func(name string) bool) [
 	var output bytes.Buffer
 	command.Stdout = &output
 	command.WaitDelay = pipeGrace
+	childprocess.NoWindow(command)
 	if err := command.Run(); err != nil {
 		return nil
 	}
