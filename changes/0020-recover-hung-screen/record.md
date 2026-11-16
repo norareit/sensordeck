@@ -1,6 +1,6 @@
 ---
 kind: bug
-status: in-progress
+status: implemented
 timestamp: 2026-11-16T13:25:49Z
 supersedes: 0004-linux-sensors-and-run
 ---
@@ -34,9 +34,9 @@ supersedes: 0004-linux-sensors-and-run
   branch: five commits, for the udev rule, the reading of the USB power state in the Linux transport, the seam of the
   command line with the one-shot commands, the recovery of `run`, and the documents, with each requirement traced to
   its tasks. The status stays `approved`
-- 2026-11-16T13:40:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, began the work. The status is
+- 2026-11-16T13:32:28Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, began the work. The status is
   `in-progress`
-- 2026-11-16T14:20:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, built the five tasks of `plan.md` in
+- 2026-11-16T13:37:08Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, built the five tasks of `plan.md` in
   five commits and ticked each as it was done. The `screenPower` seam stands as planned. The theme holder needed no
   handing of the wrapper, since `ensure` takes the transport at each call and the feeder passes its observed wrapper.
   The tests of `run` use `linuxPower` on a `fakeusb` tree, as planned. The tests of the hang were written after the code
@@ -51,7 +51,7 @@ supersedes: 0004-linux-sensors-and-run
   checks, a fresh `go test -count=1 ./...` including end-to-end tests, `npm run check-changes` and
   `git diff --check`; all passed. Could not verify the physical screen's recovery, resume on opening or healthy
   operation with autosuspend enabled, or Windows runtime behavior. The status stays `in-progress`
-- 2026-11-16T14:40:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, answered finding P1 of
+- 2026-11-16T13:40:34Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, answered finding P1 of
   `.reviews/0020-recover-hung-screen/review-round-1.md`. Accepted by the definition of the orchestrator, for the part
   that is mine to apply: the tests of the hang were validated retrospectively. With `failed` of the feeder made to
   ignore a timeout, so that a timed-out write is the screen lost as before the unit, 11 tests of `run` failed
@@ -76,3 +76,9 @@ supersedes: 0004-linux-sensors-and-run
   Ran fresh `go test -count=1 ./...` including end-to-end tests, both platform vet commands, the Windows build,
   `gofmt -l .`, `npm run check-changes` and `git diff --check`; all passed. Could not independently verify the
   historical mutation experiment, physical-device behavior or Windows runtime behavior. The status stays `in-progress`
+- 2026-11-16T13:43:49Z [Claude Code, anthropic/claude-opus-5-5] under the delegation in `AGENTS.md`, decided the findings: P1 of
+  round 1 was corrected in the documents with its exception declined as above, and round 2 returned none, so no
+  blocking finding is open. The timestamps of three entries of the implementer, which did not match their commits,
+  were corrected to the times of the commits that added them. Every task of `plan.md` is ticked, and the five
+  commands of the suite passed on the branch. The recovery at a cold boot with the new udev rule is the human's check
+  and follows the merge. The status is `implemented`
