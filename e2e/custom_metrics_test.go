@@ -53,9 +53,9 @@ func TestSensorsListsCustomMetricsAfterTheBuiltInOnes(test *testing.T) {
 	outcome.expect(test, 0, want, "")
 }
 
-func TestRunSendsCustomMetricsToTheTagsOfTheTheme(test *testing.T) {
-	setup, config := customMetricsSetup(test)
-	folder := writeThemeFolder(test, customTheme)
+// compileTheme compiles the theme folder and gives the compiled file with a function that gives the tag of a metric.
+func compileTheme(test *testing.T, setup *themeSetup, folder string) ([]byte, func(string) uint8) {
+	test.Helper()
 	out := filepath.Join(test.TempDir(), "custom.dat")
 	if compiling := runWith(test, setup.fake, setup.environment, "theme", "compile", folder, out); compiling.status != 0 {
 		test.Fatalf("theme compile: %q", compiling.stderr)
@@ -76,6 +76,12 @@ func TestRunSendsCustomMetricsToTheTagsOfTheTheme(test *testing.T) {
 	if err != nil {
 		test.Fatal(err)
 	}
+	return compiled, tagOf
+}
+
+func TestRunSendsCustomMetricsToTheTagsOfTheTheme(test *testing.T) {
+	setup, config := customMetricsSetup(test)
+	compiled, tagOf := compileTheme(test, setup, writeThemeFolder(test, customTheme))
 	setup.screen.AcceptUpload(compiled)
 	running := start(test, setup.fake, setup.environment, "run", "--config", config)
 	position := setup.expectUploadAt(0, compiled)
@@ -84,6 +90,28 @@ func TestRunSendsCustomMetricsToTheTagsOfTheTheme(test *testing.T) {
 	})
 	if !found {
 		test.Error("no value report holds the three custom values")
+	}
+	running.stop(syscall.SIGTERM)
+}
+
+func TestRunSendsNegativeAndClampedCustomMetrics(test *testing.T) {
+	setup := newThemeSetup(test)
+	below := filepath.Join(test.TempDir(), "below")
+	above := filepath.Join(test.TempDir(), "above")
+	writeFile(test, below, "-5\n")
+	writeFile(test, above, "40000\n")
+	folder := writeThemeFolder(test, "name: signed\nbackground: \"#102030\"\nfonts:\n  body: {builtin: go-regular, size: 20, color: \"#ffffff\"}\n"+
+		"widgets:\n  - {type: number, font: body, metric: below, x: 4, y: 4}\n  - {type: number, font: body, metric: above, x: 4, y: 40}\n")
+	config := writeConfigFile(test, "interval: 100ms\ntheme: '"+folder+"'\nmetrics:\n  below: {file: "+below+"}\n  above: {file: "+above+"}\n")
+	compiled, tagOf := compileTheme(test, setup, folder)
+	setup.screen.AcceptUpload(compiled)
+	running := start(test, setup.fake, setup.environment, "run", "--config", config)
+	position := setup.expectUploadAt(0, compiled)
+	_, found := waitForReport(setup.screen, position, uploadLimit, func(pairs map[uint8]uint16) bool {
+		return pairs != nil && pairs[tagOf("below")] == 0xFFFB && pairs[tagOf("above")] == 0x7FFF
+	})
+	if !found {
+		test.Error("no value report holds -5 as FF FB and 40000 as 7F FF")
 	}
 	running.stop(syscall.SIGTERM)
 }

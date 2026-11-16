@@ -81,6 +81,20 @@ func TestValuesExample(test *testing.T) {
 	}
 }
 
+func TestValuesWithANegativeValue(test *testing.T) {
+	fake := fakescreen.New(test)
+	screen := fake.Add(3, "name", "")
+	run(test, fake, "values", "1=-1", "2=32767").expect(test, 0, "values sent: 2, reports written: 1\n", "")
+	want := append([]byte{0x00, 0x02, 0x02, 0x01, 0xFF, 0xFF, 0x02, 0x7F, 0xFF}, make([]byte, 56)...)
+	if got := screen.Received(); !bytes.Equal(got, want) {
+		test.Errorf("arrived % X", got)
+	}
+}
+
+func TestValuesOutsideTheRangeWithNoScreen(test *testing.T) {
+	run(test, fakescreen.New(test), "values", "1=65536").expect(test, 1, "", "sensordeck: invalid argument \"1=65536\": the value is outside -32768 to 65535\n")
+}
+
 func TestValuesWith21PairsWritesTwoReports(test *testing.T) {
 	fake := fakescreen.New(test)
 	screen := fake.Add(3, "name", "")
