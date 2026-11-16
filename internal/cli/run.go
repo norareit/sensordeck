@@ -13,6 +13,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/norareit/sensordeck/internal/config"
+	"github.com/norareit/sensordeck/internal/custommetrics"
 	"github.com/norareit/sensordeck/internal/sensors"
 	"github.com/norareit/sensordeck/internal/smartmonitor"
 )
@@ -87,10 +88,12 @@ func (current *session) serveRun(stop context.Context, prepared preparedRun, ope
 	sources := prepared.sources
 	current.say(fmt.Sprintf("running: %d metrics every %s", len(settings.Mappings), settings.Interval))
 	observed := &observedTransport{transport: opened}
+	custom := custommetrics.NewSet(settings.Metrics, current.env.sysfsRoot, configDirectory(prepared.path), current.env.now, current.env.stderr)
 	feeding := &feeder{
 		transport:  observed,
 		restarter:  restarter,
-		others:     current.withMonitor(sources, settings.LibreHardwareMonitorURL),
+		others:     append(current.withMonitor(sources, settings.LibreHardwareMonitorURL), custom),
+		custom:     custom,
 		controller: &periodicSource{source: sources.controller, period: settings.CommanderPeriod()},
 		config:     settings,
 		holder:     newThemeHolder(prepared.started.theme, current.env.sleep, current.env.now, current.say, current.env.stderr),
@@ -114,6 +117,7 @@ func (current *session) serveRun(stop context.Context, prepared preparedRun, ope
 	}
 	feedErr := feeding.feed(stop)
 	endKeeping()
+	custom.Close()
 	closeTransport()
 	if feedErr != nil {
 		return feedErr
@@ -138,6 +142,16 @@ func (current *session) newKeeper(sources sourceSet, settings config.Config, pro
 		return sources.startSession(stop, *settings.CommanderColour)
 	}
 	return newSessionKeeper(start, probesMapped, current.env.now, current.env.after, current.env.stderr)
+}
+
+// configDirectory gives the directory of the config file as an absolute path, where the commands of custom metrics run.
+// A path that cannot be made absolute stays as it is.
+func configDirectory(path string) string {
+	directory := filepath.Dir(path)
+	if absolute, err := filepath.Abs(directory); err == nil {
+		return absolute
+	}
+	return directory
 }
 
 // configPath is the file named with --config, or the config file of the user.
@@ -205,6 +219,7 @@ type hangState struct {
 type feeder struct {
 	transport  transport
 	others     []sensors.Source
+	custom     *custommetrics.Set // the last of others; the reload replaces its definitions
 	controller controllerReader
 	config     config.Config
 	holder     *themeHolder
@@ -435,6 +450,8 @@ func (feeding *feeder) reload() {
 		_, _ = fmt.Fprintf(feeding.stderr, "config file %s: %s changed, restart run to apply it\n", feeding.watcher.path, key)
 	}
 	feeding.config.Mappings = reloaded.settings.Mappings
+	feeding.config.Metrics = reloaded.settings.Metrics
+	feeding.custom.Replace(reloaded.settings.Metrics)
 	feeding.holder.setTheme(reloaded.theme)
 }
 

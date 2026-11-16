@@ -207,10 +207,12 @@ func runErrorOf(test *testing.T, configPath string) string {
 func TestInstallChecksTheConfigFileAsRunDoesAndWritesNothingWhenItFails(test *testing.T) {
 	missing := filepath.Join(test.TempDir(), "missing.yaml")
 	hint := "; sensordeck theme use <theme> creates it"
+	undefined := writeThemeFolder(test, strings.Replace(compiledTheme, "cpu.temp", "water.temp", 1))
 	for name, tc := range map[string]struct{ content, hint string }{
-		"a missing file":                {"", hint},
-		"a file that does not parse":    {"tags: [", ""},
-		"a theme that does not compile": {"theme: no-such-theme\n", ""},
+		"a theme naming an undefined metric": {"theme: '" + undefined + "'\n", ""},
+		"a missing file":                     {"", hint},
+		"a file that does not parse":         {"tags: [", ""},
+		"a theme that does not compile":      {"theme: no-such-theme\n", ""},
 	} {
 		harness := serviceHarness(test)
 		configPath := missing

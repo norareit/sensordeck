@@ -279,23 +279,23 @@ What the tree on `feature-0024-custom-metrics` holds, and what the plan builds o
 
 ### 7. Custom metrics in run
 
-- [ ] In `internal/cli/runconfig_test.go`, add: a theme folder naming a defined custom metric loads, with its tag; one
+- [x] In `internal/cli/runconfig_test.go`, add: a theme folder naming a defined custom metric loads, with its tag; one
   naming an undefined custom metric is refused with the text of R8; one naming `nvme.9.temp` with no definition loads
   (R8, R29, R34)
-- [ ] In `internal/cli/runreload_test.go`, add: a reload whose theme names an undefined metric is refused with its line
+- [x] In `internal/cli/runreload_test.go`, add: a reload whose theme names an undefined metric is refused with its line
   and the running config kept; a reload that adds a custom metric to the theme and its definition is applied (R8,
   R28, R34)
-- [ ] In `internal/cli/run_test.go`, add with `tags` and a `file` metric over a temporary file: its value sent to its
+- [x] In `internal/cli/run_test.go`, add with `tags` and a `file` metric over a temporary file: its value sent to its
   tag through `ToValue`, a file that loses its number leaving the tag unsent with one line, and the line of a metric
   read again; with a `command` metric whose script sleeps, the clock and the other values sent in the rounds before
   its first run finished (R12, R13, R19, R23, R29, R34)
-- [ ] In `internal/cli/service_test.go`, add that `service install` refuses a config whose theme names an undefined
+- [x] In `internal/cli/service_test.go`, add that `service install` refuses a config whose theme names an undefined
   metric, before any call to `systemctl` (R8)
-- [ ] In `loadConfig` of `internal/cli/runconfig.go`, refuse a metric of the compiled tags for which
+- [x] In `loadConfig` of `internal/cli/runconfig.go`, refuse a metric of the compiled tags for which
   `settings.IsMetric` is false (R8)
-- [ ] In `internal/cli/run.go`, make the set in `serveRun`, add it to the sources and to the `feeder` as `custom`, call
+- [x] In `internal/cli/run.go`, make the set in `serveRun`, add it to the sources and to the `feeder` as `custom`, call
   `Replace` in `reload` and `Close` after `feed` (R19, R21, R22, R28, R29)
-- [ ] Run the suite and commit: `feature-0024 Send custom metrics in run`
+- [x] Run the suite and commit: `feature-0024 Send custom metrics in run`
 
 ### 8. Custom metrics in sensors
 
