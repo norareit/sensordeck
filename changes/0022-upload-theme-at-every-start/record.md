@@ -21,3 +21,10 @@ supersedes: 0013-theme-key-and-upload-on-change
   file code, the hash and the serial of the open transport, which served only it, are removed, which supersedes R13 of
   unit 0016 too. Items 1 to 3 of "Beyond the request" are left out. The device check is the human's and the unit does
   not wait for it. The status is `draft`
+- 2026-11-16T20:00:21Z [Claude Code, anthropic/claude-opus-5-5] as the specifier, amended the spec on the decision of
+  the orchestrating session under the delegation in `AGENTS.md`: item 1 of "Beyond the request" is taken, because the
+  human's screen hangs at every cold boot, so the first upload of every boot times out, and the wait of 10 seconds after
+  a restart that recovered the screen would be added to every boot for nothing. Added R21, R22 and the definition of a
+  restart that recovered the screen, which is one in which the screen left the bus and its node was opened again,
+  since the first write that succeeds is the upload itself. R6, R7, D8, a non-goal and item 1 were changed to match.
+  Items 2 and 3 are declined and stay in the list. The status stays `draft`

@@ -84,10 +84,10 @@ D8), the upload that a stop does not interrupt (R11 and D10) and no value sent w
 - **R6** When the screen comes back after it was lost, by a reopening after a failed write or a replug, or after a
   restart of a hung screen by unit `0021-restart-boot-hung-screen`, `run` uploads nothing for that return. It goes on
   as after a screen that came back, with the clock and then the values. An upload that was due before, because it failed
-  or had not been attempted yet, stays due and is made by the rules of R9 of unit 0013
+  or had not been attempted yet, stays due and is made by the rules of R9 of unit 0013 and of R21
 - **R7** An upload at the start whose writes time out is the start of a hang as unit 0021 has it: the screen is
-  restarted, and the upload is made again once the screen is open and the wait of R9 of unit 0013 has passed. No value
-  and no clock is sent until it completed
+  restarted, and the upload is made again once the screen is open, at once by R21 after a restart that recovered it,
+  and otherwise once the wait of R9 of unit 0013 has passed. No value and no clock is sent until it completed
 - **R8** With `tags` and no `theme`, `run` uploads nothing, as unit 0013 R4 says
 
 ### The state file
@@ -148,6 +148,25 @@ D8), the upload that a stop does not interrupt (R11 and D10) and no value sent w
   and uploads nothing; and no directory `sensordeck` created in `XDG_CACHE_HOME` by `run` or by `upload`
 - **R20** The five commands of the suite in `AGENTS.md` succeed
 
+### The upload after a restart that recovered the screen
+
+These requirements were added by the amendment of the spec recorded in `record.md`, and are numbered after the last
+one of the first version. A restart that recovered the screen is a restart of a hung screen, by unit 0021, in which the
+screen left the bus and whose node `run` opened again: in the round of the restart when the screen was open again at its
+end, or in the later round that opened it when it was not.
+
+- **R21** When an upload is due as the screen is opened again after a restart that recovered it, `run` makes the upload
+  in that round, without waiting for the time that R9 of unit 0013 set after the attempt that failed. A restart that
+  did not make the screen leave the bus, a restart that was not possible, and a reopening of a screen that was lost
+  without a hang keep that wait. The waits that follow a failure of the upload made at once are those of R9 of unit
+  0013, doubling from where they were, so that a screen that hangs again at each upload is not written more often than
+  that rule allows plus once per restart, which unit 0021 makes at most once a minute
+- **R22** The unit tests cover R21: a timed-out upload followed by a restart in which the screen left the bus and was
+  open again, after which the upload is made in the same round; the same with the screen opened in a later round; a
+  restart that did not make the screen leave the bus, a restart that was not possible and a reopening after a failed
+  write without a hang, after each of which the upload waits for the time of R9 of unit 0013; and the wait after a
+  failure of the upload made at once
+
 ## Decisions
 
 - **D1 Upload at every start.** The human chose it. It is the one rule that makes the screen show the theme of the
@@ -190,9 +209,13 @@ D8), the upload that a stop does not interrupt (R11 and D10) and no value sent w
   was there before and stays
 - **D8 A cold boot with a hung screen takes longer.** On the human's Linux machine the screen is hung after every cold
   boot, by unit 0021. With an upload at each start, the first upload of the service then times out, the screen is
-  restarted, and the upload is made again 10 seconds after the attempt that failed, so values appear later than after a
-  start with a screen that works. The rules of unit 0021 and of R9 of unit 0013 already give this path, and this unit
-  changes neither. Shortening the wait after a restart that recovered the screen is item 1 of "Beyond the request"
+  restarted, and by R21 the upload is made again as soon as the restart recovered the screen. Without R21 the rule of
+  R9 of unit 0013 would make it wait until 10 seconds after the attempt that failed, which would add those seconds to
+  every boot for nothing: the wait is there so that a screen that refuses the theme is not written at every round, and
+  a restart that recovered the screen is new evidence that the next attempt can succeed. The restart is made at most
+  once a minute by unit 0021, so the attempt at once adds at most one write of the flash per minute to a screen that
+  hangs again. This decision, and R21 and R22, were taken by the amendment recorded in `record.md`, from item 1 of
+  "Beyond the request"
 - **D9 The device check is the human's.** That a cold boot shows the theme of the config, with the right values, about
   10 seconds after `run` started, is for the human to check on the device. The unit is complete without that check and
   does not wait for it, and a finding of it is a new unit
@@ -208,12 +231,13 @@ D8), the upload that a stop does not interrupt (R11 and D10) and no value sent w
 - Deleting the state file that earlier releases wrote
 - Any change to `upload` other than the removal of the state file, or to `smartmonitor.Upload`, its pauses or its
   attempts
-- Changing the waits of a failed upload, or the restart of a hung screen
+- Changing the waits of a failed upload other than by R21, or the restart of a hung screen
 - Following the screen by its serial when several screens are connected
 
 ## Beyond the request
 
-1. After a restart that recovered a hung screen, making the upload that is due at once, rather than at least 10 seconds
+1. Taken into the unit by the amendment recorded in `record.md`, as R21, R22 and D8. After a restart that recovered a
+   hung screen, making the upload that is due at once, rather than at least 10 seconds
    after the attempt that failed. Cost: a rule in the retry of the upload that tells a failure by a hang from another
    one, and tests. Without it, after a cold boot with the boot hang of unit 0021, the values appear about 10 seconds
    later than they could
