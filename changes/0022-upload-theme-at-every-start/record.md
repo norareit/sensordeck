@@ -1,6 +1,6 @@
 ---
 kind: bug
-status: draft
+status: approved
 timestamp: 2026-11-16T19:59:40Z
 supersedes: 0013-theme-key-and-upload-on-change
 ---
@@ -34,3 +34,4 @@ supersedes: 0013-theme-key-and-upload-on-change
   "Beyond the request" was taken, because the screen hangs at every cold boot and the retry wait would otherwise add
   its seconds to every boot, and the spec was amended for it; items 2 and 3 are declined. The device check is the
   human's and the unit does not depend on it. The approval that follows is made under that delegation
+- 2026-11-16T20:00:52Z [human] approved the spec. The status is `approved`
