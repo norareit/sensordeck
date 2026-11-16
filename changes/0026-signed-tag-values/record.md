@@ -21,3 +21,9 @@ supersedes: 0004-linux-sensors-and-run
   `draft`
 
 ## Amendments
+- 2026-11-16T23:47:45Z [Claude Code, anthropic/claude-opus-5-5] read the spec under the delegation in `AGENTS.md`: its facts are the
+  values the human saw on the screen on 2026-11-17, the fix clamps to the signed range and keeps every argument of
+  `values` that worked, and every requirement can be tested in the sandbox. The time of the specifier's entry was
+  corrected to its commit. Items 1 to 3 of "Beyond the request" are declined: item 1 belongs to the coming unit on the
+  options of number widgets, and the other two are not needed for a correct range. The device check is the human's
+  and the unit does not depend on it. The approval that follows is made under that delegation
