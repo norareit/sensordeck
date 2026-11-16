@@ -313,14 +313,14 @@ What the tree on `feature-0024-custom-metrics` holds, and what the plan builds o
 
 ### 9. The end-to-end tests
 
-- [ ] In `e2e/main_test.go`, set `XDG_CONFIG_HOME` in `environmentOf` to a new temporary directory, before the
+- [x] In `e2e/main_test.go`, set `XDG_CONFIG_HOME` in `environmentOf` to a new temporary directory, before the
   variables of the test, and say why in its comment
-- [ ] Add `e2e/custom_metrics_test.go`: a config with a `file` metric over a temporary file, a `hwmon` metric over a
+- [x] Add `e2e/custom_metrics_test.go`: a config with a `file` metric over a temporary file, a `hwmon` metric over a
   chip of the fake sysfs tree, read with `index` 2 among two chips of one name, and a `command` metric over a fake
   script that prints a number, each with a `unit` but one; `sensors --config` lists them after the built-in metrics
   of `runningTree`, in the order of the file; `run --config` with a theme folder whose number widgets name the three,
   through `themeSetup`, uploads the theme and sends each value to the tag the compiler gave it (R29, R35)
-- [ ] Run the suite and commit: `feature-0024 Cover custom metrics end to end`
+- [x] Run the suite and commit: `feature-0024 Cover custom metrics end to end`
 
 ### 10. The documents
 

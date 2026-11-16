@@ -57,13 +57,16 @@ func run(test *testing.T, fake *fakescreen.Fake, args ...string) result {
 
 // environmentOf gives the variables that put the executable on the fake screen, and the given ones after them, so that
 // they override what the process inherits. The cache directory is one of the test, so that no run writes into the
-// cache of the user, and a test that runs several processes on one cache gives its own.
+// cache of the user, and a test that runs several processes on one cache gives its own. The config directory is a
+// temporary one for the same reason: sensors reads the config file at the default place, and must not read the one of the
+// user who runs the suite.
 func environmentOf(test *testing.T, fake *fakescreen.Fake, environment []string) []string {
 	test.Helper()
 	return append(append(os.Environ(),
 		"SENSORDECK_SYSFS_ROOT="+fake.SysfsRoot,
 		"SENSORDECK_DEV_ROOT="+fake.DevRoot,
-		"XDG_CACHE_HOME="+test.TempDir()), environment...)
+		"XDG_CACHE_HOME="+test.TempDir(),
+		"XDG_CONFIG_HOME="+test.TempDir()), environment...)
 }
 
 // runWith is run with more environment variables, and waits for the end of the executable.
