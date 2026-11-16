@@ -13,6 +13,13 @@ import (
 // errNoController is the setup that found no node of the controller, which writes no line.
 var errNoController = errors.New("no controller found")
 
+// setupNotice is what a setup tells of the LED port configuration, for the lines the keeper writes.
+type setupNotice struct {
+	configured  bool   // the stored configuration was rewritten
+	unknownPort string // the entry that made the configuration not known, empty when it is known
+	unknownLEDs int
+}
+
 // heldSession is a held session of the controller. After an error of read it has ended with its teardown.
 type heldSession interface {
 	read(stop context.Context) ([]sensors.Reading, error)
@@ -30,8 +37,8 @@ const (
 // sessionKeeper holds the session of the controller in a goroutine of its own, beside the rounds of run, so that the
 // keepalive does not wait for a round, which can wait for a source, for the screen or for its next start.
 type sessionKeeper struct {
-	start        func(stop context.Context) (heldSession, error) // a setup; on an error it has ended
-	probesMapped func() bool                                     // asked from readings, so by the goroutine that replaces the mappings
+	start        func(stop context.Context) (heldSession, setupNotice, error) // a setup; on an error it has ended
+	probesMapped func() bool                                                  // asked from readings, so by the goroutine that replaces the mappings
 	now          func() time.Time
 	after        func(duration time.Duration) <-chan time.Time
 	stderr       io.Writer
@@ -44,10 +51,13 @@ type sessionKeeper struct {
 	retry    time.Duration
 	lost     bool // "controller lost" was written and "controller back" is owed
 	reported bool // "controller setup failed" was written since the last setup that succeeded
+	// unknownReported is set once the line of a configuration that is not known is written, and never reset in a run,
+	// since the line says the same at every setup.
+	unknownReported bool
 }
 
 func newSessionKeeper(
-	start func(stop context.Context) (heldSession, error), probesMapped func() bool, now func() time.Time,
+	start func(stop context.Context) (heldSession, setupNotice, error), probesMapped func() bool, now func() time.Time,
 	after func(duration time.Duration) <-chan time.Time, stderr io.Writer,
 ) *sessionKeeper {
 	return &sessionKeeper{
@@ -140,7 +150,8 @@ func (keeper *sessionKeeper) read(stop context.Context) []sensors.Reading {
 
 // setUp makes a setup and holds the session it starts.
 func (keeper *sessionKeeper) setUp(stop context.Context) {
-	session, err := keeper.start(stop)
+	session, notice, err := keeper.start(stop)
+	keeper.sayNotice(notice)
 	if err != nil {
 		if stop.Err() == nil && !errors.Is(err, errNoController) && !keeper.reported {
 			keeper.reported = true
@@ -156,6 +167,18 @@ func (keeper *sessionKeeper) setUp(stop context.Context) {
 	if keeper.lost {
 		keeper.lost = false
 		keeper.say("controller back")
+	}
+}
+
+// sayNotice writes the lines of the LED port configuration, which come before any line of the rest of the setup.
+func (keeper *sessionKeeper) sayNotice(notice setupNotice) {
+	if notice.configured {
+		keeper.say("controller LED ports configured: the stored configuration did not enable the ports with LEDs, iCUE may have changed it")
+	}
+	if notice.unknownPort != "" && !keeper.unknownReported {
+		keeper.unknownReported = true
+		keeper.say(fmt.Sprintf("controller LED ports left as stored: %s has %d LEDs, and only fans with 4 LEDs are known",
+			notice.unknownPort, notice.unknownLEDs))
 	}
 }
 

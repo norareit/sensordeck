@@ -19,6 +19,7 @@ import (
 type fakeLighting struct {
 	clock       *fakeClock
 	setupErrors []error
+	notices     []setupNotice // taken one per setup, the zero notice once the queue is empty
 	readErrors  []error
 	setups      []fakeSetup
 	reads       []time.Time
@@ -32,16 +33,21 @@ type fakeSetup struct {
 
 type fakeHeldSession struct{ lighting *fakeLighting }
 
-func (lighting *fakeLighting) start(_ context.Context, colour config.Colour) (heldSession, error) {
+func (lighting *fakeLighting) start(_ context.Context, colour config.Colour) (heldSession, setupNotice, error) {
 	lighting.setups = append(lighting.setups, fakeSetup{at: lighting.clock.now(), colour: colour})
+	var notice setupNotice
+	if len(lighting.notices) > 0 {
+		notice = lighting.notices[0]
+		lighting.notices = lighting.notices[1:]
+	}
 	if len(lighting.setupErrors) > 0 {
 		err := lighting.setupErrors[0]
 		lighting.setupErrors = lighting.setupErrors[1:]
 		if err != nil {
-			return nil, err
+			return nil, notice, err
 		}
 	}
-	return fakeHeldSession{lighting: lighting}, nil
+	return fakeHeldSession{lighting: lighting}, notice, nil
 }
 
 func (held fakeHeldSession) read(context.Context) ([]sensors.Reading, error) {
@@ -243,5 +249,46 @@ func TestRunWithoutAColourMakesNoSetupAndReadsTheControllerOfTheSources(test *te
 	harness.run("run", "--config", writeConfig(test, controllerTags))
 	if len(lighting.setups) != 0 || controller.readsAt != 1 {
 		test.Errorf("%d setups, %d reads of the controller", len(lighting.setups), controller.readsAt)
+	}
+}
+
+const (
+	configuredLine = "controller LED ports configured: the stored configuration did not enable the ports with LEDs, iCUE may have changed it\n"
+	unknownLine    = "controller LED ports left as stored: port 3 has 8 LEDs, and only fans with 4 LEDs are known\n"
+)
+
+func TestRunWritesTheLineOfAConfigurationWriteAfterEachSetupThatMadeOneBeforeItsFailureLine(test *testing.T) {
+	lighting := &fakeLighting{
+		setupErrors: []error{errFake, errFake},
+		notices:     []setupNotice{{configured: true}, {configured: true}, {configured: true}},
+	}
+	harness := runKeeping(lighting, 100) // 100 seconds of waits of one second
+	harness.run("run", "--config", writeConfig(test, colourTags("10s")))
+	want := configuredLine + "controller setup failed: fake failure\n" + configuredLine + configuredLine
+	if got := harness.stderr.String(); got != want || len(lighting.setups) != 3 {
+		test.Errorf("stderr %q after %d setups", got, len(lighting.setups))
+	}
+}
+
+func TestRunWritesNoLineOfThePortsWhenEverySetupGivesTheZeroNotice(test *testing.T) {
+	lighting := &fakeLighting{}
+	harness := runKeeping(lighting, 20)
+	harness.run("run", "--config", writeConfig(test, colourTags("10s")))
+	if got := harness.stderr.String(); got != "" || len(lighting.setups) == 0 {
+		test.Errorf("stderr %q after %d setups", got, len(lighting.setups))
+	}
+}
+
+func TestRunWritesTheLineOfAnUnknownConfigurationOnceOverSeveralSetups(test *testing.T) {
+	unknown := setupNotice{unknownPort: "port 3", unknownLEDs: 8}
+	lighting := &fakeLighting{
+		setupErrors: []error{errFake}, readErrors: []error{errFake},
+		notices: []setupNotice{unknown, unknown, unknown},
+	}
+	harness := runKeeping(lighting, 100) // 100 seconds of waits of one second
+	harness.run("run", "--config", writeConfig(test, colourTags("10s")))
+	want := unknownLine + "controller setup failed: fake failure\ncontroller lost: fake failure\ncontroller back\n"
+	if got := harness.stderr.String(); got != want || len(lighting.setups) < 3 {
+		test.Errorf("stderr %q after %d setups", got, len(lighting.setups))
 	}
 }

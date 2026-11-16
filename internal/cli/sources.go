@@ -22,8 +22,9 @@ type sourceSet struct {
 	// is nil where the monitor is not read, which is every system but Windows.
 	monitor func(address *url.URL, report func(found []sensors.Reading, err error)) sensors.Source
 	// startSession makes a setup of a session that lights the LEDs of the controller in the colour and gives the
-	// session, or errNoController when there is no controller. On an error the setup has ended.
-	startSession func(stop context.Context, colour config.Colour) (heldSession, error)
+	// session and what the setup did with the LED port configuration, which it gives on an error too, or
+	// errNoController when there is no controller. On an error the setup has ended.
+	startSession func(stop context.Context, colour config.Colour) (heldSession, setupNotice, error)
 	// controllerProblem gives why a controller that seems to be there was not found, or nil.
 	controllerProblem func() error
 }
@@ -44,19 +45,22 @@ func (set sourceSet) all() []sensors.Source {
 // commanderSources gives the sources with the controller read through the finder and no other source, which the
 // system's own file completes.
 func commanderSources(finder commandercore.Finder) sourceSet {
-	startSession := func(stop context.Context, colour config.Colour) (heldSession, error) {
+	startSession := func(stop context.Context, colour config.Colour) (heldSession, setupNotice, error) {
 		lighting := commandercore.Lighting{
 			Finder: finder, TimeLimit: commandercore.ReplyTimeLimit,
 			Red: colour.Red, Green: colour.Green, Blue: colour.Blue,
 		}
-		session, err := lighting.Start(stop)
+		session, configuration, err := lighting.Start(stop)
+		notice := setupNotice{
+			configured: configuration.Written, unknownPort: configuration.Unknown, unknownLEDs: configuration.LEDs,
+		}
 		if errors.Is(err, commandercore.ErrNoController) {
-			return nil, errNoController
+			return nil, notice, errNoController
 		}
 		if err != nil {
-			return nil, err
+			return nil, notice, err
 		}
-		return commanderSession{session: session}, nil
+		return commanderSession{session: session}, notice, nil
 	}
 	return sourceSet{
 		controller:        commandercore.Source{Finder: finder, TimeLimit: commandercore.ReplyTimeLimit},

@@ -229,14 +229,14 @@ func lighting(fake *fakehid.Fake) Lighting {
 }
 
 func TestLightingStartGivesErrNoControllerWithNoCollection(test *testing.T) {
-	if _, err := lighting(fakehid.New()).Start(context.Background()); !errors.Is(err, ErrNoController) {
+	if _, _, err := lighting(fakehid.New()).Start(context.Background()); !errors.Is(err, ErrNoController) {
 		test.Fatalf("got %v", err)
 	}
 }
 
 func TestLightingStartGivesTheErrorOfANearMiss(test *testing.T) {
 	near := controller(zeroPath, winhid.Caps{UsagePage: 1, Usage: 1, InputLength: 385, OutputLength: 385})
-	_, err := lighting(fakehid.New(near)).Start(context.Background())
+	_, _, err := lighting(fakehid.New(near)).Start(context.Background())
 	if err == nil || errors.Is(err, ErrNoController) || !strings.HasPrefix(err.Error(), "no collection of interface 0 matches: ") {
 		test.Fatalf("got %v", err)
 	}
@@ -244,7 +244,7 @@ func TestLightingStartGivesTheErrorOfANearMiss(test *testing.T) {
 
 func TestLightingStartLightsTheLEDsAndEndReturnsToHardwareMode(test *testing.T) {
 	fake := fakehid.New(answering(controller(zeroPath, interfaceZeroCaps)))
-	session, err := lighting(fake).Start(context.Background())
+	session, _, err := lighting(fake).Start(context.Background())
 	if err != nil {
 		test.Fatal(err)
 	}

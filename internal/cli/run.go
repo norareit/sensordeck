@@ -138,7 +138,7 @@ func (current *session) withMonitor(sources sourceSet, address *url.URL) []senso
 
 // newKeeper makes the keeper of the session that lights the LEDs in the colour of the config.
 func (current *session) newKeeper(sources sourceSet, settings config.Config, probesMapped func() bool) *sessionKeeper {
-	start := func(stop context.Context) (heldSession, error) {
+	start := func(stop context.Context) (heldSession, setupNotice, error) {
 		return sources.startSession(stop, *settings.CommanderColour)
 	}
 	return newSessionKeeper(start, probesMapped, current.env.now, current.env.after, current.env.stderr)

@@ -1,6 +1,7 @@
 package commandercore
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -22,55 +23,114 @@ type Lighting struct {
 	Red, Green, Blue byte
 }
 
+// PortConfiguration is what a setup did with the LED port configuration of the endpoint 0x1E.
+type PortConfiguration struct {
+	Written bool   // the configuration write succeeded, whatever the rest of the setup gave
+	Unknown string // the name of the first entry with LEDs whose count is not 4, empty when the configuration is known
+	LEDs    int    // the LED count of that entry
+}
+
 // Session is a held session: the node open, the controller in software mode, the LEDs lit.
 type Session struct {
 	opened    node
 	timeLimit time.Duration
 }
 
-// Start makes a setup and gives the session it starts. On every error the setup has ended, with its teardown once the
-// first command was written, and the node is closed.
-func (lighting Lighting) Start(stop context.Context) (*Session, error) {
+// Start makes a setup and gives the session it starts, and what the setup did with the LED port configuration, on every
+// error too. On every error the setup has ended, with its teardown once the first command was written, and the node
+// is closed.
+func (lighting Lighting) Start(stop context.Context) (*Session, PortConfiguration, error) {
 	path, err := lighting.Finder.find()
 	if err != nil {
-		return nil, err
+		return nil, PortConfiguration{}, err
 	}
 	opened, err := lighting.Finder.open(path)
 	if err != nil {
-		return nil, err
+		return nil, PortConfiguration{}, err
 	}
 	if stop.Err() != nil {
 		_ = opened.close()
-		return nil, errStopped
+		return nil, PortConfiguration{}, errStopped
 	}
 	session := &Session{opened: opened, timeLimit: lighting.TimeLimit}
-	if err := session.setUp(stop, lighting); err != nil {
+	configuration, err := session.setUp(stop, lighting)
+	if err != nil {
 		session.teardown(closesChannelZero(err))
-		return nil, err
+		return nil, configuration, err
 	}
-	return session, nil
+	return session, configuration, nil
 }
 
 // setUp makes the exchanges of a setup in order and stops at the first that does not succeed.
-func (session *Session) setUp(stop context.Context, lighting Lighting) error {
+func (session *Session) setUp(stop context.Context, lighting Lighting) (PortConfiguration, error) {
 	// The stop was checked before this, and a stop after it must still write the teardown, since the first command
 	// is written whatever it says.
 	if _, err := session.send(enterSoftware); err != nil {
-		return err
+		return PortConfiguration{}, err
 	}
 	var count int
+	var ports []byte
 	err := session.readEndpoint(stop, channelOne, portsEndpoint, func(answer []byte) (err error) {
+		ports = answer
 		count, err = ledCount(answer)
 		return err
 	})
 	if err != nil {
-		return err
+		return PortConfiguration{}, err
+	}
+	configuration, err := session.repairConfiguration(stop, ports)
+	if err != nil {
+		return configuration, err
 	}
 	if _, err := session.exchange(stop, openCommand(channelZero, ledEndpoint)); err != nil {
-		return err
+		return configuration, err
 	}
 	_, err = session.exchange(stop, colourCommand(count, lighting.Red, lighting.Green, lighting.Blue))
-	return err
+	return configuration, err
+}
+
+// repairConfiguration reads the LED port configuration and writes the wanted one when the stored one differs. It
+// leaves the configuration alone when the answer of the ports holds a port with LEDs that the type is not known for.
+func (session *Session) repairConfiguration(stop context.Context, ports []byte) (PortConfiguration, error) {
+	if name, leds := portTypeProblem(ports); name != "" {
+		return PortConfiguration{Unknown: name, LEDs: leds}, nil
+	}
+	var stored []byte
+	err := session.readEndpoint(stop, channelOne, portConfigurationEndpoint, func(answer []byte) error {
+		stored = answer
+		return nil
+	})
+	if err != nil {
+		return PortConfiguration{}, err
+	}
+	wanted := wantedConfiguration(ports)
+	// The stored bytes are compared where a write would put them, from byte 3, and are not parsed: the content that
+	// iCUE leaves does not have the layout of the one that is written.
+	if bytes.Equal(stored[3:3+len(wanted)], wanted) {
+		return PortConfiguration{}, nil
+	}
+	written, err := session.writeConfiguration(stop, wanted)
+	return PortConfiguration{Written: written}, err
+}
+
+// writeConfiguration makes the exchanges that store the configuration, and tells whether the write itself succeeded.
+func (session *Session) writeConfiguration(stop context.Context, configuration []byte) (written bool, err error) {
+	for _, command := range [][]byte{
+		closeCommand(channelOne, portConfigurationEndpoint), openCommand(channelOne, portConfigurationEndpoint),
+	} {
+		if _, err := session.exchange(stop, command); err != nil {
+			return false, err
+		}
+	}
+	if _, err := session.exchange(stop, configurationCommand(configuration)); err != nil {
+		return false, err
+	}
+	for _, command := range [][]byte{closeCommand(channelOne, portConfigurationEndpoint), afterPortConfiguration} {
+		if _, err := session.exchange(stop, command); err != nil {
+			return true, err
+		}
+	}
+	return true, nil
 }
 
 // Read makes one reading and gives every available probe. On every error the session has ended with its teardown and

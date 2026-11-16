@@ -169,14 +169,14 @@ run.
 
 ### 3. The setup
 
-- [ ] In `session_test.go`, change `setupWrites` so that its list is enter (1), the read of `0x20` (2 to 5), the read of
+- [x] In `session_test.go`, change `setupWrites` so that its list is enter (1), the read of `0x20` (2 to 5), the read of
   `0x1E` (6 to 9), the open of `0x22` (10) and the colour write (11), and shift every position past 5 that the
   existing tests use by 4: 6 becomes 10, 7 becomes 11, and the total `7+12+2` becomes `11+12+2`. The positions 1 and 4,
   and `setupWrites(0, 4)`, stay. Change every call of `Start` to take three results. No other expectation changes
   (R4, R17)
-- [ ] Add a helper `configurationWrites` for the five exchanges of step 4 with the wanted configuration of the host:
+- [x] Add a helper `configurationWrites` for the five exchanges of step 4 with the wanted configuration of the host:
   `08 05 01 01 1E`, `08 0D 01 1E`, the configuration write, `08 05 01 01 1E` and `08 15 01` (R4)
-- [ ] Write the tests of R14 first, each failing against the tree:
+- [x] Write the tests of R14 first, each failing against the tree:
     - with the default configuration stored, the writes of a setup are `setupWrites(16, 11)`, which hold the read of
       `0x1E`, no configuration write and no `08 15 01`, and `PortConfiguration` is the zero value (R4, R14)
     - with the iCUE configuration stored, the writes are enter, the read of `0x20`, the read of `0x1E`,
@@ -198,32 +198,32 @@ run.
     - with the iCUE configuration stored, a session started, read, ended and started again: both setups read `0x1E`,
       the first writes the configuration and the second does not, and the writes of the reading are
       `readingWrites()`, with no command to `0x1E` (R5, R14)
-- [ ] In `session.go`, add `PortConfiguration` as in the approach, and change `Start` to give it from `setUp` on every
+- [x] In `session.go`, add `PortConfiguration` as in the approach, and change `Start` to give it from `setUp` on every
   path (R4, R8)
-- [ ] In `setUp`, keep the answer of `0x20` from the check of `readEndpoint`. After the read, take `portTypeProblem`;
+- [x] In `setUp`, keep the answer of `0x20` from the check of `readEndpoint`. After the read, take `portTypeProblem`;
   when it names an entry, set `Unknown` and `LEDs` and go to the open of `0x22`. Otherwise make
   `readEndpoint(stop, channelOne, portConfigurationEndpoint, check)` with a check that keeps the answer and gives no
   error, and when bytes 3 to 3 + *L* − 1 of it differ from the wanted configuration, make `writeConfiguration`. Then the
   open of `0x22` and the colour write as today. Keep `setUp` at one level of abstraction by putting steps 3 and 4 in a
   method `repairConfiguration(stop, answer) (PortConfiguration, error)` (R3, R4, D3, D4)
-- [ ] Add `writeConfiguration(stop, configuration) (written bool, err error)`: the close and open of `0x1E` on
+- [x] Add `writeConfiguration(stop, configuration) (written bool, err error)`: the close and open of `0x1E` on
   channel 1, `configurationCommand`, which sets `written` once it succeeds, the close, and `afterPortConfiguration`,
   each through `exchange` so that a stop, a failure and no answer end it as every exchange does (R4, D8, D12)
-- [ ] Check that nothing in `Read` and `End` changed, and that no command of R6's forbidden list is built anywhere in
+- [x] Check that nothing in `Read` and `End` changed, and that no command of R6's forbidden list is built anywhere in
   the package (`grep -n "0x14\|0x18\|0x02, 0x13" internal/commandercore/*.go`) (R5, R6)
-- [ ] In `hid_test.go`, take the three results of `Start`. Its writes do not change, since its one entry has 8 LEDs (R9,
+- [x] In `hid_test.go`, take the three results of `Start`. Its writes do not change, since its one entry has 8 LEDs (R9,
   R17)
-- [ ] Commit: `bugfix-0025 Repair the LED port configuration at each setup`
+- [x] Commit: `bugfix-0025 Repair the LED port configuration at each setup`
 
 The sandbox runs the suite here, and the Windows build and vet of `AGENTS.md` cover `hid.go` and the shared session
 (R9).
 
 ### 4. The lines of run
 
-- [ ] In `keeper_test.go`, give `fakeLighting` a queue `notices []setupNotice`, taken one per setup like
+- [x] In `keeper_test.go`, give `fakeLighting` a queue `notices []setupNotice`, taken one per setup like
   `setupErrors`, and change `start` to give `(heldSession, setupNotice, error)`. Change the field `startSession` of
   the harness in `commands_test.go` to the new signature (R15)
-- [ ] Write the tests of R15 first:
+- [x] Write the tests of R15 first:
     - two setups that fail with notices `{configured: true}` and then a setup that succeeds with
       `{configured: true}`: standard error is the line of the configuration write, then `controller setup failed: fake
       failure`, then the line of the configuration write twice more, in that order, so that the line comes after each
@@ -234,14 +234,14 @@ The sandbox runs the suite here, and the Windows build and vet of `AGENTS.md` co
       `controller LED ports left as stored: port 3 has 8 LEDs, and only fans with 4 LEDs are known` exactly once
       (R8, R15, D10)
     - the existing tests of the keeper keep what they expect (R17)
-- [ ] In `keeper.go`, add `setupNotice` as in the approach, change the `start` field and `newSessionKeeper` to the new
+- [x] In `keeper.go`, add `setupNotice` as in the approach, change the `start` field and `newSessionKeeper` to the new
   signature, and in `setUp` write, before anything else that the setup writes, the line
   `controller LED ports configured: the stored configuration did not enable the ports with LEDs, iCUE may have changed it`
   when `configured`, and the line of an unknown configuration when `unknownPort` is set and `unknownReported` is
   false, setting it (R8)
-- [ ] In `sources.go`, change `startSession` and its comment, and map `PortConfiguration` to `setupNotice` in
+- [x] In `sources.go`, change `startSession` and its comment, and map `PortConfiguration` to `setupNotice` in
   `commanderSources`, giving the notice with the error too. In `run.go`, change `newKeeper`'s `start` (R8, R9)
-- [ ] Commit: `bugfix-0025 Write the lines of the LED port configuration in run`
+- [x] Commit: `bugfix-0025 Write the lines of the LED port configuration in run`
 
 ### 5. End to end
 
@@ -301,8 +301,8 @@ The sandbox runs the suite here, and the Windows build and vet of `AGENTS.md` co
 
 - [x] After task 1: the fake controller
 - [x] After task 2: the protocol
-- [ ] After task 3: the setup
-- [ ] After task 4: the lines of run
+- [x] After task 3: the setup
+- [x] After task 4: the lines of run
 - [ ] After task 5: the end-to-end tests
 - [ ] After task 6: the documents
 

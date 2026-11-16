@@ -28,7 +28,7 @@ type harness struct {
 	sources           []sensors.Source // the sources other than the controller
 	set               *sourceSet       // the whole set of sources when a test gives one, instead of the three fields above
 	controller        sensors.Source
-	startSession      func(stop context.Context, colour config.Colour) (heldSession, error)
+	startSession      func(stop context.Context, colour config.Colour) (heldSession, setupNotice, error)
 	sourcesErr        error
 	configDir         string // what userConfigDir gives
 	configDirErr      error
