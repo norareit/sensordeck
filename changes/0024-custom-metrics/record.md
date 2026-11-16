@@ -18,5 +18,12 @@ timestamp: 2026-11-16T20:28:31Z
   `sensors` reads the config on every system and takes `--config`; values go through `sensors.ToValue`; the flag
   `CREATE_NO_WINDOW` for every child that reads a metric, `nvidia-smi` included, is part of the unit. Six items are
   left under "Beyond the request". The status is `draft`
+- 2026-11-16T20:30:46Z [Claude Code, anthropic/claude-opus-5-5] as the specifier, amended the spec at the decision of
+  the orchestrating session under the delegation in `AGENTS.md`, which took item 1 of "Beyond the request" and
+  declined items 2 to 6: the `hwmon` form has the key `index`, a whole number of 1 or more and 1 without the key, that
+  takes the chip at that place in the order of the device paths. Fewer chips than `index` gives no value and the line
+  of R23 with the number of chips found, not an error of the config. The README gives a command that lists the chips
+  with their device paths in that order and tells a card from a processor's graphics by its PCI address, and the tests
+  cover the key. The status stays `draft`
 
 ## Amendments

@@ -62,10 +62,11 @@ What exists today and bears on the unit:
     - `offset`, a number, 0 without the key
     - `unit`, a string, empty without the key, for `sensors` only
     - `input`, with `hwmon` only, where it is required
+    - `index`, with `hwmon` only, 1 without the key
     - `every`, with `command` only
 - **R5** `file` is an absolute path, as the system the config runs on reads it. `hwmon` is the name of a chip, a
   non-empty string without `/`. `input` is the name of a file of the chip's directory, a non-empty string that is not `.`
-  or `..` and holds no `/`. `command` is a non-empty string. `scale` and `offset` are finite numbers. `unit` holds no
+  or `..` and holds no `/`. `index` is a whole number of 1 or more. `command` is a non-empty string. `scale` and `offset` are finite numbers. `unit` holds no
   tab, line feed or other control character. `every` is a duration of at least 1 second, such as `30s` or `5m`
 - **R6** Each problem of `metrics` is refused with an error in the existing form, the config file named in front by
   the caller: `metrics:` followed by the metric name and the key at fault when there is one, and what was wanted. A
@@ -95,10 +96,11 @@ What exists today and bears on the unit:
 - **R14** A `file` metric reads the file at each reading and takes its number. A file that cannot be read, or holds no
   number, gives no value
 - **R15** A `hwmon` metric looks, at each reading, among the directories `hwmonN` of `class/hwmon` under the sysfs root,
-  for those whose `name` file holds the chip name, without its trailing line feed. It takes the first in the order of
-  the resolved path of their `device`, the order of the numbered built-in metrics, with a chip that has no `device`
-  after those that have one, by N. It reads the file `input` of that directory and takes its number. No chip of the
-  name, or an input that cannot be read or holds no number, gives no value
+  for those whose `name` file holds the chip name, without its trailing line feed. It orders them by the resolved path of
+  their `device`, compared by bytes, the order of the numbered built-in metrics, with a chip that has no `device` after
+  those that have one, by N, and takes the chip at the place `index` in that order, counted from 1. It reads the file
+  `input` of that directory and takes its number. Fewer chips of the name than `index`, none among them, or an input
+  that cannot be read or holds no number, gives no value
 - **R16** A `command` metric runs its command through the shell of the system: `/bin/sh -c <command>` on Linux, by that
   absolute path, and on Windows the program of the environment variable `ComSpec`, or `cmd.exe` when it is not set, with
   the command line `/d /s /c "<command>"` given as it is, so that the quoting of the command is the user's. The command
@@ -123,8 +125,8 @@ What exists today and bears on the unit:
 
 - **R23** In `run` a custom metric that gives no value writes one line to standard error at the first reading of a
   streak of such readings, none while the streak lasts, and one line when it gives a value again. The first line starts
-  with `metric <name>: ` and gives the cause: the file or the input that cannot be read and the error, no chip of the
-  name, no number in the text, the exit status of the command with the first line of its standard error when it wrote
+  with `metric <name>: ` and gives the cause: the file or the input that cannot be read and the error, the number of
+  chips of the name when it is less than `index` (zero when there is none), no number in the text, the exit status of the command with the first line of its standard error when it wrote
   one, a command that could not start, or the time limit it outlasted. The second line says that the metric is read
   again and names it. For a command, a streak begins and ends with finished runs, and a run in progress changes nothing
 - **R24** `sensors` writes the line of R23 for each custom metric that gives no value, and lists the others
@@ -163,9 +165,14 @@ What exists today and bears on the unit:
   examples, each a config block:
     - an AMD GPU on Linux through `hwmon: amdgpu`: the edge temperature `temp1_input` and the junction temperature
       `temp2_input` in °C with `scale: 0.001`, the power `power1_average` in W with `scale: 0.000001` and the fan
-      `fan1_input` in RPM, with how to find a chip's name (`cat /sys/class/hwmon/hwmon*/name`) and its inputs, and that
-      the first chip of the name in the order of the places of the hardware is taken, so that a machine with two chips
-      of one name, such as an AMD processor's graphics beside an AMD card, may need a `file` instead
+      `fan1_input` in RPM, with how to find a chip's name (`cat /sys/class/hwmon/hwmon*/name`) and its inputs
+    - `index` for a machine with two chips of one name, with the case of a Ryzen 7000 or 9000 desktop processor, whose
+      integrated graphics has an `amdgpu` chip of its own beside that of an AMD card. The README says that the chips
+      are counted from 1 in the order of their device paths, and gives a shell command that lists every chip's name and
+      resolved device path in that order, for each name, such as a loop over `/sys/class/hwmon/hwmon*` that prints
+      `name` and `readlink -f` of `device`, piped to `LC_ALL=C sort`, and that a chip with no device path comes last.
+      It says that a GPU's device path ends in its PCI address, which `lspci -s <address>` names, so that the card and
+      the processor's graphics are told apart. It shows the card read with the `index` that the command gives it
     - a fan of the board through the chip of its controller, such as `nct6799`, in RPM
     - a command, such as the `curl` and `jq` example of the context, with `every`
 - **R32** The README's section on `sensors` says that it lists custom metrics after the built-in ones and takes
@@ -187,7 +194,9 @@ What exists today and bears on the unit:
       too large for a float, and R12 with `scale` and `offset`, negative, fractional and too large values sent as R12
       says
     - `file` metrics with temporary files, and `hwmon` metrics with a temporary sysfs tree whose chip changes its number,
-      two chips of one name with the order of R15, and a chip without `device`
+      two chips of one name with the order of R15 whose numbers N are in the opposite order of their device paths, read
+      with `index` 1, 2 and without the key, `index` 3 with two chips and with none, and its line of R23, a chip
+      without `device`, and the errors of `index` that is 0, negative, not whole, or given without `hwmon`
     - `command` metrics with fake commands written as shell scripts in temporary directories: a value, a nonzero
       exit, no number, a run past its time limit that is killed together with a child it started, the working
       directory, a round that does not wait for a run in progress, and `every` with a fake clock
@@ -228,8 +237,14 @@ later unit.
 - **D4 The `hwmon` form is in this unit.** The number N of `hwmonN` changes between boots on a usual machine, so a
   `file` path through it reads another chip or nothing after a reboot, in a service that nobody watches. The AMD GPU,
   the first case of the request, is behind such a path. The lookup by `name` and the order by device already exist for
-  the built-in metrics, so the form costs a definition key and a lookup. Several chips of one name take the first, which
-  covers the usual machine; choosing another is left under "Beyond the request"
+  the built-in metrics, so the form costs a definition key and a lookup. `index` chooses among several chips of one name,
+  because every Ryzen 7000 and 9000 desktop processor has integrated graphics with an `amdgpu` chip of its own, so that
+  the AMD GPU example is ambiguous on most AMD hosts without it; the human's 9950X3D has one. It counts in the order of
+  the device paths because that order follows the hardware and not the boot, and it starts at 1 as the numbered
+  built-in metrics do. Fewer chips than `index` is a metric with no value and a line of R23, and not an error of the
+  config, because the chips present are known only when the machine is read, and a config is shared between systems.
+  Rejected: choosing by the device path itself, which is longer to write and to get right; and listing the chips in
+  `sensors`, which would add a second kind of output to a command that lists readings
 - **D5 `offset` is in this unit.** A file source has no other way to shift a value, and the cases are real: the
   calibration of a cheap probe of a water loop, and a value in kelvin. It is one key with a default of 0. A command can
   shift its own output, but the key costs nothing there either
@@ -294,8 +309,9 @@ later unit.
 
 ## Beyond the request
 
-1. A key `index` for the `hwmon` form, which takes the *n*-th chip of the name in the order of R15. Cost: a key, its
-   check and a test. Without it, a machine with two chips of one name, such as an AMD processor's graphics beside an AMD
+1. Taken into the unit by the amendment recorded in `record.md`, as the key `index` of R4, R5, R15, R23, R31 and R34
+   and D4. A key `index` for the `hwmon` form, which takes the *n*-th chip of the name in the order of R15. Cost: a
+   key, its check and a test. Without it, a machine with two chips of one name, such as an AMD processor's graphics beside an AMD
    card, reads the first and uses a `file` path for the other, which may change between boots
 2. A way to replace a built-in metric, such as a key `replaces: true` in a definition, so that the built-in themes show
    an AMD GPU as `gpu.temp`. Cost: the key, a rule for which source wins, and tests. Without it, a user copies a
