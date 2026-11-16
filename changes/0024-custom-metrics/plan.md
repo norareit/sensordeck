@@ -324,14 +324,14 @@ What the tree on `feature-0024-custom-metrics` holds, and what the plan builds o
 
 ### 10. The documents
 
-- [ ] In `README.md`, add the section on custom metrics after "Windows: the sensors of the machine", with everything
+- [x] In `README.md`, add the section on custom metrics after "Windows: the sensors of the machine", with everything
   R31 lists and its four example blocks, the command that lists the chips being:
   `for chip in /sys/class/hwmon/hwmon*; do printf '%s %s\n' "$(cat "$chip/name")" "$(readlink -f "$chip/device")"; done | LC_ALL=C sort`
   (R31)
-- [ ] In `README.md`, update the line of `sensors` in the list of commands, the section "Showing sensor values on the
+- [x] In `README.md`, update the line of `sensors` in the list of commands, the section "Showing sensor values on the
   screen" for `sensors`, the keys and the reload of the config of `run`, and the Windows section, as R32 says (R32)
-- [ ] In `docs/theme-folder.md`, update the paragraph on the names of the metrics as R33 says (R33)
-- [ ] Commit: `feature-0024 Document custom metrics`
+- [x] In `docs/theme-folder.md`, update the paragraph on the names of the metrics as R33 says (R33)
+- [x] Commit: `feature-0024 Document custom metrics`
 
 ### 11. The suite
 

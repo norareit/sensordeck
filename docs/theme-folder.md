@@ -80,10 +80,13 @@ names them, and a theme has at most 62 of them, because the background takes one
 | `datetime` | `font`, `format` | The date and the time, which the device fills in from the clock |
 | `image` | `file` | A PNG in the folder, drawn at its own size |
 
-The names of the metrics are those of the table in the
-[README](../README.md#showing-sensor-values-on-the-screen). The compiler checks that a name is well formed, as the
-config file of `sensordeck run` does, and not that the machine it runs on can read the metric, so that a theme compiled
-on one machine can be shared.
+A metric name is a built-in one, from the table in the
+[README](../README.md#showing-sensor-values-on-the-screen), or a custom one that the user defines under `metrics` in the
+config file of `sensordeck run`, as [Custom metrics](../README.md#custom-metrics) says. The compiler checks only that a
+name has the form of a metric name, one or more segments joined by single dots, each of the characters `a` to `z`, `0` to
+`9`, `_` and `-`, beginning with a letter. It does not know the config file, and does not check that the machine it runs
+on can read the metric, so that a theme compiled on one machine can be shared. `run` refuses a theme whose metric is
+neither built in nor defined under `metrics`, and names the metric.
 
 ### Formats of a datetime
 

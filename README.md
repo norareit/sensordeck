@@ -165,7 +165,7 @@ sensordeck values                 # send the values of numeric tags to the scree
 sensordeck upload                 # upload a theme file to the screen as it is
 sensordeck listen                 # show the input reports that the screen sends
 sensordeck raw                    # send one report of the bytes given and show the answer
-sensordeck sensors                # list the sensor readings that can be read now
+sensordeck sensors [--config <path>] # list the sensor readings that can be read now, custom metrics included
 sensordeck run                    # send live sensor values to the screen
 sensordeck theme list             # show built-in and installed themes
 sensordeck theme use minimal-dark # switch themes
@@ -213,7 +213,8 @@ hidraw is provided by the kernel's `usbhid` driver, so that driver must stay bou
 
 `sensordeck sensors` lists the readings that can be read now, one line each: the metric name, the value with one
 decimal and the unit, separated by tabs. A metric that cannot be read is left out. When none can be read, it says so on
-standard error.
+standard error. It lists the [custom metrics](#custom-metrics) of the config file after the built-in ones, and takes
+`--config <path>` to read another config file than the one at the default place.
 
 ```
 cpu.temp	51.4	°C
@@ -281,6 +282,8 @@ tags:
 `interval` is the time between two rounds, of at least 100 milliseconds, and is 1 second without the key. A tag is a
 whole number from 0 to 255.
 
+The key `metrics` defines [custom metrics](#custom-metrics), which a theme or the key `tags` can use as a built-in one.
+
 `commander_interval` is the shortest time between two readings of the Commander Core XT, in the same syntax as
 `interval`, such as `1m` or `30s`. It is at least `interval`, and is 1 minute without the key, or the interval when that
 is longer. Each reading makes the LEDs of the fans on the controller flicker once, which is why it is read less often.
@@ -302,7 +305,8 @@ standard error, each once in a hang. When it cannot restart the screen, for lack
 it writes one line that says to install the current rule, and unplugging the screen once recovers it.
 
 `run` reads the config file again when its modification time or its size changes, at the start of a round, so an edit
-or `sensordeck theme use` takes effect within a round, with no restart. A reload applies the theme and the tags. A change
+or `sensordeck theme use` takes effect within a round, with no restart. A reload applies the theme, the tags and the
+`metrics`. A change
 of `interval`, `commander_interval`, `commander_color` or `librehardwaremonitor_url` is not applied: `run` writes a line to standard error that
 says a restart applies it, and keeps the value it runs with. A file that cannot be read, is not valid or names a theme
 that does not compile is not applied: `run` writes one line to standard error and goes on with the config it has. An
@@ -339,8 +343,8 @@ librehardwaremonitor_url: http://monitor:secret@localhost:9000/data.json
 ```
 
 The key does nothing on Linux, and a config that has it is valid there. `sensordeck sensors` on Windows reads the key
-from the config file at the place where `run` reads it without `--config`, so that it reads the same address as `run`,
-and takes the default when it finds no file there. It writes one line to standard error and goes on with the default
+from the config file named with `--config`, or else at the place where `run` reads it without `--config`, so that it
+reads the same address as `run`, and takes the default when it finds no file there. It writes one line to standard error and goes on with the default
 when that file cannot be read or is not valid. The user and the password are left out of the lines that name the URL.
 
 The sensors of LibreHardwareMonitor give the metrics as follows. The CPU is the first AMD CPU, or else the first Intel
@@ -367,7 +371,131 @@ line once when the reading fails, and not again while it keeps failing, and writ
 keep their last value. The other metrics keep working throughout. `run` asks the web server only while a metric that
 needs it is mapped.
 
+The commands of [custom metrics](#custom-metrics) run through `cmd.exe`, and every program that sensordeck starts to read
+a metric, `nvidia-smi` and those commands, is started with no console window, so that none opens while `run` runs in the
+background.
+
 The sensors of Windows have not yet been checked on a real Windows machine.
+
+## Custom metrics
+
+The metrics of the table above are the ones that sensordeck knows. The key `metrics` of the config file of
+`sensordeck run` defines more, each read from a file, from a chip of hwmon or from a command, so that hardware that
+sensordeck does not know can be shown: an AMD or Intel GPU, the fans and sensors of a board, a water loop, or a value that
+a script or a web service gives. A theme or the key `tags` uses a custom metric as it uses a built-in one.
+
+```yaml
+metrics:
+  water.temp:   {file: /sys/class/hwmon/hwmon5/temp1_input, scale: 0.001}
+  gpu.amd.temp: {hwmon: amdgpu, input: temp1_input, scale: 0.001, unit: "°C"}
+  fan.pump:     {hwmon: nct6799, input: fan2_input, unit: RPM}
+  outside.temp: {command: "curl -s https://example.org/t | jq .temp", every: 5m}
+```
+
+A name is one or more segments joined by single dots, each of the characters `a` to `z`, `0` to `9`, `_` and `-`, and it
+begins with a letter. A name that is a built-in metric, such as `gpu.temp`, or `nvme.9.temp` that no hardware backs on this
+machine, cannot be defined: the config is refused with the name and the line that it is built in and cannot be replaced.
+There is no prefix to write. To show an AMD GPU in a built-in theme, copy the theme and name the custom metric in it.
+A theme compiles with a custom metric on any machine, because the compiler checks the form of the name only. `run` refuses
+a theme whose metric is neither built in nor defined under `metrics`, and says which.
+
+A definition has exactly one source key, and these keys besides:
+
+| Key | Meaning |
+|---|---|
+| `file` | The absolute path of a file, as the system that runs sensordeck reads it. Read at each reading |
+| `hwmon` | The name of a chip, as its `name` file holds it. It needs `input` |
+| `input` | With `hwmon`: the file of the chip's directory to read, such as `temp1_input` |
+| `index` | With `hwmon`: which chip of that name, counted from 1, 1 without the key |
+| `command` | A command line, run through the shell of the system |
+| `every` | With `command`: the time between two runs, of at least 1 second, such as `30s` or `5m`, 10 seconds without the key |
+| `scale` | A number the reading is multiplied by, 1 without the key |
+| `offset` | A number added after the scale, 0 without the key |
+| `unit` | The text `sensordeck sensors` writes as the unit, empty without the key. It does not reach the theme |
+
+The number of a reading is the first match in its text of an optional `-` or `+`, one or more digits and optionally a point
+and one or more digits. Exponents, a comma as the decimal mark, `NaN` and `Inf` are not numbers, and a text with no number
+gives the metric no value. The value is the number times `scale`, plus `offset`. `sensordeck sensors` writes it with one
+decimal. The screen shows whole numbers from 0 to 65535, as for every metric, so `run` rounds the value, a negative value
+shows 0, and tenths are shown by a `scale` ten times larger.
+
+### A chip of hwmon
+
+The number N of a directory `hwmonN` of `/sys/class/hwmon` follows the order in which the drivers load, and changes between
+boots, so a `file` path through it may read another chip, or none, after a reboot. The `hwmon` form finds the chip by its
+name at each reading. To see the names of the chips, and the files of one:
+
+```bash
+cat /sys/class/hwmon/hwmon*/name
+ls /sys/class/hwmon/hwmon5/
+```
+
+An AMD GPU is the chip `amdgpu`. This reads its edge temperature, its junction temperature, its power and its fan; the
+files `temp1_input` and `temp2_input` hold millidegrees, `power1_average` holds microwatts:
+
+```yaml
+metrics:
+  gpu.amd.temp:     {hwmon: amdgpu, input: temp1_input, scale: 0.001, unit: "°C"}
+  gpu.amd.junction: {hwmon: amdgpu, input: temp2_input, scale: 0.001, unit: "°C"}
+  gpu.amd.power:    {hwmon: amdgpu, input: power1_average, scale: 0.000001, unit: W}
+  gpu.amd.fan:      {hwmon: amdgpu, input: fan1_input, unit: RPM}
+```
+
+A machine with two chips of one name, such as a Ryzen 7000 or 9000 desktop processor, whose integrated graphics has an
+`amdgpu` chip of its own beside the one of an AMD card, takes the one that `index` names. The chips of a name are counted
+from 1 in the order of their device paths, which follows the hardware and not the boot, and a chip with no device path comes
+last. This lists the name and the resolved device path of every chip in that order:
+
+```bash
+for chip in /sys/class/hwmon/hwmon*; do printf '%s %s\n' "$(cat "$chip/name")" "$(readlink -f "$chip/device")"; done | LC_ALL=C sort
+```
+
+The device path of a GPU ends in its PCI address, which `lspci -s <address>` names, so the card and the graphics of the
+processor are told apart. If the card is the second `amdgpu` line, this reads it:
+
+```yaml
+metrics:
+  gpu.amd.temp: {hwmon: amdgpu, input: temp1_input, index: 2, scale: 0.001, unit: "°C"}
+```
+
+With fewer chips of the name than `index`, the metric has no value, and `run` and `sensordeck sensors` write the number of
+chips found. The fan of a board is read through the chip of its controller, such as `nct6799`:
+
+```yaml
+metrics:
+  fan.pump: {hwmon: nct6799, input: fan2_input, unit: RPM}
+```
+
+### A command
+
+```yaml
+metrics:
+  outside.temp: {command: "curl -s https://example.org/t | jq .temp", every: 5m, unit: "°C"}
+```
+
+The command runs through the shell of the system, `/bin/sh -c` on Linux and `cmd.exe /d /s /c` on Windows, the program of
+`ComSpec` when it is set, with the command line as you wrote it, so the quoting is yours. A user who wants PowerShell writes
+`powershell -NoProfile -Command "..."` as the command. It runs in the directory of the config file, with the environment of
+sensordeck and no standard input. A run that exits with status 0 and writes a number to standard output gives the value.
+
+A command never holds up a round. `run` starts a run when the metric is mapped, none is in progress and none started within
+the last `every`, and sends the value of the last run that finished, so the first rounds send no value for it. A run lasts
+at most 10 seconds, or `every` when that is shorter, and is then killed. On Linux the command is the leader of a process
+group that is killed whole, so that the programs of a pipeline end with it. Windows has no such group, and a program that a
+killed command started may go on. When `run` ends, a run in progress is killed. `sensordeck sensors` runs each command once
+and waits for it.
+
+### Failures
+
+A custom metric that has no value writes one line to standard error at the first reading of a streak of readings that
+fail, and none while the streak lasts. The line starts with `metric <name>: ` and gives the cause: the file that cannot be
+read and the error, the number of chips of the name, no number in the text, the exit status of the command with the first
+line of its standard error, a command that could not start, or the time limit it outlasted. A line `metric <name>: read
+again` says when the metric has a value again. The tile keeps its last value meanwhile. `sensordeck sensors` writes the line
+of each custom metric that has no value, and lists the others.
+
+A reload of the config applies `metrics`. A metric whose definition did not change keeps its value, its streak and its run in
+progress. A new or changed one starts with no value, and the run of a changed or removed one is killed.
 
 ## The Corsair iCUE Commander Core XT
 
