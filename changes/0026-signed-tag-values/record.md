@@ -35,6 +35,12 @@ supersedes: 0004-linux-sensors-and-run
   all passed and reported nothing. The grep of `README.md` and `docs/` for "unsigned" and "65535" finds only the
   observation of 65535 in `docs/protocol.md` and the raw range in the README. The check on the device of a negative
   custom metric is not made, and is the human's. The status stays `in-progress`
+- 2026-11-16T23:54:17Z [OpenCode, openai/gpt-6.1-sol] as the reviewer, completed a full review of
+  `0026-signed-tag-values` at `d6e5e9cdb0b2a45e42a01693d31f1318d2b126ff` against merge base
+  `24170d8a962d0ad41db90a9dd8afde5704afee36` with `origin/master`. Returned C1; the complete findings are in
+  `.reviews/0026-signed-tag-values/review-round-1.md`. Independently ran the five required Go checks, the uncached
+  end-to-end suite and `npm run check-changes`, all successfully. The physical-device check and Windows runtime
+  behavior were not verified. The status stays `in-progress`
 
 ## Amendments
 - 2026-11-16T23:47:45Z [Claude Code, anthropic/claude-opus-5-5] read the spec under the delegation in `AGENTS.md`: its facts are the
