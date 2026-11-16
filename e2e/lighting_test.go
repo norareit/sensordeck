@@ -17,10 +17,19 @@ import (
 // and maps cpu.temp and the first probe.
 func startRunWithColour(test *testing.T, interval string) (*fakescreen.Screen, *fakecommander.Controller, *process) {
 	test.Helper()
+	return startRunWithColourAfter(test, interval, func(*fakecommander.Controller) {})
+}
+
+// startRunWithColourAfter is startRunWithColour with prepare called on the controller before run starts.
+func startRunWithColourAfter(
+	test *testing.T, interval string, prepare func(*fakecommander.Controller),
+) (*fakescreen.Screen, *fakecommander.Controller, *process) {
+	test.Helper()
 	fake := fakescreen.New(test)
 	screen := fake.Add(3, "name", "")
 	tree, _ := runningTree(test, fake)
 	controller := fakecommander.New(test, fake.SysfsRoot, fake.DevRoot).Add(9, 10)
+	prepare(controller)
 	config := writeConfigFile(test, "interval: "+interval+"\ncommander_color: \"#ff0000\"\ntags:\n  cpu.temp: 1\n  commander.1.temp: 4\n")
 	return screen, controller, start(test, fake, environmentFor(test, tree, ""), "run", "--config", config)
 }
@@ -141,5 +150,63 @@ func TestRunWithAnUnquotedColourFailsBeforeTheScreen(test *testing.T) {
 	want := "sensordeck: config file " + config + `: commander_color: no colour given, write it in quotes such as "#00c8ff", because # starts a comment in YAML` + "\n"
 	if outcome.status != 1 || outcome.stderr != want {
 		test.Errorf("status %d, stderr %q", outcome.status, outcome.stderr)
+	}
+}
+
+// configurationWrites counts the writes of the LED port configuration and the commands 08 15 01 among the writes.
+func configurationWrites(writes [][]byte) (configurations, afterwards int) {
+	for _, written := range writes {
+		if bytes.HasPrefix(written, encoded(0x08, 0x06, 0x01)[:4]) {
+			configurations++
+		}
+		if bytes.Equal(written, encoded(0x08, 0x15, 0x01)) {
+			afterwards++
+		}
+	}
+	return configurations, afterwards
+}
+
+func waitForColourWrite(controller *fakecommander.Controller) {
+	deadline := time.Now().Add(reportLimit)
+	for len(controller.ColourWrites()) == 0 && time.Now().Before(deadline) {
+		time.Sleep(20 * time.Millisecond)
+	}
+}
+
+func TestRunWithAColourRepairsTheLEDPortConfigurationThatICUELeft(test *testing.T) {
+	icue := []byte{0x0D, 0x00, 0x07, 0x06, 0x06, 0x06, 0x06, 0x06, 0x06, 0x06, 0x00, 0x00, 0x01, 0x03, 0x01, 0x03, 0x01, 0x03, 0x01, 0x03}
+	wanted := []byte{0x0D, 0x00, 0x07, 0x00, 0x00, 0x00, 0x01, 0x03, 0x01, 0x03, 0x01, 0x03, 0x01, 0x03}
+	_, controller, running := startRunWithColourAfter(test, "100ms", func(controller *fakecommander.Controller) {
+		controller.SetPortConfiguration(icue)
+	})
+	waitForColourWrite(controller)
+	if lighting, colour := controller.Lighting(); lighting != fakecommander.SentColour || colour != [3]byte{0xFF, 0, 0} {
+		test.Errorf("lighting %d, colour %v while run runs", lighting, colour)
+	}
+	if got := controller.PortConfiguration(); !bytes.Equal(got, wanted) {
+		test.Errorf("stored % x", got)
+	}
+	outcome, _ := running.stop(syscall.SIGTERM)
+	want := "controller LED ports configured: the stored configuration did not enable the ports with LEDs, iCUE may have changed it\n"
+	if !strings.Contains(outcome.stderr, want) {
+		test.Errorf("stderr %q", outcome.stderr)
+	}
+	if configurations, afterwards := configurationWrites(controller.Writes()); configurations != 1 || afterwards != 1 {
+		test.Errorf("%d configuration writes, %d of 08 15 01", configurations, afterwards)
+	}
+}
+
+func TestRunWithAColourLeavesAStoredConfigurationAlone(test *testing.T) {
+	_, controller, running := startRunWithColour(test, "100ms")
+	waitForColourWrite(controller)
+	outcome, _ := running.stop(syscall.SIGTERM)
+	if strings.Contains(outcome.stderr, "controller LED ports") {
+		test.Errorf("stderr %q", outcome.stderr)
+	}
+	if configurations, afterwards := configurationWrites(controller.Writes()); configurations != 0 || afterwards != 0 {
+		test.Errorf("%d configuration writes, %d of 08 15 01", configurations, afterwards)
+	}
+	if len(controller.ColourWrites()) == 0 {
+		test.Error("no colour write arrived")
 	}
 }

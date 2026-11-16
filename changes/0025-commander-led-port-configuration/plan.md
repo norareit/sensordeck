@@ -245,19 +245,19 @@ The sandbox runs the suite here, and the Windows build and vet of `AGENTS.md` co
 
 ### 5. End to end
 
-- [ ] In `e2e/lighting_test.go`, add `startRunWithColourAfter(test, interval, prepare func(*fakecommander.Controller))`,
+- [x] In `e2e/lighting_test.go`, add `startRunWithColourAfter(test, interval, prepare func(*fakecommander.Controller))`,
   which calls `prepare` on the controller before `run` starts, and make `startRunWithColour` call it with a `prepare`
   that does nothing (R16)
-- [ ] Add a helper that counts the writes of `controller.Writes()` that start with `encoded(0x08, 0x06, 0x01)[:4]` and
+- [x] Add a helper that counts the writes of `controller.Writes()` that start with `encoded(0x08, 0x06, 0x01)[:4]` and
   those equal to `encoded(0x08, 0x15, 0x01)` (R16)
-- [ ] Add `TestRunWithAColourRepairsTheLEDPortConfigurationThatICUELeft`: the iCUE configuration stored and the lighting
+- [x] Add `TestRunWithAColourRepairsTheLEDPortConfigurationThatICUELeft`: the iCUE configuration stored and the lighting
   configuration left at its default; wait for the first colour write; `Lighting()` gives `SentColour` with `FF 00 00`
   while `run` runs; `PortConfiguration()` equals the wanted configuration; after SIGTERM, standard error holds the line
   of the configuration write and the counts are one configuration write and one `08 15 01` (R16)
-- [ ] Add `TestRunWithAColourLeavesAStoredConfigurationAlone`: the default configuration; after SIGTERM no line holding
+- [x] Add `TestRunWithAColourLeavesAStoredConfigurationAlone`: the default configuration; after SIGTERM no line holding
   `controller LED ports`, no configuration write and no `08 15 01` (R16)
-- [ ] Run `go test ./e2e/...` and the rest of the suite; the existing end-to-end tests keep what they expect (R17)
-- [ ] Commit: `bugfix-0025 Test the repair of the LED port configuration end to end`
+- [x] Run `go test ./e2e/...` and the rest of the suite; the existing end-to-end tests keep what they expect (R17)
+- [x] Commit: `bugfix-0025 Test the repair of the LED port configuration end to end`
 
 ### 6. The documents
 
@@ -303,7 +303,7 @@ The sandbox runs the suite here, and the Windows build and vet of `AGENTS.md` co
 - [x] After task 2: the protocol
 - [x] After task 3: the setup
 - [x] After task 4: the lines of run
-- [ ] After task 5: the end-to-end tests
+- [x] After task 5: the end-to-end tests
 - [ ] After task 6: the documents
 
 ## Trace
