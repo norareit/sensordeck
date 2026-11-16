@@ -23,7 +23,7 @@ A name is looked up in this order, and the first found is compiled:
    to one. The themes directory is `sensordeck/themes` in the config directory of the user: `~/.config/sensordeck/themes`,
    or `$XDG_CONFIG_HOME/sensordeck/themes`, on Linux and `%AppData%\sensordeck\themes` on Windows. A themes directory
    that does not exist holds no theme
-2. a built-in theme of that name. The built-in themes are `minimal-dark`
+2. a built-in theme of that name. The built-in themes are `minimal-dark` and `minimal-dark-probes`
 
 So a theme folder copied into the themes directory is found by its name, and one named like a built-in theme replaces it.
 

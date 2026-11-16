@@ -192,6 +192,13 @@ The five commands of the suite in `AGENTS.md` succeed.
   status stays `approved`
 - 2026-11-16T20:25:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, began the work. The status is
   `in-progress`
+- 2026-11-16T20:40:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, built the unit in the four commits of
+  the plan and ticked every task. Ran on the final tree: `go test ./...` passes, `go vet ./...` and `gofmt -l .` report
+  nothing, `GOOS=windows GOARCH=amd64 go build ./...` and `go vet ./...` report nothing, `git diff origin/master` of
+  the folder of `minimal-dark` is empty, and `go run . theme list` with an empty config directory writes both themes
+  as `built-in`. Looked at `docs/minimal-dark-probes.png`: the second row shows VRAM with DISK under it, and GPU CABLE
+  with INTAKE. Not checked: the device, which is the human's. The README image of `minimal-dark` has a changed alt
+  text in the new section only; the top one is as it was. The status stays `in-progress`
 
 ## Amendments
 - 2026-11-16T20:17:25Z [Claude Code, anthropic/claude-opus-5-5] read the record under the delegation in `AGENTS.md`: the theme is the

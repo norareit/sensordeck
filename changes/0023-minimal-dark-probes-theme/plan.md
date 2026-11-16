@@ -81,42 +81,42 @@ tree, and it gave exactly the tags file of the record.
   that it writes the background the two built-in themes share as a PNG to the path of its one argument. Run
   `go test ./internal/builtinthemes/...`, which passes (R4, R8)
 - [x] Commit point: `task-0023 Add the built-in theme minimal-dark-probes`
-- [ ] In `docs_test.go`, replace the constants `previewImagePath` and `previewCommand` by a table of the preview images
+- [x] In `docs_test.go`, replace the constants `previewImagePath` and `previewCommand` by a table of the preview images
   with the rows `minimal-dark` with `docs/minimal-dark.png` and `minimal-dark-probes` with
   `docs/minimal-dark-probes.png`. The test runs one subtest per row, compiles the built-in theme of the row, and
   compares the image of the row with `themeimage.Preview` of the read-back theme by decoded pixels; `compareWithImage`
   takes the path as a parameter. The failure message is `<path> <mismatch>: write the image again with
   "sensordeck theme preview <name> <path>"`, with the command built from the row. Run `go test .` and see the row of
   `minimal-dark-probes` fail because the image is missing (R7, R9)
-- [ ] Write the image with `go run . theme preview minimal-dark-probes docs/minimal-dark-probes.png` and run
+- [x] Write the image with `go run . theme preview minimal-dark-probes docs/minimal-dark-probes.png` and run
   `go test .`, which passes. Look at the image and check that the second row shows `VRAM` with `DISK` and a value under it, and the
   tile `GPU CABLE` with `INTAKE` under it (R7)
-- [ ] Commit point: `task-0023 Add the preview image of minimal-dark-probes`
-- [ ] In `internal/cli/themes_test.go`, change `TestThemeListShowsWhatTheLookupFinds` so that with no themes directory
+- [x] Commit point: `task-0023 Add the preview image of minimal-dark-probes`
+- [x] In `internal/cli/themes_test.go`, change `TestThemeListShowsWhatTheLookupFinds` so that with no themes directory
   it expects `minimal-dark\tbuilt-in\nminimal-dark-probes\tbuilt-in\n`, and after the installs it expects the lines of
   `linked`, of `minimal-dark` as `installed, overrides built-in`, of `minimal-dark-probes\tbuilt-in` and of `night`, in
   that order; the existing removal of the first line when the symbolic link cannot be made still applies. Leave
   `TestThemeListLinesAreSortedByName`, which takes its built-in names as a value, as it is. Run
   `go test ./internal/cli/`, which passes (R6, R10)
-- [ ] In `e2e/builtin_theme_test.go`, change `TestThemeListShowsTheBuiltInAndTheInstalledThemes` so that each of its
+- [x] In `e2e/builtin_theme_test.go`, change `TestThemeListShowsTheBuiltInAndTheInstalledThemes` so that each of its
   three cases expects `minimal-dark-probes\tbuilt-in` right after the line of `minimal-dark`, the override case
   included. Add the constant `minimalDarkProbesTagsFile` with the tags file of the record, and make
   `TestThemeCompileAndPreviewTheBuiltInTheme` run, for each row of a table of the two themes and their tags files, the
   `theme compile` by name, the check of its output, the read-back with no warning, the check of the tags file, and the
   `theme preview` by name with the check of its bytes, each row a subtest. Run `go test ./e2e/`, which passes (R5, R6,
   R10, R11)
-- [ ] Commit point: `task-0023 Expect both built-in themes in the tests of theme list and compile`
-- [ ] In `README.md`, change the last sentence of the opening paragraph so that it names the built-in themes
+- [x] Commit point: `task-0023 Expect both built-in themes in the tests of theme list and compile`
+- [x] In `README.md`, change the last sentence of the opening paragraph so that it names the built-in themes
   `minimal-dark` and `minimal-dark-probes`, and leave the image of `minimal-dark` at the top, its alt text and the
   sentence after it as they are. Leave "Quick start" unchanged (R13)
-- [ ] In `README.md`, add the section `## Built-in themes` between "Quick start" and "Commands". For `minimal-dark`: a
+- [x] In `README.md`, add the section `## Built-in themes` between "Quick start" and "Commands". For `minimal-dark`: a
   sentence that it shows the tiles the [quick start](#quick-start) lists, by that link and no second list, and the
   image `docs/minimal-dark.png` with an alt text that says what the tiles show. For `minimal-dark-probes`: a sentence
   that it is `minimal-dark` with the VRAM total replaced by the temperature of the second NVMe drive and the disk tile
   replaced by the two probes of a Corsair iCUE Commander Core XT, and the image `docs/minimal-dark-probes.png` with an
   alt text that says what its tiles show. A sentence says that the two images are previews that
   `sensordeck theme preview` draws with sample values, and not photos of the screen (R12)
-- [ ] In the same section, say which hardware `minimal-dark-probes` expects: a Commander Core XT with two temperature
+- [x] In the same section, say which hardware `minimal-dark-probes` expects: a Commander Core XT with two temperature
   probes, `commander.1.temp` and `commander.2.temp`, labelled `GPU CABLE` and `INTAKE` because on the machine the theme
   was made for probe 1 is at the GPU power cable and probe 2 at the front intake; and a second NVMe drive, whose
   `nvme.2.temp` is the second drive in the order of the places of the hardware, its PCI path, as the table of metrics
@@ -126,25 +126,25 @@ tree, and it gave exactly the tags file of the record.
   `internal/builtinthemes/themes/minimal-dark-probes` of the repository, into the themes directory under a name of
   one's own, and change the labels and the metrics to those of one's own hardware. Do not say that it has been seen on
   the device (R12)
-- [ ] In `docs/theme-folder.md`, change the sentence that says the built-in themes are `minimal-dark` so that it
+- [x] In `docs/theme-folder.md`, change the sentence that says the built-in themes are `minimal-dark` so that it
   names `minimal-dark` and `minimal-dark-probes` (R14)
-- [ ] Commit point: `task-0023 Document the built-in theme minimal-dark-probes`
+- [x] Commit point: `task-0023 Document the built-in theme minimal-dark-probes`
 
 ## Verification
 
-- [ ] `go test ./...` passes (R15)
-- [ ] `go vet ./...` reports nothing (R15)
-- [ ] `gofmt -l .` prints no file name (R15)
-- [ ] `GOOS=windows GOARCH=amd64 go build ./...` succeeds and reports nothing (R15)
-- [ ] `GOOS=windows GOARCH=amd64 go vet ./...` succeeds and reports nothing (R15)
-- [ ] `git diff master -- internal/builtinthemes/themes/minimal-dark` prints nothing (R1)
-- [ ] `go run . theme list` with `XDG_CONFIG_HOME` set to an empty temporary directory writes
+- [x] `go test ./...` passes (R15)
+- [x] `go vet ./...` reports nothing (R15)
+- [x] `gofmt -l .` prints no file name (R15)
+- [x] `GOOS=windows GOARCH=amd64 go build ./...` succeeds and reports nothing (R15)
+- [x] `GOOS=windows GOARCH=amd64 go vet ./...` succeeds and reports nothing (R15)
+- [x] `git diff master -- internal/builtinthemes/themes/minimal-dark` prints nothing (R1)
+- [x] `go run . theme list` with `XDG_CONFIG_HOME` set to an empty temporary directory writes
   `minimal-dark\tbuilt-in` and `minimal-dark-probes\tbuilt-in` (R6)
-- [ ] `npm run check-changes` passes after the last commit
+- [x] `npm run check-changes` passes after the last commit
 
 ## Commit Points
 
-- [ ] `task-0023 Add the built-in theme minimal-dark-probes`
-- [ ] `task-0023 Add the preview image of minimal-dark-probes`
-- [ ] `task-0023 Expect both built-in themes in the tests of theme list and compile`
-- [ ] `task-0023 Document the built-in theme minimal-dark-probes`
+- [x] `task-0023 Add the built-in theme minimal-dark-probes`
+- [x] `task-0023 Add the preview image of minimal-dark-probes`
+- [x] `task-0023 Expect both built-in themes in the tests of theme list and compile`
+- [x] `task-0023 Document the built-in theme minimal-dark-probes`

@@ -7,7 +7,7 @@ and `raw`), shows live hardware readings with `sensordeck run`, lists them with 
 a systemd user service with `sensordeck service`. It also reads the temperature probes of a Corsair iCUE Commander Core
 XT. `sensordeck theme` works with themes and needs no screen: `use` sets the theme of the config file, which `run`
 uploads at its start, `compile` turns a theme, by name or folder, into a theme file, `preview` draws a
-theme as a PNG, `dump` reads a theme file and `list` lists the themes. The built-in theme `minimal-dark` is there.
+theme as a PNG, `dump` reads a theme file and `list` lists the themes. The built-in themes `minimal-dark` and `minimal-dark-probes` are there.
 
 On Windows the screen and the Commander Core XT work with the commands that open a device, with `sensors` and with
 `run`, and need no driver and no rule to install. The sensors of the machine are read on Windows too, natively for the
@@ -128,6 +128,33 @@ sent. A tile that was never sent one shows what the screen shows for a number wi
 on the device.
 
 `sensordeck theme preview minimal-dark preview.png` draws the theme as a PNG, with no screen.
+
+## Built-in themes
+
+* `minimal-dark` shows the tiles that the [quick start](#quick-start) lists.
+
+  ![The preview of the built-in theme minimal-dark: tiles for the CPU, the GPU, the memory, the VRAM with its total, the
+  first NVMe drive, the network and the clock, each with the number 42 as a sample value](docs/minimal-dark.png)
+
+* `minimal-dark-probes` is `minimal-dark` with the VRAM total replaced by the temperature of the second NVMe drive, and
+  the disk tile replaced by the two probes of a Corsair iCUE Commander Core XT.
+
+  ![The preview of the built-in theme minimal-dark-probes: tiles for the CPU, the GPU, the memory, the VRAM with the
+  temperature of the second NVMe drive under it, the two probes GPU CABLE and INTAKE, the network and the clock, each with
+  the number 42 as a sample value](docs/minimal-dark-probes.png)
+
+The two images are previews that `sensordeck theme preview` draws with sample values, and not photos of the screen.
+
+`minimal-dark-probes` expects a Commander Core XT with two temperature probes, `commander.1.temp` and
+`commander.2.temp`, which the theme labels `GPU CABLE` and `INTAKE` because on the machine it was made for probe 1 is at
+the GPU power cable and probe 2 at the front intake. It also expects a second NVMe drive: `nvme.2.temp` is the second
+drive in the order of the places of the hardware, its PCI path, as the table of metrics says. For what reading the
+controller does to its LEDs, see [The Corsair iCUE Commander Core XT](#the-corsair-icue-commander-core-xt). A tile whose
+metric the host cannot read behaves as the [quick start](#quick-start) says.
+
+`minimal-dark-probes` is an example to copy and adapt: copy its folder,
+`internal/builtinthemes/themes/minimal-dark-probes` of the repository, into the themes directory under a name of your
+own, and change the labels and the metrics to those of your own hardware.
 
 ## Commands
 
