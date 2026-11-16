@@ -40,6 +40,12 @@ supersedes: 0009-commander-led-colour
   `go test ./...`, `go vet ./...`, `gofmt -l .`, `GOOS=windows GOARCH=amd64 go build ./...` and
   `GOOS=windows GOARCH=amd64 go vet ./...` all reported nothing but passing tests. Not checked: the device, and Windows,
   which are the human's. No requirement was left out, and the plan needed no addition. The status stays `in-progress`
+- 2026-11-16T23:20:56Z [OpenCode, openai/gpt-6.1-sol] as the reviewer, performed a full review of unit
+  `0025-commander-led-port-configuration` at `30599af75566e61cacb34ab45fcdfd0e117b4f6e` against the merge base
+  with `origin/master`. Returned no findings on spec conformance, plan fidelity or code quality. Saved the review in
+  `.reviews/0025-commander-led-port-configuration/review-round-1.md`. Independently ran the five required suite
+  commands, an uncached `go test -count=1 ./...`, `npm run check-changes` and the diff whitespace check; all passed.
+  Could not verify physical-device behavior, Windows runtime behavior or tests-first ordering within commits.
 
 ## Amendments
 - 2026-11-16T23:08:20Z [Claude Code, anthropic/claude-opus-5-5] read the spec under the delegation in `AGENTS.md`: its facts are those
