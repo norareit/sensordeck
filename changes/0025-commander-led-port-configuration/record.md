@@ -22,3 +22,11 @@ supersedes: 0009-commander-led-colour
   whose R6 and R10 it changes. No code of OpenLinkHub, liquidctl, OpenRGB or iCUE was read. The status is `draft`
 
 ## Amendments
+- 2026-11-16T23:08:20Z [Claude Code, anthropic/claude-opus-5-5] read the spec under the delegation in `AGENTS.md`: its facts are those
+  observed on the human's controller on 2026-11-16 and 2026-11-17, among them that writing OpenLinkHub's configuration
+  to 0x1E made the colour of a test script and then of `run` show again, it writes only the configuration observed to
+  work and only when the stored one differs, and every requirement can be tested in the sandbox with the fake
+  controller. Items 1 and 2 of "Beyond the request" are declined: `08 15 01` was part of every setup that lit the
+  LEDs, and a user who wants to keep iCUE's configuration leaves out `commander_color`, without which sensordeck does
+  not touch it. The device check is the human's and the unit does not depend on it. The approval that follows is made
+  under that delegation
