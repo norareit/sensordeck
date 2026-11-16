@@ -82,3 +82,10 @@ supersedes: 0004-linux-sensors-and-run
   were corrected to the times of the commits that added them. Every task of `plan.md` is ticked, and the five
   commands of the suite passed on the branch. The recovery at a cold boot with the new udev rule is the human's check
   and follows the merge. The status is `implemented`
+
+## Amendments
+
+- 2026-11-16T15:08:03Z [Claude Code, anthropic/claude-opus-5-5] recorded that `0021-restart-boot-hung-screen` supersedes this unit:
+  the suspend and resume does not clear the hang at a cold boot, whose trigger is UEFI setting the screen up before
+  Linux, so its recovery and the autosuspend line of the udev rule are replaced by a restart of the screen through
+  requests for string descriptors it does not have
