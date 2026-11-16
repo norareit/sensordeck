@@ -43,6 +43,12 @@ timestamp: 2026-11-16T20:28:31Z
   several slow commands do not add up. Not checked: Windows, so the `shell_windows_test.go` and `nowindow_windows_test.go`
   tests are built by `go vet` and not run, and the three items under "Unverified until the human runs it". No review was
   run by this step, so the status stays `in-progress`
+- 2026-11-16T20:50:21Z [OpenCode, openai/gpt-6.1-sol] as the reviewer, reviewed `changes/0024-custom-metrics` at
+  `8663d2ed51a9569df228267380b9e42edf785258` in a full review against merge base
+  `f0f08d2f42be45ca1da9391d857ef1fd2315d6f6`. Returned S1 in
+  `.reviews/0024-custom-metrics/review-round-1.md`. The five required commands, the change check, an uncached full
+  test run and the custom-metrics race tests passed. Windows runtime behavior and the physical screen were not
+  verified. The status stays `in-progress`
 
 ## Amendments
 - 2026-11-16T20:31:31Z [Claude Code, anthropic/claude-opus-5-5] read the spec under the delegation in `AGENTS.md`: the three sources
