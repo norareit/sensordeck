@@ -135,23 +135,23 @@ test depends on `uploadstate`, which task 2 deletes.
 
 ### 2. `upload` without the state file, and the state file removed
 
-- [ ] In `internal/cli/commands_test.go`, replace `TestUploadWritesNoReportWithoutACacheDirectory` by a test in which
+- [x] In `internal/cli/commands_test.go`, replace `TestUploadWritesNoReportWithoutACacheDirectory` by a test in which
   `upload` with a `userCacheDir` that fails completes as `TestUploadComplete` does, and `harness.cacheDirCalls` is 0.
   Remove `TestUploadWritesNoReportWhenTheRemovalCannotBeWritten` and the checks of the state file in the other tests of
   `upload`, and remove `useCacheDirectory`, whose callers set `cacheDir` themselves where they still need one (R11,
   R18)
-- [ ] In `e2e/theme_upload_test.go`, add `TestRunAndUploadCreateNothingInTheCacheDirectory`: after `theme use`, a `run`
+- [x] In `e2e/theme_upload_test.go`, add `TestRunAndUploadCreateNothingInTheCacheDirectory`: after `theme use`, a `run`
   that uploads and is stopped, and an `upload` of another file, the `XDG_CACHE_HOME` of the setup holds no entry named
   `sensordeck` (R9, R19)
-- [ ] In `internal/cli/commands.go`, have `upload` call `smartmonitor.Upload(opened, theme, current.env.sleep,
+- [x] In `internal/cli/commands.go`, have `upload` call `smartmonitor.Upload(opened, theme, current.env.sleep,
   progress)` with no look-up of the state file, and keep its lines, its errors and `restartAfterHang` as they are (R9,
   R11)
-- [ ] Delete `internal/cli/statefile.go`, `internal/cli/statefile_test.go` and the directory `internal/uploadstate/`,
+- [x] Delete `internal/cli/statefile.go`, `internal/cli/statefile_test.go` and the directory `internal/uploadstate/`,
   and remove every remaining import of `uploadstate` (R12)
-- [ ] Run `grep -rn "uploadstate\|stateFile\|uploaded-themes" --include=*.go .` and leave only the literal path of the
+- [x] Run `grep -rn "uploadstate\|stateFile\|uploaded-themes" --include=*.go .` and leave only the literal path of the
   tests of task 1 that write a file of an earlier release (R9, R12)
-- [ ] Run the five commands of the suite (R20)
-- [ ] Commit: `bugfix-0022 Upload a theme file without the state file and remove the state file`
+- [x] Run the five commands of the suite (R20)
+- [x] Commit: `bugfix-0022 Upload a theme file without the state file and remove the state file`
 
 ### 3. The serial of the open transport removed
 
@@ -247,7 +247,7 @@ the moment of each upload attempt, as `uploadStarts` in `runtheme_test.go` does 
 ## Commit Points
 
 - [x] `bugfix-0022 Upload the theme at every start of run and decide reloads in memory` (task 1)
-- [ ] `bugfix-0022 Upload a theme file without the state file and remove the state file` (task 2)
+- [x] `bugfix-0022 Upload a theme file without the state file and remove the state file` (task 2)
 - [ ] `bugfix-0022 Remove the serial of the open transport` (task 3)
 - [ ] `bugfix-0022 Upload at once after a restart that recovered the screen` (task 4)
 - [ ] `bugfix-0022 Document the upload of the theme at every start` (task 5)

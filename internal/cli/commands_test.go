@@ -6,7 +6,6 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
-	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -14,7 +13,6 @@ import (
 	"github.com/norareit/sensordeck/internal/config"
 	"github.com/norareit/sensordeck/internal/sensors"
 	"github.com/norareit/sensordeck/internal/smartmonitor"
-	"github.com/norareit/sensordeck/internal/uploadstate"
 )
 
 // harness runs the command line against a fake environment.
@@ -82,7 +80,7 @@ func newHarness() *harness {
 	clock := &fakeClock{current: time.Date(2026, 11, 14, 15, 4, 5, 0, time.UTC), armed: make(chan struct{}, 1), release: stopped.Done()}
 	return &harness{
 		clock: clock, transport: &fakeTransport{clock: clock}, controller: &fakeSource{}, stopped: stopped, cancelStop: cancelStop,
-		// No test writes a state file outside a temporary directory of its own: it sets cacheDir and clears this.
+		// No test writes into a cache directory outside a temporary directory of its own: it sets cacheDir and clears this.
 		cacheDirErr: errors.New("no cache directory in this test"),
 		system:      "linux",
 		stopEvent:   &fakeStopEvent{channel: make(chan struct{})},
@@ -416,16 +414,8 @@ func writeTheme(test *testing.T, size int) string {
 	return path
 }
 
-// useCacheDirectory gives the harness a cache directory of its own and returns the path of its state file.
-func (harness *harness) useCacheDirectory(test *testing.T) string {
-	test.Helper()
-	harness.cacheDir, harness.cacheDirErr = test.TempDir(), nil
-	return uploadstate.Path(harness.cacheDir)
-}
-
 func TestUploadComplete(test *testing.T) {
 	harness := newHarness()
-	harness.useCacheDirectory(test)
 	harness.transport.ackWhenEmpty = true
 	if status := harness.run("upload", writeTheme(test, 2500)); status != 0 {
 		test.Fatalf("status %d: %q", status, harness.stderr.String())
@@ -455,7 +445,6 @@ upload complete: 2500 bytes in 3 data blocks
 
 func TestUploadFailsOnAnUnexpectedAnswer(test *testing.T) {
 	harness := newHarness()
-	harness.useCacheDirectory(test)
 	harness.transport.queue = []readResult{{report: reportOf(0x43)}}
 	if status := harness.run("upload", writeTheme(test, 2500)); status != 1 {
 		test.Fatalf("status %d", status)
@@ -471,91 +460,17 @@ func TestUploadFailsOnAnUnexpectedAnswer(test *testing.T) {
 	}
 }
 
-func TestUploadRecordsTheHashOfAnyFileUnderTheSerial(test *testing.T) {
-	harness := newHarness()
-	statePath := harness.useCacheDirectory(test)
-	harness.transport.ackWhenEmpty, harness.transport.serial = true, "2022100600"
-	path := writeTheme(test, 600)
-	content, _ := os.ReadFile(path)
-	var atFirstReport map[string]string
-	harness.transport.afterWrite = func(count int) {
-		if count == 1 {
-			atFirstReport, _ = uploadstate.Read(statePath)
-		}
-	}
-	if err := uploadstate.Write(statePath, map[string]string{"2022100600": "old"}); err != nil {
-		test.Fatal(err)
-	}
-	if status := harness.run("upload", path); status != 0 {
-		test.Fatalf("status %d: %q", status, harness.stderr.String())
-	}
-	if len(atFirstReport) != 0 {
-		test.Errorf("at the first report the file held %v", atFirstReport)
-	}
-	entries, err := uploadstate.Read(statePath)
-	if want := map[string]string{"2022100600": uploadstate.Hash(content)}; err != nil || !reflect.DeepEqual(entries, want) {
-		test.Errorf("the state file holds %v, %v", entries, err)
-	}
-}
-
-func TestUploadRecordsNothingWhenTheUploadFails(test *testing.T) {
-	harness := newHarness()
-	statePath := harness.useCacheDirectory(test)
-	harness.transport.queue = []readResult{{report: reportOf(0x43)}}
-	if status := harness.run("upload", writeTheme(test, 600)); status != 1 {
-		test.Fatalf("status %d", status)
-	}
-	if entries, err := uploadstate.Read(statePath); err != nil || len(entries) != 0 {
-		test.Errorf("the state file holds %v, %v", entries, err)
-	}
-}
-
-func TestUploadWritesNoReportWithoutACacheDirectory(test *testing.T) {
+func TestUploadNeedsNoCacheDirectoryAndDoesNotLookForOne(test *testing.T) {
 	harness := newHarness()
 	harness.transport.ackWhenEmpty = true
-	harness.expectFailure(test, "cannot find the cache directory: no cache directory in this test", "upload", writeTheme(test, 600))
-	if len(harness.opened) != 0 || len(harness.transport.writes) != 0 {
-		test.Errorf("opened %v, wrote %d reports", harness.opened, len(harness.transport.writes))
-	}
-}
-
-func TestUploadWritesNoReportWhenTheRemovalCannotBeWritten(test *testing.T) {
-	harness := newHarness()
-	blocker := filepath.Join(test.TempDir(), "cache")
-	if err := os.WriteFile(blocker, nil, 0o644); err != nil {
-		test.Fatal(err)
-	}
-	harness.cacheDir, harness.cacheDirErr = blocker, nil
-	harness.transport.ackWhenEmpty = true
-	if status := harness.run("upload", writeTheme(test, 600)); status != 1 {
-		test.Fatalf("status %d", status)
-	}
-	if got := harness.stderr.String(); !strings.Contains(got, "sensordeck: cannot write the state file "+uploadstate.Path(blocker)+": ") {
-		test.Errorf("stderr %q", got)
-	}
-	if len(harness.transport.writes) != 0 || harness.stdout.Len() != 0 {
-		test.Errorf("wrote %d reports, stdout %q", len(harness.transport.writes), harness.stdout.String())
-	}
-}
-
-func TestUploadThatCannotRecordWritesALineAndSucceeds(test *testing.T) {
-	harness := newHarness()
-	statePath := harness.useCacheDirectory(test)
-	harness.transport.ackWhenEmpty = true
-	harness.transport.afterWrite = func(count int) {
-		if count == 1 {
-			_ = os.Remove(statePath)
-			_ = os.Mkdir(statePath, 0o755)
-		}
-	}
 	if status := harness.run("upload", writeTheme(test, 600)); status != 0 {
 		test.Fatalf("status %d: %q", status, harness.stderr.String())
 	}
-	if !strings.Contains(harness.stderr.String(), "cannot record the theme in the state file "+statePath+": ") {
-		test.Errorf("stderr %q", harness.stderr.String())
+	if !strings.HasSuffix(harness.stdout.String(), "upload complete: 600 bytes in 1 data blocks\n") || harness.stderr.Len() != 0 {
+		test.Errorf("stdout %q, stderr %q", harness.stdout.String(), harness.stderr.String())
 	}
-	if !strings.Contains(harness.stdout.String(), "upload complete: 600 bytes in 1 data blocks\n") {
-		test.Errorf("stdout %q", harness.stdout.String())
+	if harness.cacheDirCalls != 0 {
+		test.Errorf("%d look-ups of the cache directory", harness.cacheDirCalls)
 	}
 }
 

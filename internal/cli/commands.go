@@ -141,10 +141,6 @@ func (current *session) uploadCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			state, err := current.stateFile()
-			if err != nil {
-				return err
-			}
 			opened, restarter, closeTransport, err := current.open()
 			if err != nil {
 				return err
@@ -159,7 +155,7 @@ func (current *session) uploadCommand() *cobra.Command {
 				}
 				current.say(stage.String())
 			}
-			if err := state.upload(opened, opened.Serial(), theme, current.env.sleep, progress); err != nil {
+			if err := smartmonitor.Upload(opened, theme, current.env.sleep, progress); err != nil {
 				return restartAfterHang(err, restarter)
 			}
 			current.say(fmt.Sprintf("upload complete: %d bytes in %d data blocks", len(theme), blocks))

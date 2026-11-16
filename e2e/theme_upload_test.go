@@ -299,3 +299,23 @@ func TestRunPutsItsThemeBackAfterAnUpload(test *testing.T) {
 	}
 	running.stop(syscall.SIGTERM)
 }
+
+func TestRunAndUploadCreateNothingInTheCacheDirectory(test *testing.T) {
+	setup := newThemeSetup(test)
+	minimalDark := setup.compiled("minimal-dark")
+	runWith(test, setup.fake, setup.environment, "theme", "use", "minimal-dark")
+	setup.screen.AcceptUpload(minimalDark)
+	running := start(test, setup.fake, setup.environment, "run", "--config", setup.configPath)
+	position := setup.expectUploadAt(0, minimalDark)
+	setup.expectClockThenValue(position, 1, 42)
+	running.stop(syscall.SIGTERM)
+
+	other := make([]byte, 1500)
+	setup.screen.AcceptUpload(other)
+	if outcome := runWith(test, setup.fake, setup.environment, "upload", writeThemeFile(test, other)); outcome.status != 0 {
+		test.Fatalf("upload: status %d, stderr %q", outcome.status, outcome.stderr)
+	}
+	if names := listDirectory(test, setup.cache); len(names) != 0 {
+		test.Errorf("the cache directory holds %v", names)
+	}
+}
