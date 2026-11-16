@@ -187,3 +187,8 @@ The five commands of the suite in `AGENTS.md` succeed.
   the host, so it was derived and not compiled here. The status is `draft`
 
 ## Amendments
+- 2026-11-16T20:17:25Z [Claude Code, anthropic/claude-opus-5-5] read the record under the delegation in `AGENTS.md`: the theme is the
+  layout whose preview the orchestrating session checked on 2026-11-15, without the leading space of the experiment,
+  the background stays described once in its generator, and the tags file of the record equals the one the compiler
+  wrote on the host for the human's copy of the theme, whose differing time format does not change the tags. The
+  approval that follows is made under that delegation
