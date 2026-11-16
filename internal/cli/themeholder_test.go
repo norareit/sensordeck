@@ -5,15 +5,13 @@ import (
 	"context"
 	"errors"
 	"reflect"
+	"strings"
 	"testing"
 	"time"
-
-	"github.com/norareit/sensordeck/internal/uploadstate"
 )
 
 type holderFixture struct {
 	holder *themeHolder
-	state  stateFile
 	fake   *fakeTransport
 	clock  *fakeClock
 	said   []string
@@ -24,24 +22,22 @@ func newHolderFixture(test *testing.T, theme *configTheme) *holderFixture {
 	test.Helper()
 	fixture := &holderFixture{stderr: &bytes.Buffer{}}
 	fixture.clock = &fakeClock{current: time.Date(2026, 11, 14, 15, 4, 5, 0, time.UTC)}
-	fixture.fake = &fakeTransport{clock: fixture.clock, ackWhenEmpty: true, serial: "S1"}
-	fixture.state = stateFile{path: uploadstate.Path(test.TempDir()), stderr: fixture.stderr}
-	fixture.holder = newThemeHolder(theme, fixture.state, func(time.Duration) {}, fixture.clock.now,
+	fixture.fake = &fakeTransport{clock: fixture.clock, ackWhenEmpty: true}
+	fixture.holder = newThemeHolder(theme, func(time.Duration) {}, fixture.clock.now,
 		func(line string) { fixture.said = append(fixture.said, line) }, fixture.stderr)
 	return fixture
 }
 
 func aTheme(content string) *configTheme {
-	return &configTheme{value: "mine", file: []byte(content), hash: uploadstate.Hash([]byte(content))}
+	return &configTheme{value: "mine", file: []byte(content)}
 }
 
 func (fixture *holderFixture) ensure() (ready, uploaded bool, failure error) {
 	return fixture.holder.ensure(context.Background(), fixture.fake)
 }
 
-func TestHolderUploadsAtTheFirstCheckWithNoStateFile(test *testing.T) {
-	theme := aTheme("theme one")
-	fixture := newHolderFixture(test, theme)
+func TestHolderUploadsAtTheFirstEnsureAndSaysTwoLines(test *testing.T) {
+	fixture := newHolderFixture(test, aTheme("theme one"))
 	ready, uploaded, failure := fixture.ensure()
 	if !ready || !uploaded || failure != nil {
 		test.Fatalf("ready %v uploaded %v failure %v", ready, uploaded, failure)
@@ -49,52 +45,68 @@ func TestHolderUploadsAtTheFirstCheckWithNoStateFile(test *testing.T) {
 	if want := []string{"uploading theme mine", "theme uploaded: 9 bytes"}; !reflect.DeepEqual(fixture.said, want) {
 		test.Errorf("said %v", fixture.said)
 	}
-	if !fixture.state.holds("S1", theme.hash) {
-		test.Error("the hash was not recorded")
+	if ready, uploaded, _ := fixture.ensure(); !ready || uploaded {
+		test.Error("a second upload with nothing due")
 	}
 }
 
-func TestHolderUploadsNothingWhenTheHashIsStoredForTheSerialAndSaysSoOnce(test *testing.T) {
+func TestHolderOfAnotherStartUploadsAgainAndNeverSaysTheThemeIsOnTheScreen(test *testing.T) {
 	theme := aTheme("theme one")
-	fixture := newHolderFixture(test, theme)
-	writeEntries(test, fixture.state, map[string]string{"S1": theme.hash})
 	for range 2 {
-		if ready, uploaded, failure := fixture.ensure(); !ready || uploaded || failure != nil {
-			test.Fatalf("ready %v uploaded %v failure %v", ready, uploaded, failure)
+		fixture := newHolderFixture(test, theme)
+		if _, uploaded, _ := fixture.ensure(); !uploaded {
+			test.Fatal("no upload at a start")
 		}
-	}
-	fixture.holder.screenBack()
-	fixture.ensure()
-	if want := []string{"theme mine is on the screen"}; !reflect.DeepEqual(fixture.said, want) || len(fixture.fake.writes) != 0 {
-		test.Errorf("said %v, %d reports", fixture.said, len(fixture.fake.writes))
+		for _, line := range fixture.said {
+			if strings.Contains(line, "is on the screen") {
+				test.Errorf("said %q", line)
+			}
+		}
 	}
 }
 
-func TestHolderUploadsWhenTheStoredHashDiffersOrIsOfAnotherSerialOrTheSerialIsEmpty(test *testing.T) {
+func TestHolderUploadsAReloadedThemeOfOtherBytesAndNotOneOfTheSameBytes(test *testing.T) {
 	theme := aTheme("theme one")
-	cases := []struct {
-		name    string
-		entries map[string]string
-		serial  string
-	}{
-		{"another hash", map[string]string{"S1": "other"}, "S1"},
-		{"another serial", map[string]string{"S2": theme.hash}, "S1"},
-		{"empty serial", map[string]string{"S1": theme.hash}, ""},
-	}
-	for _, each := range cases {
-		fixture := newHolderFixture(test, theme)
-		fixture.fake.serial = each.serial
-		writeEntries(test, fixture.state, each.entries)
-		if _, uploaded, _ := fixture.ensure(); !uploaded {
-			test.Errorf("%s: no upload", each.name)
-		}
-	}
 	fixture := newHolderFixture(test, theme)
-	fixture.fake.serial = ""
 	fixture.ensure()
-	fixture.holder.screenBack()
-	if _, uploaded, _ := fixture.ensure(); uploaded {
-		test.Error("a second upload for the empty serial")
+	fixture.holder.setTheme(&configTheme{value: "again", file: theme.file})
+	if _, uploaded, _ := fixture.ensure(); uploaded || !fixture.holder.onScreen() {
+		test.Error("a theme with the same bytes made an upload due")
+	}
+	fixture.holder.setTheme(aTheme("theme two"))
+	if fixture.holder.onScreen() {
+		test.Error("on screen after a theme of other bytes")
+	}
+	if _, uploaded, _ := fixture.ensure(); !uploaded {
+		test.Error("no upload for a theme of other bytes")
+	}
+}
+
+func TestHolderUploadsATagsRunsFirstThemeAndTheSameThemeAfterNoTheme(test *testing.T) {
+	fixture := newHolderFixture(test, nil)
+	fixture.holder.setTheme(aTheme("theme one"))
+	if _, uploaded, _ := fixture.ensure(); !uploaded {
+		test.Error("no upload for the first theme")
+	}
+	fixture.holder.setTheme(nil)
+	fixture.holder.setTheme(aTheme("theme one"))
+	if _, uploaded, _ := fixture.ensure(); !uploaded {
+		test.Error("no upload for the same theme after no theme")
+	}
+}
+
+func TestHolderUploadsTheThemeOfTheLastUploadAgainAfterAFailedUploadOfAnother(test *testing.T) {
+	fixture := newHolderFixture(test, aTheme("theme one"))
+	fixture.ensure()
+	fixture.holder.setTheme(aTheme("theme two"))
+	fixture.fake.failWrites, fixture.fake.failErr = []bool{true}, errFake
+	if _, uploaded, failure := fixture.ensure(); uploaded || failure == nil {
+		test.Fatal("the upload of theme two did not fail")
+	}
+	fixture.holder.setTheme(aTheme("theme one"))
+	fixture.clock.current = fixture.clock.current.Add(firstRetry)
+	if _, uploaded, _ := fixture.ensure(); !uploaded {
+		test.Error("no upload of theme one, which the failed upload may have broken")
 	}
 }
 
@@ -130,33 +142,11 @@ func TestHolderRetriesAFailedUploadAfterTenSecondsDoublingToFiveMinutes(test *te
 	if got := fixture.stderr.String(); !bytes.Contains([]byte(got), []byte("theme upload failed: upload failed at the ymodem command: unexpected answer 0x43\n")) {
 		test.Errorf("stderr %q", got)
 	}
-	if fixture.state.holds("S1", uploadstate.Hash([]byte("theme one"))) {
-		test.Error("a failed upload recorded its hash")
-	}
 	// an upload that completes sets the wait back to ten seconds
 	fixture.fake.ackWhenEmpty = true
 	fixture.fake.queue = nil
 	if _, uploaded, _ := fixture.ensure(); !uploaded || fixture.holder.wait != 10*time.Second {
 		test.Errorf("uploaded %v, wait %v", uploaded, fixture.holder.wait)
-	}
-}
-
-func TestHolderChecksAgainAfterTheScreenCameBackAndAfterAThemeOfAnotherHash(test *testing.T) {
-	theme := aTheme("theme one")
-	fixture := newHolderFixture(test, theme)
-	fixture.ensure()
-	fixture.fake.serial = "S2"
-	fixture.holder.screenBack()
-	if _, uploaded, _ := fixture.ensure(); !uploaded {
-		test.Error("no upload for another screen that came back")
-	}
-	fixture.holder.setTheme(&configTheme{value: "again", file: theme.file, hash: theme.hash})
-	if _, uploaded, _ := fixture.ensure(); uploaded || fixture.holder.checkDue {
-		test.Error("a theme with the same hash made a check due")
-	}
-	fixture.holder.setTheme(aTheme("theme two"))
-	if _, uploaded, _ := fixture.ensure(); !uploaded {
-		test.Error("no upload for a theme with another hash")
 	}
 }
 
@@ -181,28 +171,13 @@ func TestHolderStartsNoUploadOnceStopIsDone(test *testing.T) {
 	}
 }
 
-func TestHolderOnScreenTellsWhetherValuesMayBeSentWithoutACheckOrAnUpload(test *testing.T) {
+func TestHolderOnScreenTellsWhetherValuesMayBeSentWithoutAnUpload(test *testing.T) {
 	if !newHolderFixture(test, nil).holder.onScreen() {
 		test.Error("a holder with no theme is not on screen")
 	}
-	theme := aTheme("theme one")
-	fixture := newHolderFixture(test, theme)
+	fixture := newHolderFixture(test, aTheme("theme one"))
 	if fixture.holder.onScreen() {
-		test.Error("on screen before the first check")
-	}
-	writeEntries(test, fixture.state, map[string]string{"S1": theme.hash})
-	fixture.ensure()
-	if !fixture.holder.onScreen() {
-		test.Error("not on screen after a check that found the hash")
-	}
-	fixture.holder.screenBack()
-	if fixture.holder.onScreen() {
-		test.Error("on screen after the screen came back")
-	}
-	fixture.ensure()
-	fixture.holder.setTheme(aTheme("theme two"))
-	if fixture.holder.onScreen() {
-		test.Error("on screen after a theme of another hash")
+		test.Error("on screen before the first upload")
 	}
 	fixture.ensure()
 	if !fixture.holder.onScreen() {

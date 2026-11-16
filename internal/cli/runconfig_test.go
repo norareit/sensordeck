@@ -13,7 +13,6 @@ import (
 	"github.com/norareit/sensordeck/internal/builtinthemes"
 	"github.com/norareit/sensordeck/internal/config"
 	"github.com/norareit/sensordeck/internal/themecompile"
-	"github.com/norareit/sensordeck/internal/uploadstate"
 )
 
 func newSession() *session {
@@ -29,7 +28,7 @@ func TestLoadConfigWithTagsGivesItsMappingsAndNoTheme(test *testing.T) {
 	}
 }
 
-func TestLoadConfigWithABuiltInThemeGivesItsTagsAndTheHashOfItsFile(test *testing.T) {
+func TestLoadConfigWithABuiltInThemeGivesItsTags(test *testing.T) {
 	folder, _ := builtinthemes.Folder("minimal-dark")
 	want, err := themecompile.Compile(folder)
 	if err != nil {
@@ -40,7 +39,7 @@ func TestLoadConfigWithABuiltInThemeGivesItsTagsAndTheHashOfItsFile(test *testin
 		test.Fatal(err)
 	}
 	if !reflect.DeepEqual(loaded.settings.Mappings, want.Tags) || loaded.theme.value != "minimal-dark" ||
-		!bytes.Equal(loaded.theme.file, want.File) || loaded.theme.hash != uploadstate.Hash(want.File) {
+		!bytes.Equal(loaded.theme.file, want.File) {
 		test.Errorf("got %+v", loaded.theme)
 	}
 }

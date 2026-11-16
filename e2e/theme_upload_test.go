@@ -3,6 +3,8 @@
 package e2e
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"os"
 	"path/filepath"
 	"strings"
@@ -12,7 +14,6 @@ import (
 
 	"github.com/norareit/sensordeck/internal/fakescreen"
 	"github.com/norareit/sensordeck/internal/smartmonitor"
-	"github.com/norareit/sensordeck/internal/uploadstate"
 )
 
 // uploadLimit is long enough for an upload with its two pauses of a second, and for a second round that follows it.
@@ -24,7 +25,7 @@ const screenSerial = "2022100600"
 const clockOnlyTheme = "name: clock\nbackground: \"#102030\"\nfonts:\n  body: {builtin: go-regular, size: 20, color: \"#ffffff\"}\n" +
 	"widgets:\n  - {type: number, font: body, metric: cpu.clock, x: 4, y: 4}\n"
 
-// themeSetup gives a fake screen with a serial, the environment of the tests, the config file and the state file paths.
+// themeSetup gives a fake screen with a serial, the environment of the tests, the config file and the cache directory.
 type themeSetup struct {
 	test        *testing.T
 	fake        *fakescreen.Fake
@@ -32,7 +33,7 @@ type themeSetup struct {
 	environment []string
 	configPath  string
 	themes      string // the directory of the installed themes
-	statePath   string
+	cache       string // the XDG_CACHE_HOME of the processes
 }
 
 func newThemeSetup(test *testing.T) *themeSetup {
@@ -46,7 +47,7 @@ func newThemeSetup(test *testing.T) *themeSetup {
 	environment = append(environment, "XDG_CACHE_HOME="+cache)
 	configPath := filepath.Join(filepath.Dir(filepath.Dir(themes)), "sensordeck", "config.yaml")
 	return &themeSetup{test: test, fake: fake, screen: screen, environment: environment, configPath: configPath,
-		themes: themes, statePath: uploadstate.Path(cache)}
+		themes: themes, cache: cache}
 }
 
 // compiled gives the theme file of the theme `theme compile` makes of the name or folder.
@@ -63,13 +64,20 @@ func (setup *themeSetup) compiled(nameOrFolder string) []byte {
 	return content
 }
 
-func (setup *themeSetup) stateHolds(serial string, theme []byte) bool {
+// writeEarlierStateFile writes the state file that a release before unit 0022 kept in the cache directory, which names
+// the hash of the theme for the serial, and gives its path and content. run and upload no longer use it.
+func (setup *themeSetup) writeEarlierStateFile(serial string, theme []byte) (string, string) {
 	setup.test.Helper()
-	entries, err := uploadstate.Read(setup.statePath)
-	if err != nil {
+	sum := sha256.Sum256(theme)
+	path := filepath.Join(setup.cache, "sensordeck", "uploaded-themes.json")
+	content := `{"` + serial + `":"` + hex.EncodeToString(sum[:]) + `"}`
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		setup.test.Fatal(err)
 	}
-	return entries[serial] == uploadstate.Hash(theme)
+	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+		setup.test.Fatal(err)
+	}
+	return path, content
 }
 
 func (setup *themeSetup) installClockOnlyTheme() {
@@ -145,7 +153,7 @@ func TestThemeUseCreatesTheConfigFile(test *testing.T) {
 	}
 }
 
-func TestRunUploadsTheThemeOnceAndAStartAfterItUploadsNothing(test *testing.T) {
+func TestRunUploadsTheThemeAtEveryStart(test *testing.T) {
 	setup := newThemeSetup(test)
 	minimalDark := setup.compiled("minimal-dark")
 	runWith(test, setup.fake, setup.environment, "theme", "use", "minimal-dark")
@@ -157,24 +165,57 @@ func TestRunUploadsTheThemeOnceAndAStartAfterItUploadsNothing(test *testing.T) {
 	if outcome.status != 0 || !strings.Contains(outcome.stdout, "uploading theme minimal-dark\ntheme uploaded: ") {
 		test.Errorf("status %d, stdout %q, stderr %q", outcome.status, outcome.stdout, outcome.stderr)
 	}
-	if !setup.stateHolds(screenSerial, minimalDark) {
-		test.Error("the state file does not hold the hash under the serial")
-	}
-	if names := listDirectory(test, filepath.Dir(setup.statePath)); len(names) != 1 {
-		test.Errorf("the cache directory holds %v", names)
-	}
 
-	// a second start with the same theme and screen makes no upload
+	// a second start with the same theme and screen uploads it again
 	setup.screen.Remove()
 	secondScreen := setup.fake.Add(3, "name", screenSerial)
+	secondScreen.AcceptUpload(minimalDark)
 	secondRunning := start(test, setup.fake, setup.environment, "run", "--config", setup.configPath)
-	reports, reached := secondScreen.WaitReports(2, uploadLimit)
-	if !reached || reports[0][0] != 0x03 {
-		test.Fatalf("%d reports, the first % X", len(reports), reports[0][:4])
-	}
+	secondSetup := *setup
+	secondSetup.screen = secondScreen
+	position = secondSetup.expectUploadAt(0, minimalDark)
+	secondSetup.expectClockThenValue(position, 1, 42)
 	secondOutcome, _ := secondRunning.stop(syscall.SIGTERM)
-	if !strings.Contains(secondOutcome.stdout, "theme minimal-dark is on the screen\n") || strings.Contains(secondOutcome.stdout, "uploading") {
+	if !strings.Contains(secondOutcome.stdout, "uploading theme minimal-dark\ntheme uploaded: ") || strings.Contains(secondOutcome.stdout, "is on the screen") {
 		test.Errorf("stdout %q", secondOutcome.stdout)
+	}
+}
+
+func TestRunUploadsAlthoughAnEarlierStateFileNamesTheThemeAndLeavesItAsItWas(test *testing.T) {
+	setup := newThemeSetup(test)
+	minimalDark := setup.compiled("minimal-dark")
+	runWith(test, setup.fake, setup.environment, "theme", "use", "minimal-dark")
+	statePath, content := setup.writeEarlierStateFile(screenSerial, minimalDark)
+	setup.screen.AcceptUpload(minimalDark)
+	running := start(test, setup.fake, setup.environment, "run", "--config", setup.configPath)
+	position := setup.expectUploadAt(0, minimalDark)
+	setup.expectClockThenValue(position, 1, 42)
+	if outcome, _ := running.stop(syscall.SIGTERM); outcome.status != 0 {
+		test.Errorf("status %d, stderr %q", outcome.status, outcome.stderr)
+	}
+	if got, err := os.ReadFile(statePath); err != nil || string(got) != content {
+		test.Errorf("the state file holds %q, %v", got, err)
+	}
+}
+
+func TestRunUploadsNothingWhenTheScreenMovesToAnotherNumber(test *testing.T) {
+	setup := newThemeSetup(test)
+	minimalDark := setup.compiled("minimal-dark")
+	runWith(test, setup.fake, setup.environment, "theme", "use", "minimal-dark")
+	setup.screen.AcceptUpload(minimalDark)
+	uploadReports := len(expectedUploadReports(test, writeThemeFile(test, minimalDark)))
+	setup.screen.MoveAfter(uploadReports+1, 7)
+	running := start(test, setup.fake, setup.environment, "run", "--config", setup.configPath)
+	position := setup.expectUploadAt(0, minimalDark)
+	setup.expectClockThenValue(position, 1, 42)
+	outcome, _ := running.stop(syscall.SIGTERM)
+	if outcome.status != 0 || strings.Count(outcome.stdout, "uploading theme") != 1 || !strings.Contains(outcome.stderr, "screen back\n") {
+		test.Errorf("status %d, stdout %q, stderr %q", outcome.status, outcome.stdout, outcome.stderr)
+	}
+	for index, report := range setup.screen.Reports() {
+		if index >= position && report == smartmonitor.ResetCommand() {
+			test.Errorf("report %d is a reset report after the upload", index)
+		}
 	}
 }
 
@@ -201,7 +242,7 @@ func TestThemeUseWhileRunRunsPutsTheNewThemeOnTheScreenWithItsTags(test *testing
 		test.Error("no value report with the tag 1 and the value of cpu.clock")
 	}
 	outcome, _ := running.stop(syscall.SIGTERM)
-	if outcome.status != 0 || !setup.stateHolds(screenSerial, clock) {
+	if outcome.status != 0 {
 		test.Errorf("status %d, stderr %q", outcome.status, outcome.stderr)
 	}
 }
@@ -236,7 +277,7 @@ func TestAThemeThatDoesNotCompileIsRefusedByThemeUseAndByRun(test *testing.T) {
 	}
 }
 
-func TestUploadKeepsTheStateFileTrueForRun(test *testing.T) {
+func TestRunPutsItsThemeBackAfterAnUpload(test *testing.T) {
 	setup := newThemeSetup(test)
 	minimalDark := setup.compiled("minimal-dark")
 	runWith(test, setup.fake, setup.environment, "theme", "use", "minimal-dark")
@@ -247,36 +288,14 @@ func TestUploadKeepsTheStateFileTrueForRun(test *testing.T) {
 	if outcome := runWith(test, setup.fake, setup.environment, "upload", otherPath); outcome.status != 0 {
 		test.Fatalf("upload: status %d, stderr %q", outcome.status, outcome.stderr)
 	}
-	if !setup.stateHolds(screenSerial, other) {
-		test.Fatal("upload did not record the hash of the file")
-	}
 	position := len(setup.screen.Reports())
 
 	// the screen holds another file now, so run puts its own theme back
 	setup.screen.AcceptUpload(minimalDark)
 	running := start(test, setup.fake, setup.environment, "run", "--config", setup.configPath)
-	setup.expectUploadAt(position, minimalDark)
-	if _, reached := waitForReport(setup.screen, position, uploadLimit, func(pairs map[uint8]uint16) bool { return pairs != nil }); !reached {
+	after := setup.expectUploadAt(position, minimalDark)
+	if _, reached := waitForReport(setup.screen, after, uploadLimit, func(pairs map[uint8]uint16) bool { return pairs != nil }); !reached {
 		test.Error("no values after the upload")
 	}
 	running.stop(syscall.SIGTERM)
-
-	// an upload of the compiled file of the theme of the config, after which run uploads nothing
-	minimalPath := writeThemeFile(test, minimalDark)
-	setup.screen.AcceptUpload(other)
-	runWith(test, setup.fake, setup.environment, "upload", otherPath)
-	setup.screen.AcceptUpload(minimalDark)
-	if outcome := runWith(test, setup.fake, setup.environment, "upload", minimalPath); outcome.status != 0 {
-		test.Fatalf("upload: status %d, stderr %q", outcome.status, outcome.stderr)
-	}
-	position = len(setup.screen.Reports())
-	second := start(test, setup.fake, setup.environment, "run", "--config", setup.configPath)
-	reports, reached := setup.screen.WaitReports(position+1, uploadLimit)
-	if !reached || reports[position][0] != 0x03 {
-		test.Errorf("the first report after the upload is % X", reports[position][:4])
-	}
-	outcome, _ := second.stop(syscall.SIGTERM)
-	if strings.Contains(outcome.stdout, "uploading") || !strings.Contains(outcome.stdout, "theme minimal-dark is on the screen") {
-		test.Errorf("stdout %q", outcome.stdout)
-	}
 }

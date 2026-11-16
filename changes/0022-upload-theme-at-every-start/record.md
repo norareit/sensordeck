@@ -1,6 +1,6 @@
 ---
 kind: bug
-status: approved
+status: in-progress
 timestamp: 2026-11-16T19:59:40Z
 supersedes: 0013-theme-key-and-upload-on-change
 ---
@@ -42,3 +42,4 @@ supersedes: 0013-theme-key-and-upload-on-change
   and the roots `OpenPath` took only for it, while `entryOfNode` stays for the restart of unit 0021; a restart that
   recovered a hung screen clears the wait of a due upload; the README is rewritten last. Five commits, tests first in
   each. The fix needs a plan, since it takes far more than a couple of steps. The status stays `approved`
+- 2026-11-16T20:10:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, began the work in round 1, with no review of this unit yet. The status is `in-progress`

@@ -1,6 +1,8 @@
 package cli
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -9,7 +11,6 @@ import (
 	"time"
 
 	"github.com/norareit/sensordeck/internal/smartmonitor"
-	"github.com/norareit/sensordeck/internal/uploadstate"
 )
 
 // themeKinds writes U for each run of reports of an upload, C for a clock report and V for each run of the value report of the
@@ -41,20 +42,34 @@ func themeConfig(test *testing.T, folder string) string {
 	return writeConfig(test, "theme: '"+folder+"'\n")
 }
 
-// runningTheme gives a harness with a cache directory, a screen with the serial S1 that acknowledges every report, and a
-// stop after the given number of waits.
-func runningTheme(test *testing.T, stopAfterWaits int) (*harness, string) {
+// runningTheme gives a harness with a screen that acknowledges every report, and a stop after the given number of waits.
+func runningTheme(test *testing.T, stopAfterWaits int) *harness {
 	test.Helper()
 	harness := runWith(twoMetrics(), stopAfterWaits)
-	statePath := harness.useCacheDirectory(test)
-	harness.transport.ackWhenEmpty, harness.transport.serial = true, "S1"
-	return harness, statePath
+	harness.transport.ackWhenEmpty = true
+	return harness
 }
 
-func TestRunWithAThemeUploadsItBeforeTheClockAndTheValuesAndRecordsTheHash(test *testing.T) {
+// writeEarlierStateFile writes the state file that a release before unit 0022 kept, with the hash of the compiled theme
+// for the serial, and gives its path. run and upload no longer use it.
+func writeEarlierStateFile(test *testing.T, cache, serial string, compiled []byte) string {
+	test.Helper()
+	sum := sha256.Sum256(compiled)
+	path := filepath.Join(cache, "sensordeck", "uploaded-themes.json")
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		test.Fatal(err)
+	}
+	content := `{"` + serial + `":"` + hex.EncodeToString(sum[:]) + `"}`
+	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+		test.Fatal(err)
+	}
+	return path
+}
+
+func TestRunWithAThemeUploadsItBeforeTheClockAndTheValues(test *testing.T) {
 	folder := writeThemeFolder(test, compiledTheme)
 	compiled := compileExpected(test, folder)
-	harness, statePath := runningTheme(test, 1)
+	harness := runningTheme(test, 1)
 	if status := harness.run("run", "--config", themeConfig(test, folder)); status != 0 {
 		test.Fatalf("status %d, stderr %q", status, harness.stderr.String())
 	}
@@ -68,33 +83,46 @@ func TestRunWithAThemeUploadsItBeforeTheClockAndTheValuesAndRecordsTheHash(test 
 	if last := harness.transport.writes[len(harness.transport.writes)-1]; last != valueReport(smartmonitor.Value{Tag: 1, Value: 42}) {
 		test.Errorf("values % X", last[:8])
 	}
-	if entries, err := uploadstate.Read(statePath); err != nil || entries["S1"] != uploadstate.Hash(compiled.File) {
-		test.Errorf("the state file holds %v, %v", entries, err)
+}
+
+func TestRunUploadsAlthoughAnEarlierStateFileNamesTheThemeAndLeavesItAsItWas(test *testing.T) {
+	folder := writeThemeFolder(test, compiledTheme)
+	compiled := compileExpected(test, folder)
+	harness := runningTheme(test, 1)
+	harness.cacheDir, harness.cacheDirErr = test.TempDir(), nil
+	statePath := writeEarlierStateFile(test, harness.cacheDir, "S1", compiled.File)
+	before := readTestFile(test, statePath)
+	if status := harness.run("run", "--config", themeConfig(test, folder)); status != 0 {
+		test.Fatalf("status %d, stderr %q", status, harness.stderr.String())
+	}
+	if got := themeKinds(harness.transport.writes); got != "UCV" {
+		test.Errorf("writes %s", got)
+	}
+	if after := readTestFile(test, statePath); after != before {
+		test.Errorf("the state file became %q", after)
 	}
 }
 
-func TestTwoStartsWithTheSameThemeAndScreenMakeOneUpload(test *testing.T) {
+func TestTwoStartsWithTheSameThemeAndScreenMakeTwoUploads(test *testing.T) {
 	folder := writeThemeFolder(test, compiledTheme)
-	first, _ := runningTheme(test, 1)
 	config := themeConfig(test, folder)
-	first.run("run", "--config", config)
-	second := runWith(twoMetrics(), 1)
-	second.cacheDir, second.cacheDirErr = first.cacheDir, nil
-	second.transport.ackWhenEmpty, second.transport.serial = true, "S1"
-	if status := second.run("run", "--config", config); status != 0 {
-		test.Fatalf("status %d, stderr %q", status, second.stderr.String())
-	}
-	if got := themeKinds(second.transport.writes); got != "CV" {
-		test.Errorf("writes %s", got)
-	}
-	if want := "running: 1 metrics every 1s\ntheme " + folder + " is on the screen\nstopped\n"; second.stdout.String() != want {
-		test.Errorf("stdout %q", second.stdout.String())
+	for range 2 {
+		harness := runningTheme(test, 1)
+		if status := harness.run("run", "--config", config); status != 0 {
+			test.Fatalf("status %d, stderr %q", status, harness.stderr.String())
+		}
+		if got := themeKinds(harness.transport.writes); got != "UCV" {
+			test.Errorf("writes %s", got)
+		}
+		if strings.Contains(harness.stdout.String(), "is on the screen") || strings.Count(harness.stdout.String(), "uploading theme") != 1 {
+			test.Errorf("stdout %q", harness.stdout.String())
+		}
 	}
 }
 
 func TestRunSendsNothingWhileTheThemeIsNotOnTheScreenAfterAFailedUpload(test *testing.T) {
 	folder := writeThemeFolder(test, compiledTheme)
-	harness, statePath := runningTheme(test, 5)
+	harness := runningTheme(test, 5)
 	harness.transport.queue = []readResult{{report: reportOf(0x43)}}
 	if status := harness.run("run", "--config", themeConfig(test, folder)); status != 0 {
 		test.Fatalf("status %d, stderr %q", status, harness.stderr.String())
@@ -109,9 +137,6 @@ func TestRunSendsNothingWhileTheThemeIsNotOnTheScreenAfterAFailedUpload(test *te
 	if strings.Count(harness.stderr.String(), "screen back") != 1 {
 		test.Errorf("stderr %q", harness.stderr.String())
 	}
-	if entries, _ := uploadstate.Read(statePath); len(entries) != 0 {
-		test.Errorf("the state file holds %v", entries)
-	}
 	if strings.Count(harness.stdout.String(), "uploading theme") != 1 {
 		test.Errorf("stdout %q", harness.stdout.String())
 	}
@@ -119,8 +144,7 @@ func TestRunSendsNothingWhileTheThemeIsNotOnTheScreenAfterAFailedUpload(test *te
 
 func TestRunTriesAFailedUploadAgainAfterTenSeconds(test *testing.T) {
 	folder := writeThemeFolder(test, compiledTheme)
-	compiled := compileExpected(test, folder)
-	harness, statePath := runningTheme(test, 13)
+	harness := runningTheme(test, 13)
 	harness.transport.queue = []readResult{{report: reportOf(0x43)}}
 	harness.run("run", "--config", themeConfig(test, folder))
 	if got := themeKinds(harness.transport.writes); got != "UCVCVCV" {
@@ -129,38 +153,49 @@ func TestRunTriesAFailedUploadAgainAfterTenSeconds(test *testing.T) {
 	if strings.Count(harness.stdout.String(), "uploading theme") != 2 || strings.Count(harness.stdout.String(), "theme uploaded") != 1 {
 		test.Errorf("stdout %q", harness.stdout.String())
 	}
-	if entries, _ := uploadstate.Read(statePath); entries["S1"] != uploadstate.Hash(compiled.File) {
-		test.Errorf("the state file holds %v", entries)
+}
+
+func TestRunUploadsNothingWhenTheScreenCameBackAfterAFailedWrite(test *testing.T) {
+	folder := writeThemeFolder(test, compiledTheme)
+	harness := runningTheme(test, 3)
+	harness.onWait = func(count int) {
+		if count == 1 {
+			harness.transport.failWrites = []bool{true}
+		}
+		if count >= 3 {
+			harness.cancelStop()
+		}
+	}
+	harness.run("run", "--config", themeConfig(test, folder))
+	if got := themeKinds(harness.transport.writes); got != "UCVCV" {
+		test.Errorf("writes %s, want UCVCV", got)
 	}
 }
 
-func TestRunChecksTheThemeAgainAfterTheScreenCameBack(test *testing.T) {
+func TestRunMakesAnUploadThatFailedBeforeTheScreenCameBackOnceTheWaitHasPassed(test *testing.T) {
 	folder := writeThemeFolder(test, compiledTheme)
-	cases := []struct {
-		serial, want string
-	}{{"S1", "UCVCV"}, {"OTHER", "UCVUCV"}}
-	for _, each := range cases {
-		harness, _ := runningTheme(test, 3)
-		harness.onWait = func(count int) {
-			if count == 1 {
-				harness.transport.failWrites = []bool{true}
-				harness.transport.serial = each.serial
-			}
-			if count >= 3 {
-				harness.cancelStop()
-			}
-		}
-		harness.run("run", "--config", themeConfig(test, folder))
-		if got := themeKinds(harness.transport.writes); got != each.want {
-			test.Errorf("serial %s: writes %s, want %s", each.serial, got, each.want)
+	harness := runningTheme(test, 13)
+	harness.transport.failWrites, harness.transport.failErr = []bool{true}, errFake
+	written := stampWrites(harness, startOfTheRun())
+	harness.run("run", "--config", themeConfig(test, folder))
+	starts := uploadStarts(*written)
+	// the report of the failed first attempt is not recorded, so the one start is that of the second attempt
+	if len(starts) != 1 || starts[0] < 10*time.Second {
+		test.Fatalf("uploads started at %v", starts)
+	}
+	if got := themeKinds(harness.transport.writes); !strings.HasPrefix(got, "UCV") {
+		test.Errorf("writes %s", got)
+	}
+	for _, write := range *written {
+		if write.isClock() && write.at < starts[0] {
+			test.Errorf("a clock report at %v, before the upload at %v", write.at, starts[0])
 		}
 	}
 }
 
-func TestAStopDuringAnUploadEndsRunAfterTheUploadWithTheHashRecorded(test *testing.T) {
+func TestAStopDuringAnUploadEndsRunAfterTheUpload(test *testing.T) {
 	folder := writeThemeFolder(test, compiledTheme)
-	compiled := compileExpected(test, folder)
-	harness, statePath := runningTheme(test, 100)
+	harness := runningTheme(test, 100)
 	harness.transport.afterWrite = func(count int) {
 		if count == 1 {
 			harness.cancelStop()
@@ -175,35 +210,34 @@ func TestAStopDuringAnUploadEndsRunAfterTheUploadWithTheHashRecorded(test *testi
 	if !strings.Contains(harness.stdout.String(), "theme uploaded: ") || !strings.HasSuffix(harness.stdout.String(), "stopped\n") {
 		test.Errorf("stdout %q", harness.stdout.String())
 	}
-	if entries, _ := uploadstate.Read(statePath); entries["S1"] != uploadstate.Hash(compiled.File) {
-		test.Errorf("the state file holds %v", entries)
+}
+
+func TestRunWithAThemeNeedsNoCacheDirectory(test *testing.T) {
+	folder := writeThemeFolder(test, compiledTheme)
+	harness := runningTheme(test, 1)
+	harness.cacheDirErr = os.ErrNotExist
+	if status := harness.run("run", "--config", themeConfig(test, folder)); status != 0 {
+		test.Fatalf("status %d, stderr %q", status, harness.stderr.String())
+	}
+	if got := themeKinds(harness.transport.writes); got != "UCV" || harness.cacheDirCalls != 0 {
+		test.Errorf("writes %s, %d look-ups of the cache directory", got, harness.cacheDirCalls)
 	}
 }
 
 func TestRunRefusesWhatItCannotStartWithAThemeBeforeOpeningTheScreen(test *testing.T) {
-	folder := writeThemeFolder(test, compiledTheme)
 	missing := filepath.Join(test.TempDir(), "nothing")
 	cases := []struct {
 		name, content, want string
-		noCache             bool
 	}{
-		{"theme and tags", "theme: x\n" + twoTags, "config file %s: theme and tags cannot both be given, the theme gives the tags", false},
-		{"no compile", "theme: '" + missing + "'\n", "config file %s: theme: " + filepath.Join(missing, "theme.yaml") + ": cannot read the file: no such file or directory", false},
-		{"no cache directory", "theme: '" + folder + "'\n", "cannot find the cache directory: no cache directory in this test", true},
+		{"theme and tags", "theme: x\n" + twoTags, "config file %s: theme and tags cannot both be given, the theme gives the tags"},
+		{"no compile", "theme: '" + missing + "'\n", "config file %s: theme: " + filepath.Join(missing, "theme.yaml") + ": cannot read the file: no such file or directory"},
 	}
 	for _, each := range cases {
 		harness := newHarness()
-		harness.cacheDir, harness.cacheDirErr = test.TempDir(), nil
-		if each.noCache {
-			harness.cacheDirErr = os.ErrNotExist
-		}
 		path := writeConfig(test, each.content)
 		want := each.want
 		if strings.Contains(want, "%s") {
 			want = strings.Replace(want, "%s", path, 1)
-		}
-		if each.noCache {
-			want = "cannot find the cache directory: file does not exist"
 		}
 		harness.expectFailure(test, want, "run", "--config", path)
 		if len(harness.opened) != 0 || len(harness.transport.writes) != 0 {
@@ -226,7 +260,7 @@ func uploadStarts(written []stamped) []time.Duration {
 
 func TestATickWritesNothingAndUploadsNothingWhileTheThemeIsNotOnTheScreen(test *testing.T) {
 	folder := writeThemeFolder(test, compiledTheme)
-	harness, _ := runningTheme(test, 16)
+	harness := runningTheme(test, 16)
 	harness.transport.queue = []readResult{{report: reportOf(0x43)}}
 	written := stampWrites(harness, startOfTheRun())
 	harness.run("run", "--config", writeConfig(test, "interval: 5s\ntheme: '"+folder+"'\n"))

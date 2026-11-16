@@ -74,64 +74,64 @@ A test that needs a state file that an earlier release wrote writes it itself, a
 lower-case hexadecimal SHA-256 of the compiled file, from `crypto/sha256` and `encoding/hex` in the test, so that no
 test depends on `uploadstate`, which task 2 deletes.
 
-- [ ] In `internal/cli/themeholder_test.go`, drop the state file from `holderFixture` and `aTheme` (no `hash`), and
+- [x] In `internal/cli/themeholder_test.go`, drop the state file from `holderFixture` and `aTheme` (no `hash`), and
   replace the tests of the check by tests of the rules of "The theme holder after this unit": the first `ensure`
   uploads and says the two lines; a second holder made with the same theme uploads again; `setTheme` with other bytes
   makes the next `ensure` upload, and with the same bytes uploads nothing; `setTheme(nil)` then the same theme again
   uploads; a failed upload of theme `B` after a completed upload of `A`, followed by `setTheme(A)`, uploads `A`; the
   line `theme <value> is on the screen` is never said. Keep the tests of the retry, of no theme, of stop and of the
   error of a failed upload, without the state file (R1, R2, R3, R4, R5, R18)
-- [ ] In `internal/cli/runtheme_test.go`, rewrite `runningTheme` with no state file and no serial, and change
+- [x] In `internal/cli/runtheme_test.go`, rewrite `runningTheme` with no state file and no serial, and change
   `TestRunWithAThemeUploadsItBeforeTheClockAndTheValuesAndRecordsTheHash` to check the upload before the clock and the
   values with no state file, and again with a state file that names the hash of the compiled theme for the serial,
   which `run` uploads anyway and leaves byte for byte as it was (R1, R9, R18)
-- [ ] In `runtheme_test.go`, change `TestTwoStartsWithTheSameThemeAndScreenMakeOneUpload` to two starts that each
+- [x] In `runtheme_test.go`, change `TestTwoStartsWithTheSameThemeAndScreenMakeOneUpload` to two starts that each
   upload, with no `theme <value> is on the screen` in standard output (R1, R2, R18)
-- [ ] In `runtheme_test.go`, change `TestRunChecksTheThemeAgainAfterTheScreenCameBack` into one test of a screen lost
+- [x] In `runtheme_test.go`, change `TestRunChecksTheThemeAgainAfterTheScreenCameBack` into one test of a screen lost
   by a failed write and reopened, whose writes are `UCVCV` (R6, R18), and add one in which the first upload fails with
   `errFake`, the screen is reopened in the next round, and the upload is made once the wait of 10 seconds has passed,
   before any clock or value (R6, R18)
-- [ ] In `runtheme_test.go`, remove the case `no cache directory` of
+- [x] In `runtheme_test.go`, remove the case `no cache directory` of
   `TestRunRefusesWhatItCannotStartWithAThemeBeforeOpeningTheScreen`, and add a test in which `run` with a theme and a
   `userCacheDir` that fails uploads and sends the values, and `harness.cacheDirCalls` is 0 (R11, R18). Rename
   `TestAStopDuringAnUploadEndsRunAfterTheUploadWithTheHashRecorded` to
   `TestAStopDuringAnUploadEndsRunAfterTheUpload` and drop its check of the state file
-- [ ] In `internal/cli/runreload_test.go`, replace `TestAReloadToAThemeWithNoCacheDirectoryIsRefusedWithItsLine` by a
+- [x] In `internal/cli/runreload_test.go`, replace `TestAReloadToAThemeWithNoCacheDirectoryIsRefusedWithItsLine` by a
   test in which that reload uploads the theme with nothing written to standard error, and add a test of `theme` to
   `tags` and back to the same theme, which uploads twice in all. Keep the tests of `tags` to `theme`, of `theme` to
   `tags` and of the rewrite with the same bytes and the edited folder, without the state file (R4, R5, R11, R18)
-- [ ] In `internal/cli/runhang_linux_test.go`, change `TestRunChecksTheThemeAfterTheRestartOfAHungScreen` to
+- [x] In `internal/cli/runhang_linux_test.go`, change `TestRunChecksTheThemeAfterTheRestartOfAHungScreen` to
   `TestRunUploadsNothingAfterTheRestartOfAHungScreen`: the theme is uploaded at the start, a write of the clock or of a
   value times out, the screen is restarted with `openedAt33`, and the writes after the restart hold no upload. Drop the
   state file from `TestRunWritesThatAnUploadFailedBeforeThatTheScreenHung` (R6, R7, R18)
-- [ ] In `internal/cli/runconfig_test.go`, drop the check of `loaded.theme.hash` and the import of `uploadstate`
-- [ ] Rewrite `internal/cli/themeholder.go` as "The theme holder after this unit" says, without `restartRecovered`,
+- [x] In `internal/cli/runconfig_test.go`, drop the check of `loaded.theme.hash` and the import of `uploadstate`
+- [x] Rewrite `internal/cli/themeholder.go` as "The theme holder after this unit" says, without `restartRecovered`,
   which task 4 adds. Update its comments: the holder uploads the theme of the config at the start and again when a
   reload gives other bytes than the last upload (R1, R2, R3, R4, R5, R8)
-- [ ] In `internal/cli/runconfig.go`, remove `hash` from `configTheme` and the import of `uploadstate` (R10)
-- [ ] In `internal/cli/run.go`, remove `state` and `stateErr` from `preparedRun` and the call of `current.stateFile()`
+- [x] In `internal/cli/runconfig.go`, remove `hash` from `configTheme` and the import of `uploadstate` (R10)
+- [x] In `internal/cli/run.go`, remove `state` and `stateErr` from `preparedRun` and the call of `current.stateFile()`
   from `prepareRun`, make the `load` of the watcher `current.loadConfig(prepared.path, content)` alone, make the holder
   with `newThemeHolder(prepared.started.theme, current.env.sleep, current.env.now, current.say, current.env.stderr)`,
   and remove the call of `screenBack` from `reopen` (R6, R9, R11)
-- [ ] In `e2e/theme_upload_test.go`, drop `statePath` and `stateHolds` from `themeSetup`, keep its own
+- [x] In `e2e/theme_upload_test.go`, drop `statePath` and `stateHolds` from `themeSetup`, keep its own
   `XDG_CACHE_HOME`, and rename `TestRunUploadsTheThemeOnceAndAStartAfterItUploadsNothing` to
   `TestRunUploadsTheThemeAtEveryStart`: the first `run` uploads `minimal-dark` and then sends the clock and the values,
   and the second, on a screen added again with `AcceptUpload` armed, uploads it again, with no
   `theme minimal-dark is on the screen` in standard output (R19)
-- [ ] In `e2e/theme_upload_test.go`, add a test in which a state file in the `XDG_CACHE_HOME` of the setup names the
+- [x] In `e2e/theme_upload_test.go`, add a test in which a state file in the `XDG_CACHE_HOME` of the setup names the
   hash of `minimal-dark` for `screenSerial`, `run` uploads `minimal-dark` all the same, and the file is byte for byte
   as it was after `run` stopped (R19)
-- [ ] In `e2e/theme_upload_test.go`, drop the check of the state file from
+- [x] In `e2e/theme_upload_test.go`, drop the check of the state file from
   `TestThemeUseWhileRunRunsPutsTheNewThemeOnTheScreenWithItsTags` (R19)
-- [ ] In `e2e/theme_upload_test.go`, add a test in which `run` with `minimal-dark` uploads it and sends values, the
+- [x] In `e2e/theme_upload_test.go`, add a test in which `run` with `minimal-dark` uploads it and sends values, the
   screen is moved to hidraw 7 with `MoveAfter` once the upload is done, and `run` then sends the clock and the values on
   the new node with no reset report after the move and no second `uploading theme` in standard output (R6, R19)
-- [ ] In `e2e/theme_upload_test.go`, replace `TestUploadKeepsTheStateFileTrueForRun` by
+- [x] In `e2e/theme_upload_test.go`, replace `TestUploadKeepsTheStateFileTrueForRun` by
   `TestRunPutsItsThemeBackAfterAnUpload`: `upload` of another file, then `run`, which uploads `minimal-dark` and sends
   values. The second half, in which `run` uploads nothing after an `upload` of the same file, goes, since it is the
   behavior this unit removes (R1, R19)
-- [ ] Run the five commands of the suite (R20)
-- [ ] Commit: `bugfix-0022 Upload the theme at every start of run and decide reloads in memory`
+- [x] Run the five commands of the suite (R20)
+- [x] Commit: `bugfix-0022 Upload the theme at every start of run and decide reloads in memory`
 
 ### 2. `upload` without the state file, and the state file removed
 
@@ -246,7 +246,7 @@ the moment of each upload attempt, as `uploadStarts` in `runtheme_test.go` does 
 
 ## Commit Points
 
-- [ ] `bugfix-0022 Upload the theme at every start of run and decide reloads in memory` (task 1)
+- [x] `bugfix-0022 Upload the theme at every start of run and decide reloads in memory` (task 1)
 - [ ] `bugfix-0022 Upload a theme file without the state file and remove the state file` (task 2)
 - [ ] `bugfix-0022 Remove the serial of the open transport` (task 3)
 - [ ] `bugfix-0022 Upload at once after a restart that recovered the screen` (task 4)

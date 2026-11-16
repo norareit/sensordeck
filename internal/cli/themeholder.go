@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -9,41 +10,30 @@ import (
 	"github.com/norareit/sensordeck/internal/smartmonitor"
 )
 
-// themeHolder decides whether the theme of the config is on the screen, and uploads it when it is not.
+// themeHolder uploads the theme of the config at the start and again when a reload gives a compiled theme of other
+// bytes than the last upload, which it keeps in memory.
 type themeHolder struct {
-	theme    *configTheme
-	state    stateFile
-	pause    func(time.Duration)
-	now      func() time.Time
-	say      func(line string)
-	stderr   io.Writer
-	checkDue bool          // the state file is to be read at the next call of ensure
-	starting bool          // the next check is the one at the start, which writes its line
-	due      bool          // the theme is not on the screen
-	next     time.Time     // no attempt before this moment
-	wait     time.Duration // the wait after the next failure; firstRetry, doubled up to longestRetry
+	theme  *configTheme
+	last   []byte // the compiled file of the last upload that completed, nil when there is none
+	pause  func(time.Duration)
+	now    func() time.Time
+	say    func(line string)
+	stderr io.Writer
+	due    bool          // the theme is to be uploaded
+	next   time.Time     // no attempt before this moment
+	wait   time.Duration // the wait after the next failure; firstRetry, doubled up to longestRetry
 }
 
-// newThemeHolder makes the holder of the theme of the config, whose first check is the one at the start.
-func newThemeHolder(theme *configTheme, state stateFile, pause func(time.Duration), now func() time.Time,
+// newThemeHolder makes the holder of the theme of the config, which is due at once when there is one.
+func newThemeHolder(theme *configTheme, pause func(time.Duration), now func() time.Time,
 	say func(line string), stderr io.Writer) *themeHolder {
-	return &themeHolder{
-		theme: theme, state: state, pause: pause, now: now, say: say, stderr: stderr,
-		checkDue: theme != nil, starting: true, wait: firstRetry,
-	}
+	return &themeHolder{theme: theme, pause: pause, now: now, say: say, stderr: stderr, due: theme != nil, wait: firstRetry}
 }
 
-// ensure tells whether values may be sent, and whether an upload completed in this call. It reads the state file
-// when a check is due and uploads the theme when it is not on the screen and the wait has passed. failure is the error
-// of an upload that failed, after which the screen is lost.
+// ensure tells whether values may be sent, and whether an upload completed in this call. It uploads the theme when it
+// is due and the wait has passed. failure is the error of an upload that failed, after which the screen is lost.
 func (holder *themeHolder) ensure(stop context.Context, opened transport) (ready, uploaded bool, failure error) {
-	if holder.theme == nil {
-		return true, false, nil
-	}
-	if holder.checkDue {
-		holder.check(opened.Serial())
-	}
-	if !holder.due {
+	if holder.theme == nil || !holder.due {
 		return true, false, nil
 	}
 	if stop.Err() != nil || holder.now().Before(holder.next) {
@@ -55,24 +45,17 @@ func (holder *themeHolder) ensure(stop context.Context, opened transport) (ready
 	return true, true, nil
 }
 
-// onScreen tells whether values may be sent now without a check or an upload, which only a round does.
+// onScreen tells whether values may be sent now without an upload, which only a round makes.
 func (holder *themeHolder) onScreen() bool {
-	return holder.theme == nil || (!holder.checkDue && !holder.due)
-}
-
-func (holder *themeHolder) check(serial string) {
-	holder.checkDue = false
-	holder.due = !holder.state.holds(serial, holder.theme.hash)
-	if !holder.due && holder.starting {
-		holder.say(fmt.Sprintf("theme %s is on the screen", holder.theme.value))
-	}
-	holder.starting = false
+	return holder.theme == nil || !holder.due
 }
 
 func (holder *themeHolder) upload(opened transport) error {
+	// An upload cut short may leave the flash with neither theme, so only its completion makes the screen's theme known.
+	holder.last = nil
 	holder.say("uploading theme " + holder.theme.value)
 	// The progress writes nothing: an upload of run is one line before and one after.
-	err := holder.state.upload(opened, opened.Serial(), holder.theme.file, holder.pause, func(smartmonitor.Stage, int, int) {})
+	err := smartmonitor.Upload(opened, holder.theme.file, holder.pause, func(smartmonitor.Stage, int, int) {})
 	if err != nil {
 		_, _ = fmt.Fprintf(holder.stderr, "theme upload failed: %v\n", err)
 		holder.next = holder.now().Add(holder.wait)
@@ -80,22 +63,19 @@ func (holder *themeHolder) upload(opened transport) error {
 		return err
 	}
 	holder.say(fmt.Sprintf("theme uploaded: %d bytes", len(holder.theme.file)))
+	holder.last = holder.theme.file
 	holder.due, holder.next, holder.wait = false, time.Time{}, firstRetry
 	return nil
 }
 
-// setTheme replaces the theme of the config. A theme whose hash differs from the one before, or a first theme, makes a
-// check due. No theme clears what is due.
+// setTheme replaces the theme of the config. A theme that compiles to other bytes than the last upload, or a first
+// theme, makes an upload due. No theme clears what is due and forgets the last upload, since the screen may be given
+// another theme by other means while the config has tags.
 func (holder *themeHolder) setTheme(theme *configTheme) {
+	holder.theme = theme
 	if theme == nil {
-		holder.theme, holder.checkDue, holder.due = nil, false, false
+		holder.last, holder.due = nil, false
 		return
 	}
-	if holder.theme == nil || holder.theme.hash != theme.hash {
-		holder.checkDue = true
-	}
-	holder.theme = theme
+	holder.due = !bytes.Equal(theme.file, holder.last)
 }
-
-// screenBack makes a check due.
-func (holder *themeHolder) screenBack() { holder.checkDue = holder.theme != nil }

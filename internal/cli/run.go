@@ -51,15 +51,13 @@ func (current *session) runCommand() *cobra.Command {
 
 // preparedRun is what a start of run made before it opens the screen.
 type preparedRun struct {
-	path     string
-	stamp    fileStamp
-	started  runConfig
-	state    stateFile
-	stateErr error
-	sources  sourceSet
+	path    string
+	stamp   fileStamp
+	started runConfig
+	sources sourceSet
 }
 
-// prepareRun reads and loads the config file, finds the state file and makes the sources, as run does at its start.
+// prepareRun reads and loads the config file and makes the sources, as run does at its start.
 func (current *session) prepareRun(named string) (preparedRun, error) {
 	path, err := current.configPath(named)
 	if err != nil {
@@ -75,15 +73,11 @@ func (current *session) prepareRun(named string) (preparedRun, error) {
 	if err != nil {
 		return preparedRun{}, err
 	}
-	state, stateErr := current.stateFile()
-	if started.theme != nil && stateErr != nil {
-		return preparedRun{}, stateErr
-	}
 	sources, err := current.env.newSources(current.env.sysfsRoot, current.env.devRoot, current.env.procRoot)
 	if err != nil {
 		return preparedRun{}, err
 	}
-	return preparedRun{path: path, stamp: stamp, started: started, state: state, stateErr: stateErr, sources: sources}, nil
+	return preparedRun{path: path, stamp: stamp, started: started, sources: sources}, nil
 }
 
 // serveRun writes the line running, feeds the screen until stop is done, ends the keeper and closes the transport, and
@@ -99,18 +93,11 @@ func (current *session) serveRun(stop context.Context, prepared preparedRun, ope
 		others:     current.withMonitor(sources, settings.LibreHardwareMonitorURL),
 		controller: &periodicSource{source: sources.controller, period: settings.CommanderPeriod()},
 		config:     settings,
-		holder:     newThemeHolder(prepared.started.theme, prepared.state, current.env.sleep, current.env.now, current.say, current.env.stderr),
-		watcher: &configWatcher{path: prepared.path, last: prepared.stamp, stderr: current.env.stderr, load: func(content []byte) (runConfig, error) {
-			reloaded, err := current.loadConfig(prepared.path, content)
-			// A theme needs the state file, and a run that started with tags may have none.
-			if err == nil && reloaded.theme != nil && prepared.stateErr != nil {
-				return runConfig{}, prepared.stateErr
-			}
-			return reloaded, err
-		}},
-		now:    current.env.now,
-		wait:   current.env.wait,
-		stderr: current.env.stderr,
+		holder:     newThemeHolder(prepared.started.theme, current.env.sleep, current.env.now, current.say, current.env.stderr),
+		watcher:    &configWatcher{path: prepared.path, last: prepared.stamp, stderr: current.env.stderr, load: func(content []byte) (runConfig, error) { return current.loadConfig(prepared.path, content) }},
+		now:        current.env.now,
+		wait:       current.env.wait,
+		stderr:     current.env.stderr,
 	}
 	observed.written = feeding.writeSucceeded
 	endKeeping := func() {}
@@ -319,7 +306,6 @@ func (feeding *feeder) reopen(stop context.Context) bool {
 		_, _ = fmt.Fprintln(feeding.stderr, "screen back")
 	}
 	feeding.lost = false
-	feeding.holder.screenBack()
 	feeding.clockDue = true
 	return true
 }

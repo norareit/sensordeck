@@ -7,8 +7,6 @@ import (
 	"strings"
 	"testing"
 	"time"
-
-	"github.com/norareit/sensordeck/internal/uploadstate"
 )
 
 const (
@@ -97,27 +95,22 @@ func TestRunRestartsAHungScreenAndGoesOn(test *testing.T) {
 	hung.checkNoSuspendLines(test)
 }
 
-func TestRunChecksTheThemeAfterTheRestartOfAHungScreen(test *testing.T) {
+func TestRunUploadsNothingAfterTheRestartOfAHungScreen(test *testing.T) {
 	folder := writeThemeFolder(test, compiledTheme)
-	compiled := compileExpected(test, folder)
-	hung := newHungRun(test, []bool{true}, 3, openedAt33)
-	harness := hung.harness
-	statePath := harness.useCacheDirectory(test)
-	harness.transport.ackWhenEmpty, harness.transport.serial = true, "S1"
-	if err := uploadstate.Write(statePath, map[string]string{"S1": uploadstate.Hash(compiled.File)}); err != nil {
-		test.Fatal(err)
-	}
-	hung.restarter.onRestart = func(int) {
-		if err := os.Remove(statePath); err != nil {
-			test.Fatal(err)
+	hung := newHungRun(test, nil, 4, openedAt33)
+	hung.harness.transport.ackWhenEmpty = true
+	stopping := hung.harness.onWait
+	hung.harness.onWait = func(count int) {
+		if count == 1 {
+			// the upload of the start is done, so the next write, a clock, times out
+			hung.harness.transport.failWrites = []bool{true}
 		}
+		stopping(count)
 	}
 	hung.run(test, themeConfig(test, folder))
-	if got := themeKinds(harness.transport.writes); !strings.HasPrefix(got, "UCV") {
-		test.Errorf("writes %s", got)
-	}
-	if want := hungLine + restartingText + restarted33Line + recoveredLine; hung.stderr() != want {
-		test.Errorf("stderr %q", hung.stderr())
+	got := themeKinds(hung.harness.transport.writes)
+	if !strings.HasPrefix(got, "UC") || strings.Count(got, "U") != 1 || len(hung.restarter.began) != 1 {
+		test.Errorf("writes %s, %d restarts", got, len(hung.restarter.began))
 	}
 }
 
@@ -194,8 +187,7 @@ func TestRunOpensAScreenThatIsNotOpenAfterItsRestartWithNoNewRestart(test *testi
 func TestRunWritesThatAnUploadFailedBeforeThatTheScreenHung(test *testing.T) {
 	folder := writeThemeFolder(test, compiledTheme)
 	hung := newHungRun(test, []bool{true}, 1, openedAt33)
-	hung.harness.useCacheDirectory(test)
-	hung.harness.transport.ackWhenEmpty, hung.harness.transport.serial = true, "S1"
+	hung.harness.transport.ackWhenEmpty = true
 	hung.run(test, themeConfig(test, folder))
 	got := hung.stderr()
 	failed, hungAt := strings.Index(got, "theme upload failed: "), strings.Index(got, "\nscreen hung: ")

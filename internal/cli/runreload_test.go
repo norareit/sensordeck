@@ -108,7 +108,7 @@ func TestRunDoesNotApplyTheKeysThatNeedARestartAndSaysSo(test *testing.T) {
 
 func TestRunUploadsTheThemeAfterAChangeFromTagsToThemeAndSendsItsTags(test *testing.T) {
 	folder := writeThemeFolder(test, compiledTheme)
-	harness, _ := runningTheme(test, 3)
+	harness := runningTheme(test, 3)
 	path := writeConfig(test, "tags: {cpu.clock: 2}\n")
 	changeAtWait(harness, 1, 3, func() { rewrite(test, path, "theme: '"+folder+"'\n", 1) })
 	harness.run("run", "--config", path)
@@ -122,25 +122,66 @@ func TestRunUploadsTheThemeAfterAChangeFromTagsToThemeAndSendsItsTags(test *test
 
 func TestRunUploadsNothingAfterAChangeFromThemeToTags(test *testing.T) {
 	folder := writeThemeFolder(test, compiledTheme)
-	first, _ := runningTheme(test, 1)
-	first.run("run", "--config", themeConfig(test, folder))
-	harness := runWith(twoMetrics(), 3)
-	harness.cacheDir, harness.cacheDirErr = first.cacheDir, nil
-	harness.transport.ackWhenEmpty, harness.transport.serial = true, "S1"
+	harness := runningTheme(test, 3)
 	path := themeConfig(test, folder)
 	changeAtWait(harness, 1, 3, func() { rewrite(test, path, "tags: {cpu.clock: 2}\n", 1) })
 	harness.run("run", "--config", path)
-	if strings.Contains(harness.stdout.String(), "uploading") || len(harness.transport.writes) != 6 {
-		test.Errorf("stdout %q, %d reports", harness.stdout.String(), len(harness.transport.writes))
+	if got := strings.Count(harness.stdout.String(), "uploading"); got != 1 {
+		test.Errorf("%d uploads, stdout %q", got, harness.stdout.String())
 	}
 	if reports := valueReports(harness); reports[len(reports)-1] != valueReport(smartmonitor.Value{Tag: 2, Value: 1234}) {
 		test.Errorf("last values % X", reports[len(reports)-1][:8])
 	}
 }
 
+func TestRunUploadsTheSameThemeAgainAfterAChangeToTagsAndBack(test *testing.T) {
+	folder := writeThemeFolder(test, compiledTheme)
+	harness := runningTheme(test, 5)
+	path := themeConfig(test, folder)
+	harness.onWait = func(count int) {
+		switch count {
+		case 1:
+			rewrite(test, path, "tags: {cpu.clock: 2}\n", 1)
+		case 3:
+			rewrite(test, path, "theme: '"+folder+"'\n", 2)
+		case 5:
+			harness.cancelStop()
+		}
+	}
+	harness.run("run", "--config", path)
+	if got := strings.Count(harness.stdout.String(), "uploading theme"); got != 2 {
+		test.Errorf("%d uploads, stdout %q", got, harness.stdout.String())
+	}
+}
+
+func TestAReloadBackToTheThemeOfTheLastUploadAfterAFailedUploadOfAnotherUploadsIt(test *testing.T) {
+	folder := writeThemeFolder(test, compiledTheme)
+	edited := strings.Replace(compiledTheme, "Hello", "Howdy", 1)
+	harness := runningTheme(test, 14)
+	path := themeConfig(test, folder)
+	harness.onWait = func(count int) {
+		switch count {
+		case 1:
+			// the upload of the edited theme fails, which leaves the screen with neither theme
+			harness.transport.failWrites, harness.transport.failErr = []bool{true}, errFake
+			writeTestFile(test, folder+"/theme.yaml", edited)
+			rewrite(test, path, "theme: '"+folder+"'\n", 1)
+		case 2:
+			writeTestFile(test, folder+"/theme.yaml", compiledTheme)
+			rewrite(test, path, "theme: '"+folder+"'\n", 2)
+		case 14:
+			harness.cancelStop()
+		}
+	}
+	harness.run("run", "--config", path)
+	if got := strings.Count(harness.stdout.String(), "theme uploaded"); got != 2 {
+		test.Errorf("%d completed uploads, stdout %q", got, harness.stdout.String())
+	}
+}
+
 func TestARewriteOfTheSameThemeUploadsNothingAndAnEditedFolderIsUploaded(test *testing.T) {
 	folder := writeThemeFolder(test, compiledTheme)
-	harness, _ := runningTheme(test, 5)
+	harness := runningTheme(test, 5)
 	path := themeConfig(test, folder)
 	harness.onWait = func(count int) {
 		switch count {
@@ -165,15 +206,14 @@ func TestARewriteOfTheSameThemeUploadsNothingAndAnEditedFolderIsUploaded(test *t
 	}
 }
 
-func TestAReloadToAThemeWithNoCacheDirectoryIsRefusedWithItsLine(test *testing.T) {
+func TestAReloadToAThemeUploadsItWithNoCacheDirectory(test *testing.T) {
 	folder := writeThemeFolder(test, compiledTheme)
-	harness := runWith(twoMetrics(), 3)
+	harness := runningTheme(test, 3)
 	path := writeConfig(test, "tags: {cpu.temp: 1}\n")
 	changeAtWait(harness, 1, 3, func() { rewrite(test, path, "theme: '"+folder+"'\n", 1) })
 	harness.run("run", "--config", path)
-	want := "config file " + path + ": cannot find the cache directory: no cache directory in this test, keeping the running config\n"
-	if harness.stderr.String() != want || themeKinds(harness.transport.writes) != "CVCVCV" {
-		test.Errorf("stderr %q, writes %s", harness.stderr.String(), themeKinds(harness.transport.writes))
+	if harness.stderr.Len() != 0 || strings.Count(harness.stdout.String(), "uploading theme") != 1 || harness.cacheDirCalls != 0 {
+		test.Errorf("stderr %q, stdout %q, %d look-ups", harness.stderr.String(), harness.stdout.String(), harness.cacheDirCalls)
 	}
 }
 

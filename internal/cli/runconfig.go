@@ -10,14 +10,12 @@ import (
 
 	"github.com/norareit/sensordeck/internal/config"
 	"github.com/norareit/sensordeck/internal/themecompile"
-	"github.com/norareit/sensordeck/internal/uploadstate"
 )
 
 // configTheme is the theme of the config, compiled.
 type configTheme struct {
 	value string // the value of the key theme as the file gives it
 	file  []byte
-	hash  string
 }
 
 // runConfig is a config of run as it is applied: its settings, with the mappings of the theme when it has one.
@@ -43,7 +41,7 @@ func (current *session) loadConfig(path string, content []byte) (runConfig, erro
 	settings.Mappings = compiled.Tags
 	return runConfig{
 		settings: settings,
-		theme:    &configTheme{value: settings.Theme, file: compiled.File, hash: uploadstate.Hash(compiled.File)},
+		theme:    &configTheme{value: settings.Theme, file: compiled.File},
 	}, nil
 }
 
