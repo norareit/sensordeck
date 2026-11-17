@@ -135,10 +135,10 @@ No other file changes, apart from this plan and the record.
 - [x] Each fact of the paragraph "Other programs, such as iCUE" and of the paragraph "`schtasks /End /TN sensordeck`"
   before the change is still in it after the change (R1, R4)
 - [x] The five commands of the suite in `AGENTS.md` succeed (R9)
-- [ ] `npm run check-changes` passes on the committed branch
+- [x] `npm run check-changes` passes on the committed branch
 
 ## Commit Points
 
-- [ ] `task-0033 Plan the README changes from the Windows checklist`: this plan and its log entry in the record
-- [ ] `task-0033 Write what the Windows checklist found into the README`: the change of `README.md`
-- [ ] `task-0033 Record the implementation`: the ticked plan and the log entries of the record
+- [x] `task-0033 Plan the README changes from the Windows checklist`: this plan and its log entry in the record
+- [x] `task-0033 Write what the Windows checklist found into the README`: the change of `README.md`
+- [x] `task-0033 Record the implementation`: the ticked plan and the log entries of the record
