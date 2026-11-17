@@ -242,7 +242,7 @@ The design decisions the spec leaves to the plan:
 
 ### 5. The end-to-end tests
 
-- [ ] Write `e2e/lock_test.go`, every test with the environment of `environmentFor`:
+- [x] Write `e2e/lock_test.go`, every test with the environment of `environmentFor`:
     - `sensors` while `run` with `commander_color` holds a session, started after `waitForColourWrite`: status 0,
       standard output holds `cpu.temp\t42.0\t°C` and no line beginning `commander.`, standard error is exactly the line
       of R9 with no holder, and afterwards the fake controller is in software mode with the colour of the config, and
@@ -260,30 +260,30 @@ The design decisions the spec leaves to the plan:
     - after a `run` with a custom metric whose command starts `<sleep> 5 >/dev/null 2>&1 &` with the absolute path of
       `sleep` found with `exec.LookPath` when the test starts, and that ended on SIGTERM, `values 7=1234` succeeds
       while the child still runs (R4)
-- [ ] Run the suite; the e2e tests of earlier units run one process at a time and pass unchanged. Commit:
+- [x] Run the suite; the e2e tests of earlier units run one process at a time and pass unchanged. Commit:
   `bugfix-0029 Test two sensordeck processes on the fake devices`
 
 ### 6. The README
 
-- [ ] In "The Corsair iCUE Commander Core XT", replace the paragraph that begins `Another program that talks to the
+- [x] In "The Corsair iCUE Commander Core XT", replace the paragraph that begins `Another program that talks to the
   controller` with two: one sensordeck process at a time uses the controller; `sensordeck sensors` leaves out the
   probes while `run` holds a session or reads, writing its line, quoted; and a `run` whose setup finds the controller
   in use writes `controller setup failed` and tries again as after any failed setup. Then that iCUE, liquidctl and
   OpenLinkHub are not kept out, and talking to the controller from one of them at the same time as sensordeck is not
   supported: the commands of both mix, readings fail and the LEDs may show the stored lighting or go dark (R16)
-- [ ] In the same section, after `sensordeck sensors` makes them flicker once each time it runs, and in "Showing
+- [x] In the same section, after `sensordeck sensors` makes them flicker once each time it runs, and in "Showing
   sensor values on the screen", after `sensordeck sensors` reads the controller once each time it runs, say that this
   is so unless `run` has the controller, when `sensors` leaves the probes out (R17)
-- [ ] In "Running as a service", replace the paragraph of Linux that begins `Running \`sensordeck run\`, or another
+- [x] In "Running as a service", replace the paragraph of Linux that begins `Running \`sensordeck run\`, or another
   command that writes to the screen, by hand while the service runs` and the paragraph of Windows that begins the same
   way for the task, each with: such a command refuses while the service (or the task) has the screen, with the line of
   R12 of that system, quoted with `<holder>` written as the process ID and command line; and a service (or a task)
   that starts while another sensordeck process has the screen refuses and starts again 10 seconds later (R17)
-- [ ] In "Running as a service", after its first paragraph, add one that says that on Linux the lock is on the device
+- [x] In "Running as a service", after its first paragraph, add one that says that on Linux the lock is on the device
   node, so it holds between every sensordeck process that opens the device, whatever its user or environment, and that
   on Windows it is one lock for the screens and one for the controllers, for the processes of one user, so that two
   sensordeck processes cannot drive two screens at once on Windows (R18)
-- [ ] Commit: `bugfix-0029 Document one sensordeck process at a time on each device`
+- [x] Commit: `bugfix-0029 Document one sensordeck process at a time on each device`
 
 ### 7. Checks
 

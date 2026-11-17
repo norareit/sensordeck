@@ -299,7 +299,7 @@ is longer. Each reading makes the LEDs of the fans on the controller flicker onc
 The period applies when `commander_color` is not given. With it, the controller is read in every round, as
 [The Corsair iCUE Commander Core XT](#the-corsair-icue-commander-core-xt) says.
 Between two readings `sensordeck run` sends the values of the last reading. `sensordeck sensors` reads the controller
-once each time it runs.
+once each time it runs, unless `run` has the controller, when `sensors` leaves the probes out.
 
 Values are sent as whole numbers, rounded and clamped to -32768 to 32767, so 51.5 is sent as 52. A negative value shows
 with its minus sign, and a reading above 32767, such as a network rate of 40000 KiB/s, shows 32767 while
@@ -513,7 +513,8 @@ progress. A new or changed one starts with no value, and the run of a changed or
 The controller has a hardware mode, in which it runs its fans and shows the lighting stored in it, and a software mode,
 in which it shows only what a program sends it, and is dark when nothing is sent. Reading the probes needs software
 mode, so without `commander_color` each reading of `sensordeck run` makes the LEDs flicker once, at most once per
-period of `commander_interval`, of 1 minute by default. `sensordeck sensors` makes them flicker once each time it runs.
+period of `commander_interval`, of 1 minute by default. `sensordeck sensors` makes them flicker once each time it runs, unless `run` has the controller, when `sensors` leaves
+the probes out and writes nothing to the controller.
 
 With `commander_color`, `run` holds software mode for as long as it runs. It lights the LEDs of every connected port in
 that one colour, reads the probes in every round and keeps the controller awake with a reading once a second. The value
@@ -556,10 +557,21 @@ When the controller is unplugged or stops answering, `run` returns it to hardwar
 again after 10 seconds and then less often, up to every 5 minutes, and writes `controller back` and lights the colour
 again when it succeeds.
 
-Another program that talks to the controller at the same time, such as iCUE, liquidctl, OpenLinkHub or
-`sensordeck sensors`, is not supported: the commands of both mix, readings fail, the LEDs may show the stored lighting or
-go dark, and `run` sets the colour again at its next setup. Running iCUE and sensordeck at the same time is not
-supported.
+One sensordeck process at a time uses the controller. While `run` holds a session or makes a reading, `sensordeck
+sensors` leaves the probes out, lists the other readings as usual and writes this line to standard error, where
+`<holder>` is ` (process <process ID>: <command line>)` of the process that has the controller, or nothing when it cannot
+be found:
+
+```
+the controller is in use by another sensordeck process<holder>, its probes are left out
+```
+
+A `run` whose setup finds the controller in use by another sensordeck process writes `controller setup failed: the
+controller is in use by another sensordeck process<holder>` and tries again as after any failed setup.
+
+Other programs, such as iCUE, liquidctl and OpenLinkHub, are not kept out. Talking to the controller from one of them at
+the same time as sensordeck is not supported: the commands of both mix, readings fail, and the LEDs may show the stored
+lighting or go dark. `run` sets the colour again at its next setup.
 
 What the controller does with fans that it runs, in software mode with no fan settings sent, is not known. sensordeck
 sends no fan settings, and the fans of the machine it was tested on are not run by the controller.
@@ -579,6 +591,11 @@ SUBSYSTEM=="hidraw", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="0c2a", MODE="06
 
 sensordeck runs `run` as a systemd user service on Linux and as a startup task of the Task Scheduler on Windows. Set the
 config file first, as the [quick start](#quick-start) says, for instance with `sensordeck theme use minimal-dark`.
+
+One sensordeck process at a time uses each device. On Linux the lock is on the device node, so it holds between every
+sensordeck process that opens the device, whatever its user or its environment. On Windows it is one lock for the
+screens and one for the controllers, for the processes of one user, so two sensordeck processes cannot drive two screens
+at once on Windows. The lock binds sensordeck processes only, and ends with the process that holds it.
 
 ### Linux
 
@@ -612,8 +629,16 @@ The service is restarted 10 seconds after it ended with an error, as when no scr
 no limit to the number of restarts. A stop with `systemctl --user stop sensordeck.service` leaves the screen with its
 last values and returns the Commander Core XT to hardware mode.
 
-Running `sensordeck run`, or another command that writes to the screen, by hand while the service runs is not
-supported, because both write to the screen. Stop the service first.
+Running `sensordeck run`, or another command that writes to the screen, by hand while the service runs refuses, with
+this line on standard error and status 1, where `<holder>` is ` (process <process ID>: <command line>)` of the service,
+or nothing when it cannot be found:
+
+```
+sensordeck: the screen is in use by another sensordeck process<holder>, stop it first, or stop the service with systemctl --user stop sensordeck
+```
+
+A service that starts while another sensordeck process has the screen refuses in the same way and starts again 10
+seconds later.
 
 `sensordeck service uninstall` stops and disables the service, removes the unit file and reloads systemd.
 
@@ -671,8 +696,16 @@ starts the task again.
 The task starts `run` with a console, and `run` detaches from it at once, so a console window may flash at the logon
 before it closes.
 
-Running `sensordeck run`, or another command that writes to the screen, by hand while the task runs is not supported,
-because both write to the screen. Stop the task first with `sensordeck service uninstall`.
+Running `sensordeck run`, or another command that writes to the screen, by hand while the task runs refuses, with this
+line on standard error and status 1, where `<holder>` is ` (process <process ID>: <command line>)` of the task's
+process, or nothing when it cannot be found:
+
+```
+sensordeck: the screen is in use by another sensordeck process<holder>, stop it first, or stop the startup task with sensordeck service uninstall
+```
+
+A task that starts while another sensordeck process has the screen refuses in the same way and starts again 10 seconds
+later.
 
 ## Writing a theme
 
