@@ -170,5 +170,11 @@ The five commands of the suite in `AGENTS.md` succeed.
   text of the record does not say: the record says the test passes with the committed image, and it does, so the
   earlier entry overstated it. Only `plan.md` changed, so no suite was rerun for this correction. The status stays
   `in-progress`
+- 2026-11-17T15:17:22Z [OpenCode, openai/gpt-6.1-sol] as the reviewer, performed a delta review of unit
+  `0030-probes-theme-alarm-colours` at commit `1fab8c4b94e7dbac787a99792a27dd075bb89395`, compared against
+  `e6c79a2e8cb95153f244de7de958f4f7eecf583f` from the first review. Verified P1 corrected and returned no new
+  findings, saved in `.reviews/0030-probes-theme-alarm-colours/review-round-2.md`. Independently reran all five
+  required suite commands, `npm run check-changes` and `git diff --check`; all passed. Physical-device rendering
+  and Windows execution remain unverified. The status stays `in-progress`
 
 ## Amendments
