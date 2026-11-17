@@ -20,6 +20,21 @@ timestamp: 2026-11-17T12:05:47Z
   `approved`
 - 2026-11-17T12:20:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, began the work. The status is
   `in-progress`
+- 2026-11-17T13:40:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, built tasks 1 to 7 of the plan on the
+  branch. Verified on this tree: `go test ./...` (the e2e package took about 50 seconds), `go vet ./...`, `gofmt -l .`,
+  `GOOS=windows GOARCH=amd64 go build ./...` and `GOOS=windows GOARCH=amd64 go vet ./...` all succeed. The code for
+  Windows (`lockfile_windows.go`, `device_windows.go`, its tests) is compiled and vetted only, not run: that, and the
+  check of D10 on the device, are the human's. The README sections of the plan are written in the same commit as the
+  e2e tests, not in a commit of their own
+- 2026-11-17T13:41:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, logged these departures from the
+  plan, none of which changes a requirement. `layout_test.go` lists the files that may import `golang.org/x/sys/windows`,
+  and the two files of `internal/devicelock` are added to it. `sensors` after a `run` killed with SIGKILL fails to read
+  the probes in the e2e test while the fake controller has the LED endpoint of channel 0 left open by the killed
+  session, as the driver does not close channel 0 after a failed reading (unit 0005), so the test closes it in the fake
+  before the reading, and checks that the lock is free (`values` succeeds and `sensors` writes no line of a controller
+  in use). The first reading of a real controller after a killed session may fail the same way: not checked on a device.
+  The test of the proc root `Dev` field uses the major and minor of `Stat_t`, checked in the e2e test against a fake
+  `locks` and in the unit test against `/proc/locks`
 
 ## Amendments
 - 2026-11-17T12:06:08Z [Claude Code, anthropic/claude-opus-5-5] read the spec under the delegation in `AGENTS.md`: its cause is the

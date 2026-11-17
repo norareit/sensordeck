@@ -287,6 +287,6 @@ The design decisions the spec leaves to the plan:
 
 ### 7. Checks
 
-- [ ] Run the five commands of the suite in `AGENTS.md` and `npm run check-changes`, and fix what they report (R21)
-- [ ] Check that every requirement R1 to R21 has its task ticked, and that the checks of D10 on the device and on
+- [x] Run the five commands of the suite in `AGENTS.md` and `npm run check-changes`, and fix what they report (R21)
+- [x] Check that every requirement R1 to R21 has its task ticked, and that the checks of D10 on the device and on
   Windows are left to the human
