@@ -42,6 +42,20 @@ timestamp: 2026-11-17T12:05:47Z
   suite commands, an uncached `go test -count=1 ./...`, `npm run check-changes` and the diff whitespace check;
   all succeeded. Windows runtime behavior, the physical-device checks of D10 and the test-first red phase could
   not be verified. The status remains `in-progress`
+- 2026-11-17T14:10:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, accepted finding P1 of
+  `review-round-1-20261117T132203Z.md` by the definition of the orchestrator, which accepts the findings the implementer
+  agrees with, and not as a decision of the human. Added `TestTheLockEndsWithTheTeardownOfAFailedReadingAndOfAFailedSetup`
+  to `internal/commandercore/session_test.go`: the lock of the controller is free after a setup that failed and after a
+  keepalive that failed, and is held while the session is held. `go test ./internal/commandercore`, `go vet ./...` and
+  `gofmt -l .` report nothing on the tree with this change
+- 2026-11-17T14:11:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, proposes declining finding S1
+  of the same review, as a proposal and not as a decision. What it says holds: the SIGKILL test closes the LED
+  endpoint of channel 0 in the fake before `sensors`, which R19 does not say. The session leaves that endpoint open
+  between keepalives, so after any kill of a session the next reading of `sensors` fails on the fake, whatever the lock
+  does. Meeting R19 as written needs a change to the protocol of the reading (closing channel 0 first), which is beyond
+  this unit and which the spec rules out of its scope, or a correction of R19 by the specifier. The lock itself is
+  shown free by the test (`values` succeeds and `sensors` writes no line of a controller in use). The human decides
+  between declining S1 with R19 read as it is tested, a correction of R19, or a new unit for the reading after a kill
 
 ## Amendments
 - 2026-11-17T12:06:08Z [Claude Code, anthropic/claude-opus-5-5] read the spec under the delegation in `AGENTS.md`: its cause is the

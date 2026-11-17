@@ -534,3 +534,41 @@ func TestASetupOfAControllerHeldByAnotherProcessFailsWithNoWrite(test *testing.T
 		test.Fatalf("after End: %v", err)
 	}
 }
+
+// lockIsFree tells whether another sensordeck process could take the lock of the controller now.
+func lockIsFree(test *testing.T, devRoot string) bool {
+	test.Helper()
+	other, err := hidraw.OpenNode(filepath.Join(devRoot, "hidraw9"))
+	if err != nil {
+		test.Fatal(err)
+	}
+	defer other.Close()
+	return devicelock.LockNode(other, "/nonexistent") == nil
+}
+
+func TestTheLockEndsWithTheTeardownOfAFailedReadingAndOfAFailedSetup(test *testing.T) {
+	harness := newSessionHarness(test)
+	harness.controller.FailCommand(openCommand(channelZero, ledEndpoint), fakecommander.BadStatus)
+	if _, _, err := harness.lighting.Start(harness.stop); err == nil {
+		test.Fatal("the setup did not fail")
+	}
+	if !lockIsFree(test, harness.devRoot) {
+		test.Fatal("the lock is held after a setup that failed")
+	}
+
+	harness = newSessionHarness(test)
+	session, _, err := harness.lighting.Start(harness.stop)
+	if err != nil {
+		test.Fatal(err)
+	}
+	if lockIsFree(test, harness.devRoot) {
+		test.Fatal("the lock is free while the session is held")
+	}
+	harness.controller.FailCommand(readCommand(channelOne, 0x21), fakecommander.BadStatus)
+	if _, err := session.Read(harness.stop); err == nil {
+		test.Fatal("the reading did not fail")
+	}
+	if !lockIsFree(test, harness.devRoot) {
+		test.Fatal("the lock is held after a keepalive that failed")
+	}
+}
