@@ -35,6 +35,13 @@ timestamp: 2026-11-17T12:05:47Z
   in use). The first reading of a real controller after a killed session may fail the same way: not checked on a device.
   The test of the proc root `Dev` field uses the major and minor of `Stat_t`, checked in the e2e test against a fake
   `locks` and in the unit test against `/proc/locks`
+- 2026-11-17T13:23:12Z [OpenCode, openai/gpt-6.1-sol] as the reviewer, completed a full review of unit
+  `0029-one-sensordeck-process-per-device` at `3df96a145202d8f77c7fa7a61bb879a776b18333` against merge base
+  `b349c99c17ed0553beb318339fbf69897f22477f`. Returned S1 and P1; the complete review is saved in
+  `.reviews/0029-one-sensordeck-process-per-device/review-round-1-20261117T132203Z.md`. Independently ran the five
+  suite commands, an uncached `go test -count=1 ./...`, `npm run check-changes` and the diff whitespace check;
+  all succeeded. Windows runtime behavior, the physical-device checks of D10 and the test-first red phase could
+  not be verified. The status remains `in-progress`
 
 ## Amendments
 - 2026-11-17T12:06:08Z [Claude Code, anthropic/claude-opus-5-5] read the spec under the delegation in `AGENTS.md`: its cause is the
