@@ -208,7 +208,7 @@ The limits:
 - [x] `GOOS=windows GOARCH=amd64 go build ./...` succeeds and reports nothing (R23)
 - [x] `GOOS=windows GOARCH=amd64 go vet ./...` succeeds and reports nothing (R23)
 - [x] `npm run check-changes` passes on the committed branch
-- [ ] On the screen of the human, `minimal-dark-probes` shows the date, the time, every label and the five temperatures
+- [x] On the screen of the human, `minimal-dark-probes` shows the date, the time, every label and the five temperatures
   with their alarms, as its preview shows it. This is the human's check (R14)
 
 ## Commit Points
