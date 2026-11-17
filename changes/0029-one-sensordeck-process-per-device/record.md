@@ -1,6 +1,6 @@
 ---
 kind: bug
-status: draft
+status: approved
 timestamp: 2026-11-17T12:05:47Z
 ---
 
@@ -13,6 +13,7 @@ timestamp: 2026-11-17T12:05:47Z
   reproduced in the sandbox, which has no device; the root cause is stated from the reported log lines and the code.
   The lock on Linux is `flock` on the device node rather than the lock file under `$XDG_RUNTIME_DIR` the request
   suggested, for the reasons of D2. The status is `draft`
+- 2026-11-17T12:06:09Z [human] approved the spec. The status is `approved`
 
 ## Amendments
 - 2026-11-17T12:06:08Z [Claude Code, anthropic/claude-opus-5-5] read the spec under the delegation in `AGENTS.md`: its cause is the
