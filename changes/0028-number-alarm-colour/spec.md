@@ -157,10 +157,23 @@ gives it (R1 of unit 0026): rounded, halves away from zero, and clamped to -3276
   This holds with the key `theme`, from the tags the compiler gave, and with the key `tags`, from the block
 - **R20** A metric that has no value in a round is not sent, to its plain tag or to either tag of a pair, so the screen
   keeps what it showed, as for any metric today
-- **R21** The pairs of a round are sent in the order of their tags, ascending, in the reports of the value update as
-  today. `run` refuses a theme or a block in which a metric of a pair is neither built in nor defined under `metrics`,
-  with the error of today. The line `running: <n> metrics every <interval>` counts each metric once, whatever entries it
-  has
+- **R21** The values of a round are sent in the order of their tags, ascending, in the reports of the value update as
+  today, except as R21a says. `run` refuses a theme or a block in which a metric of a pair is neither built in nor
+  defined under `metrics`, with the error of today. The line `running: <n> metrics every <interval>` counts each
+  metric once, whatever entries it has
+- **R21a** The two values of an alarm pair are always in the same report of the value update. A report holds at most
+  20 values, and the reports of a round are filled so:
+    - the values of the round form units: a value of a plain entry is a unit of one, and the two values of an alarm
+      pair are a unit of two, its normal tag first, then its alarm tag
+    - the units are in the order of their lowest tag, ascending
+    - the units are placed in that order into the current report while it has room for the whole unit. A unit of two
+      that does not fit in the one place left starts a new report, and that place stays empty
+
+  So a round whose units are all of one value, every round of a theme without alarm number included, is sent in the
+  same reports and order as today. A round of a compiled theme has its values in the order of their tags, since the
+  two tags of a pair follow one another but for 21, and needs at most one more report than today, only when a pair
+  would have been split. With the key `tags`, the alarm tag of a pair is sent right after its normal tag even when other
+  tags lie between them
 
 ### The preview
 
@@ -215,6 +228,10 @@ gives it (R1 of unit 0026): rounded, halves away from zero, and clamped to -3276
       tag 21, the order independent of the order of the widgets, and the tags of a theme without alarm unchanged
     - R15 to R18: the tags file of R17 byte for byte, parsed back to the tags of the compiler; each new form of the key
       `tags` accepted and each error of R16
+    - R21a: the reports of a round with 19 single values followed by a pair, which go in two reports with the pair
+      whole in the second and the first holding 19 values; with 18 single values and a pair, one report of 20; with
+      21 single values, the same two reports as today; and a block whose pair has tags with other tags between them,
+      sent with the alarm tag right after the normal one
     - R2 and R19 to R21: the pair sent across the threshold upward and back downward with `above`, and with `below`;
       a value equal to the threshold; a reading of 80.4 and 80.5 with `above: 80`; a metric with no value sending
       nothing to either tag; a plain entry and a pair of the same metric in one round
@@ -284,9 +301,14 @@ gives it (R1 of unit 0026): rounded, halves away from zero, and clamped to -3276
   that does not say which records form a pair, so it draws every number as 42, and the documents say what that shows.
   A way to draw the alarm state is item 1 of "Beyond the request": the alarm state differs from the normal one in the
   colour alone, which the author wrote
-- **D13 A pair may cross two reports.** A value update carries 20 pairs, and a pair whose two tags fall in two
-  reports is shown with both widgets or with neither for the time between two writes of one round. That is not worth a
-  change of the encoding for this unit, and it is item 6 of "Beyond the request"
+- **D13 A pair is never split across two reports.** A report carries at most 20 values, so a theme with more than 20
+  tags is sent in several reports each round, and a pair whose two values fell in two reports would show both widgets
+  or neither between the two writes, a flicker every round that the user would see. The orchestrating session took
+  item 6 of "Beyond the request" into the unit for this. Filling the reports in order and starting a new report for a
+  pair that does not fit keeps the order and the reports of today for every round without a pair at a boundary, and
+  costs at most one empty place in a report. Rejected: reordering the values to fill every report, which changes the
+  order of today for no visible gain; sending the hiding value first in a report of its own, which still shows
+  nothing for a moment and costs a report in every round
 - **D14 The threat model is unit 0011's.** A theme folder may come from anyone, and D15 of unit 0011 holds. The new
   keys are scalars checked as R3 says, and the boxes are checked against the screen as every box is. The config file is
   the user's own, as it is today
@@ -324,4 +346,4 @@ gives it (R1 of unit 0026): rounded, halves away from zero, and clamped to -3276
    Cost: an error and a test. Without it the number shows in the alarm colour always, which the author sees and fixes
 6. Keeping both tags of a pair in one report of the value update. Cost: a change of how `run` groups the pairs into
    reports and a test. Without it a pair split over two reports shows both widgets or neither for the time between two
-   writes of a round, and only in a round that sends more than 20 values
+   writes of a round, and only in a round that sends more than 20 values. Taken into the unit as R21a
