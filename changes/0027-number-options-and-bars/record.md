@@ -27,6 +27,9 @@ supersedes: 0010-theme-file-reader
   of its edge and a box taller than wide as unknown. The session confirmed that the values of the tests went to the
   tags in byte 2 of the bar records, so R8 stands. The status stays `draft`
 - 2026-11-17T11:11:42Z [human] approved the spec. The status is `approved`
+- 2026-11-17T11:15:15Z [Claude Code, anthropic/claude-opus-5-5] as the planner, wrote the plan against the tree of
+  `feature-0027-number-options-and-bars`: the reader and the dump first, then the compiler, the preview, the end-to-end
+  tests and the documents, in five commits, with every requirement traced to a task. The status stays `approved`
 
 ## Amendments
 - 2026-11-17T11:11:42Z [Claude Code, anthropic/claude-opus-5-5] read the spec under the delegation in `AGENTS.md`: its facts are those
