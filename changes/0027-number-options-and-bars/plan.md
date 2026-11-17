@@ -260,7 +260,7 @@ Commit point 4.
 
 ### The documents
 
-- [ ] In `docs/theme-format.md` (R18):
+- [x] In `docs/theme-format.md` (R18):
     - add the mark **observed on the device** to the list of marks, for a fact seen on the screen on 2026-11-17
     - in "The tags seen", say that the tag of a bar is the tag of a metric, observed on the device, in place of the
       guess
@@ -289,7 +289,7 @@ Commit point 4.
       and the empty part in 12-13; and name as the preview's own the rounding of the centre and of the fill, the fill
       from the left of a tall box, 14-15 as the fill and the clipping at the top and bottom. Name the JSON fields of
       R10 and R11
-- [ ] In `docs/theme-folder.md` (R19):
+- [x] In `docs/theme-folder.md` (R19):
     - in the table of the widgets, add `align`, `opacity` and `thousands` to the number with their values and defaults,
       and the row of `bar` with `metric`, `width`, `height`, `color` and `background`, its defaults and its box
     - after the table, say that the screen cuts a value wider than the box, that the minus sign takes a place so that a
@@ -303,7 +303,7 @@ Commit point 4.
     - in the section on the bytes the compiler writes, give the number's bytes 11, 14 and 15 as R3 writes them, observed
       on the device, and the bar's bytes as R7 writes them, with 12-17 observed and 11, 18-19, 20-25 and 26-27 copied
       from the vendor sample, and remove the alignment from the closing sentence of what was not checked
-- [ ] In `README.md` (R20):
+- [x] In `README.md` (R20):
     - in "Writing a theme", give the number of the example `align: center` or `align: right` and add a bar such as
       `{type: bar, metric: cpu.util, x: 20, y: 130, width: 200, height: 12, color: "#00c8ff"}`, and add a paragraph on
       `align`, `opacity`, `thousands` and the bar, the value cut at the edge of its box and the minus sign that
@@ -316,7 +316,7 @@ Commit point 4.
       fact that it shows nothing
     - in "Reading a theme file", replace the left alignment and the magenta outlines with the numbers aligned as their
       record says and clipped to their box, and the bars filled to 42
-- [ ] Read each changed section against R18 to R20 item by item, and check that no other part of the three documents
+- [x] Read each changed section against R18 to R20 item by item, and check that no other part of the three documents
   still says that the alignment, byte 14, the opacity of a number, the bar or the clipping is unknown or a guess where
   this unit established it, with `grep -n "magenta\|left-aligned\|_guess\|not been checked\|bytes_11_63" README.md
   docs/*.md`
@@ -342,4 +342,4 @@ Commit point 5.
 - [x] 2: `feature-0027 Compile the number options and the bar widget`
 - [x] 3: `feature-0027 Align, clip and fade numbers and draw bars in the preview`
 - [x] 4: `feature-0027 Cover the bar and the number options end to end`
-- [ ] 5: `feature-0027 Document the number options, the bar and the observations of the device`
+- [x] 5: `feature-0027 Document the number options, the bar and the observations of the device`

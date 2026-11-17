@@ -17,9 +17,11 @@ vendor is part of this repository. Every rule of the layout was checked by compo
 each sample from these rules alone. All three previews showed the expected screen: backgrounds, icons, text labels,
 numbers, the date and the time in place.
 
-Each rule below carries one of three marks:
+Each rule below carries one of these marks:
 
 * **known**: the rule holds in all three samples and the previews confirmed it
+* **observed on the device**: seen on the screen on 2026-11-17, with test themes patched by hand and values sent with
+  `sensordeck values`. The device was the screen of the project, and what was not tried is said to be unknown
 * **guess**: a plausible reading that nothing has confirmed
 * **unknown**: no reading at all
 
@@ -62,7 +64,8 @@ Bytes 0 to 10 of a slot:
 The tag of a number record is the metric tag the computer sends values for. Tags 1 (CPU temperature), 5 (GPU
 temperature), 12 (RAM %), 13 (SSD temperature), 18 (upload KiB/s) and 19 (download KiB/s) of the tool-made sample were
 confirmed on the device earlier. Number records with tag 0 occur in the orange sample. Date and time records have tag 21
-(`0x15`). For progress bars the tag is a guess. Other records have tag 0.
+(`0x15`). The tag of a bar is the tag of a metric: values sent to the tag of a bar were shown by it. Observed on the device on
+2026-11-17. Other records have tag 0.
 
 ## The record types
 
@@ -144,10 +147,10 @@ The text is pre-rendered: one alpha mask of width x height bytes, drawn in the c
 
 | Bytes | Meaning | Status |
 |---|---|---|
-| 11 | 1 in every sample | guess: the alignment of the value in its box. Left alignment looked plausible in the previews, centring is as likely |
+| 11 | 1 in every sample | the alignment of the value in its box: 0 left, 1 centred, 2 right. Observed on the device on 2026-11-17, with three numbers of the same box and value side by side. Values above 2 are unknown |
 | 12-13 | RGB565 colour | known |
-| 14 | 0 in every sample | guess: the number of decimals, since the device shows whole numbers |
-| 15 | `0xff` in every sample | guess, by analogy with byte 17 of text: the opacity |
+| 14 | 0 in every sample | the thousands mode when not 0. Observed on the device on 2026-11-17: with 1, 1234 showed `1.2` and 12345 showed `12`, and with 2, 1234 showed `1.2` and 999 showed `0.9`. The values 1 and 2 looked the same. Values above 2 and the difference between 1 and 2 are unknown |
+| 15 | `0xff` in every sample | the opacity: 0 made the number invisible and 255 opaque. Observed on the device on 2026-11-17. Values from 1 to 254 were not tried and are unknown |
 | 16-19 | offset of the glyph set | known |
 | 20-21 | glyph height | known |
 | 22-45 | twelve 16-bit glyph widths, for the glyphs `0 1 2 3 4 5 6 7 8 9 . -` in this order | known |
@@ -156,6 +159,18 @@ The text is pre-rendered: one alpha mask of width x height bytes, drawn in the c
 The glyph set is the twelve glyphs back to back in the order of the widths, each an alpha mask of glyph height x its own
 width bytes, row by row, drawn in the colour. Its size is the glyph height times the sum of the twelve widths. In the
 samples the ten digit widths are equal.
+
+The thousands mode: all three results agree with the value divided by 1000 and cut, not rounded, to one decimal below
+10000 and to a whole number from 10000 on. That is a guess, and nothing beyond the three results is established: no
+negative value, no value from 10000 to 12344, no value below 999 and no other value of the byte was tried.
+
+On the device, observed on 2026-11-17:
+
+* The glyphs of a number are clipped to the box of the record: -32768 in a box of 5 digits showed `-3276` with the 8
+  cut at the right edge of the box, and 40000, which the screen reads as -25536, in a right-aligned box showed `25536`
+  with its minus sign cut at the left edge. Only the left and the right edge were seen
+* The minus sign takes a place in the box, like a digit
+* A number that never received a value shows nothing
 
 ## `0x8E` datetime
 
@@ -183,35 +198,69 @@ other fields two, with a leading zero. How a format refers to the six CJK glyphs
 
 ## `0x8B` bar
 
-Only the orange sample has bars, four of them, and all four have the same bytes from byte 11 on: `01 00 00 a8 00 a8 00 76
-b0 00 00 00 00 00 00 76 b0`, followed by zeros. Read as 16-bit values from byte 12 on, they are `0000`, `a800`, `a800`,
-`76b0`, `0000`, `0000`, `0000`, `76b0`. There is no resource offset. `a800` (dark red) and `76b0` (light green) look like
-RGB565 colours. The fields are unknown and are not decoded: decoding them needs experiments on the device. The dump
-keeps bytes 11 to 63 as one unknown range.
+The common head is that of every record: type, index, tag, x, y, width and height. Only the orange sample has bars, four
+of them, and all four have the same bytes from byte 11 on: `01 00 00 a8 00 a8 00 76 b0 00 00 00 00 00 00 76 b0`,
+followed by zeros. There is no resource offset. The test themes kept these bytes and changed the ones named below one at
+a time.
+
+| Bytes | Meaning | Status |
+|---|---|---|
+| 11 | 1 in every sample and every test | unknown |
+| 12-13 | `0000` in the samples: the colour of the empty part. Observed on the device on 2026-11-17 | observed on the device |
+| 14-15 | `a800` in the samples (dark red): the colour of the fill or of the frame. Writing `07e0` into both 14-15 and 16-17 made the fill and the frame green. Which of the two is the fill was not separated | observed on the device, for the pair |
+| 16-17 | `a800` in the samples: the colour of the fill or of the frame, as 14-15 | observed on the device, for the pair |
+| 18-19 | `76b0` in the samples. Writing `001f` into this and 26-27 had no visible effect | unknown |
+| 20-25 | zero in the samples. Writing 50 into 20-21, 22-23 or 24-25 gave no threshold colour | unknown |
+| 26-27 | `76b0` in the samples. No visible effect when changed, as 18-19 | unknown |
+| 28-63 | zero | unknown |
+
+What was observed on the device on 2026-11-17:
+
+* The value is a share from 0 to 100: 50 filled half the bar, 100 filled it, 0 showed it empty and 150 showed it empty.
+  Values from 101 to 149 and negative values were not tried
+* A bar that never received a value shows full, in the colour of bytes 14 to 17
+* The fill grows from the left edge: at 50 each bar was filled from the left edge to about the middle, and at 100
+  entirely. Where the edge of the fill falls in pixels was not measured, and no bar taller than wide was tried
+* The frame is drawn inside the box of the bar, an outline one pixel wide
+* The tag of a bar is the tag of a metric, and the values were sent to it as to a number
 
 ## Open questions
 
 Each of these needs an experiment on the device, or more samples:
 
-* byte 11 of a number: whether it is the alignment of the value in its box, and what its values mean
-* byte 14 of a number: whether it is the number of decimals
-* the bars: every field from byte 11 on
+* the values of the number bytes that were not tried: byte 15 from 1 to 254, byte 11 above 2, byte 14 above 2 and the
+  difference between 1 and 2 of byte 14, and the rule of the thousands mode, whose guess rests on three results
+* the bars: byte 11, which of bytes 14-15 and 16-17 is the fill, bytes 18 to 63, the values from 101 to 149 and below 0,
+  how a bar fills a box taller than wide, and the exact pixels of the edge of the fill
 * the startup timings: bytes 16 to 19 of a startup, whether they are the duration and the period of a frame
-* the opacity bytes: byte 17 of a text, byte 15 of a number and byte 14 of a datetime
+* the opacity bytes: byte 17 of a text and byte 14 of a datetime
 * the header: what byte 0 means and whether the other bytes matter
 * the index byte of a record, whose value is known and whose purpose is not
 * how a datetime refers to its six CJK glyphs, since its format is ASCII
 * the order in which the device draws the records: the dump draws them in the order of the slots
-* whether the device clips glyphs to the box of their record: the dump clips them to the screen only
+* whether the device clips a number at the top and the bottom of its box, and whether it clips the glyphs of a datetime
 
 ## What the dump of `sensordeck theme dump` shows
 
 The preview of the dump is composed from the records alone: it starts black, and the records are drawn in the order of
-the slots, each over what is there. Every number is drawn as the sample value `42`, and a datetime as 2026-11-15
-09:41:07. Numbers are drawn left-aligned in their box, because the alignment of the device is not known yet. A bar is
-drawn as the outline of its box in `#ff00ff`, a placeholder because its fields are not decoded. A startup and a record
-of an unknown type are not drawn.
+the slots, each over what is there. A startup and a record of an unknown type are not drawn.
+
+* A number is drawn as the sample value `42`, or as `1.2` when byte 14 is not 0, with its glyphs side by side. Byte 11
+  places the value in the box: 0 at the left edge, 2 with its right edge at the right edge of the box, and 1 centred,
+  and any other value as 0. A number is clipped to its box on all four sides and to the screen, and the alpha of each
+  pixel of its glyphs is multiplied by byte 15 over 255
+* A datetime is drawn as 2026-11-15 09:41:07, clipped to the screen only
+* A bar is drawn at the sample value 42: its frame, one pixel inside the edge of the box, in the colour of bytes 16-17,
+  then inside the frame as many columns from the left as the width inside the frame times 42 over 100, rounded down, in
+  the colour of bytes 14-15, and the other columns in the colour of bytes 12-13. A box 2 high or wide or less has no
+  inside and shows its frame alone
+
+Some of these are choices of the preview and not facts of the device: the centre rounded down when the margin is odd, the
+fill rounded down, the fill from the left in a box taller than wide, bytes 14-15 as the fill, and the clipping of a
+number at the top and the bottom of its box.
 
 The names of the fields in `theme.json` carry the marks of this document: a name that ends in `_guess` is a guess, and a
 name of the form `byte_<n>_unknown` or `bytes_<from>_<to>_unknown` is a byte or a range whose meaning is unknown. When a
-guess is confirmed, the field is renamed.
+guess is confirmed, the field is renamed. A number has `alignment`, `thousands_mode` and `opacity`, each with the value
+of its byte. A bar has `byte_11_unknown`, `empty_colour`, `fill_or_frame_colour_14`, `fill_or_frame_colour_16` and
+`bytes_18_63_unknown`.

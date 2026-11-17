@@ -124,8 +124,8 @@ time and the date. The GPU tiles need `nvidia-smi` and show the first NVIDIA GPU
 in the order of the places of the hardware, as the table of metrics says.
 
 When the host cannot read a metric of a tile, `run` does not send its value, so the tile keeps the last value it was
-sent. A tile that was never sent one shows what the screen shows for a number with no value, which has not been checked
-on the device.
+sent. A tile that was never sent one shows nothing: that a number that never received a value shows nothing was observed on
+the device.
 
 `sensordeck theme preview minimal-dark preview.png` draws the theme as a PNG, with no screen.
 
@@ -686,9 +686,28 @@ fonts:
 widgets:                          # drawn in this order
   - {type: image, file: icons/cpu.png, x: 20, y: 20}
   - {type: text, font: label, text: CPU, x: 70, y: 28}
-  - {type: number, font: value, metric: cpu.temp, digits: 3, x: 70, y: 60}
+  - {type: number, font: value, metric: cpu.temp, digits: 3, align: right, x: 70, y: 60}
+  - {type: bar, metric: cpu.util, x: 20, y: 130, width: 200, height: 12, color: "#00c8ff"}
   - {type: datetime, font: label, format: "YYYY-MM-DD HH:mm:ss", x: 20, y: 280}
 ```
+
+A number takes three more keys. `align` is `left`, `center` or `right`, and `center` without the key. `opacity` is a number
+from 0 to 1, 1 without the key, but only 0 and 1 were seen on the device. `thousands: true` shows the value in thousands,
+`1.2` for 1234. A bar shows its metric's value as a share from 0 (empty) to 100 (full), filled from the left, in its
+`color`, with the empty part in its `background`, black without the key. The screen cuts a value that is wider than its
+box, and the minus sign of a negative value takes a place in the box like a digit, so `digits` must count it. The
+[theme folder document](docs/theme-folder.md) has the rest.
+
+A bar shows 0 to 100, which `cpu.util`, `gpu.util` and `ram.util` fit as they are. A metric of another range is shown
+through a custom metric whose `scale` makes it 0 to 100. This one reads a temperature of a chip of hwmon in
+millidegrees, so that 90 °C fills the bar, since 0.001 times 100 over 90 is 0.0011111:
+
+```yaml
+metrics:
+  board.load: {hwmon: nct6799, input: temp1_input, scale: 0.0011111}
+```
+
+with `{type: bar, metric: board.load, x: 20, y: 150, width: 200, height: 12, color: "#ff8000"}` in the theme.
 
 Two commands work on a theme and need no screen. The first argument is a theme name or a folder:
 
@@ -705,7 +724,7 @@ Windows. A theme folder copied there under a name is found by that name, and rep
 `sensordeck theme list` lists the built-in and the installed themes, one line each, with tabs between the name, the kind
 and the folder of an installed theme.
 
-The compiler gives each metric of the number widgets a tag and writes the mapping beside the theme file, in
+The compiler gives each metric of the number and bar widgets a tag and writes the mapping beside the theme file, in
 `img.tags.yaml`:
 
 ```yaml
@@ -752,8 +771,8 @@ writes what is in it into the directory, which it creates when it does not exist
 * a PNG of each resource, named after the slot of its record, such as `slot03-image-frame1.png`
 * `preview.png`, the 480 x 320 screen composed from the records alone
 
-The preview shows every number as 42 and the date and time as 2026-11-15 09:41:07, draws numbers left-aligned and bars
-as magenta outlines, because the device's own alignment and the fields of a bar are not known yet. The command touches no
+The preview shows every number as 42 and the date and time as 2026-11-15 09:41:07, draws each number as its record aligns it,
+clipped to its box, and each bar filled to 42. The command touches no
 device and works with no screen connected, on Linux and on Windows. It prints each warning of the reader, such as a
 record of a type it does not know, to standard error. The format is described in
 [docs/theme-format.md](docs/theme-format.md).

@@ -76,9 +76,19 @@ names them, and a theme has at most 62 of them, because the background takes one
 | Type | Keys | Meaning |
 |---|---|---|
 | `text` | `font`, `text` | A fixed text. `font` names a font of `fonts`. `text` is a non-empty single line with no control character |
-| `number` | `font`, `metric`, `digits` | A value that the device fills in. `metric` is the name of a metric. `digits`, a whole number from 1 to 5 and 3 without the key, is how many digits the box of the value holds |
+| `number` | `font`, `metric`, `digits`, `align`, `opacity`, `thousands` | A value that the device fills in. `metric` is the name of a metric. `digits`, a whole number from 1 to 5 and 3 without the key, is how many digits the box of the value holds. `align` is `left`, `center` or `right`, and `center` without the key. `opacity` is a number from 0 to 1, whole or decimal, and 1 without the key. `thousands` is `true` or `false`, and `false` without the key |
 | `datetime` | `font`, `format` | The date and the time, which the device fills in from the clock |
 | `image` | `file` | A PNG in the folder, drawn at its own size |
+| `bar` | `metric`, `width`, `height`, `color`, `background` | A bar that the device fills in from a metric. `metric` is as for a number. `width` and `height`, whole numbers from 1, are the size of its box. `color`, a colour, is the colour of the fill and of the frame. `background`, a colour and `"#000000"` without the key, is the colour of the empty part. A bar has no font |
+
+The screen cuts a value that is wider than the box of its number. The minus sign of a negative value takes a place in the
+box like a digit, so a number that shows negative values needs a `digits` one larger than its longest value. With
+`thousands` the value is shown in thousands, `1.2` for 1234 and `12` for 12345, with the point taking its own glyph
+width. The compiler writes any `opacity` between 0 and 1 as a byte, but only 0 and 1 were seen on the device.
+
+A bar shows the value of its metric as a share from 0 (empty) to 100 (full), as it is: nothing scales it. A value above
+100 was seen to show the bar empty, and a bar that never received a value shows full. A metric of another range is made
+a share with a custom metric, as the [README](../README.md#writing-a-theme) shows.
 
 A metric name is a built-in one, from the table in the
 [README](../README.md#showing-sensor-values-on-the-screen), or a custom one that the user defines under `metrics` in the
@@ -108,15 +118,15 @@ month and no unit character.
 
 ## The tags
 
-The device takes a value for a tag, a number, and not for a metric. The compiler gives the number widgets their tags:
+The device takes a value for a tag, a number, and not for a metric. The compiler gives the number and bar widgets their tags:
 the distinct metric names of the theme, sorted by their bytes, get 1, 2, 3 and up, with 21 skipped, because 21 is the tag
-of the clock. Two widgets with the same metric have the same tag, and no number gets 0. The tags do not depend on the
+of the clock. Two widgets with the same metric, a bar and a number included, have the same tag, and no widget gets 0. The tags do not depend on the
 order of the widgets.
 
 `sensordeck theme compile <name-or-folder> <out.dat>` writes the tags beside the theme file, in a file named like it with its
 extension replaced by `.tags.yaml`, or with `.tags.yaml` added when there is none, so `img.dat` gives `img.tags.yaml`.
 It is a block in the shape of the `tags:` section of the config file of `sensordeck run`, to be pasted into it. For a
-theme with no number it is `tags: {}`, and such a theme needs no values from `run`.
+theme with neither a number nor a bar it is `tags: {}`, and such a theme needs no values from `run`.
 
 The tags file is for a config file with `tags`, which is the way to use a vendor theme. A config file with the key
 `theme`, which names this theme by its name or folder, needs no tags block, because `run` compiles the theme and takes
@@ -147,8 +157,8 @@ because the background record has no alpha. A solid background is a full picture
 ## The box of a widget
 
 The box of each widget is exactly what it draws, from its x and y: an image has the size of its PNG, a text the width of
-its text as the font measures it, rounded up, a number `digits` digit widths, and a datetime the width of its format as
-drawn, each `YYYY` four digit widths and each other token two. All have the glyph height, except an image. The preview
+its text as the font measures it, rounded up, a number `digits` digit widths, a bar its `width` and `height`, and a datetime the width of its format as
+drawn, each `YYYY` four digit widths and each other token two. All have the glyph height, except an image and a bar. The preview
 draws from the top left of the box, so the box and the preview agree.
 
 ## The limits
@@ -178,9 +188,15 @@ the values that the three vendor samples agree on. **They come from the samples 
   and the rest of 18 to 63 is zero. Its offset is never 0
 * Image: one frame, byte 16 is 1, bytes 17 to 18 are 0, bytes 19 to 63 are zero
 * Text: the tag is 0, byte 17 is `0xff`, bytes 18 to 63 are zero
-* Number: byte 11 is 1, byte 14 is 0, byte 15 is `0xff`, bytes 46 to 63 are zero
+* Number: byte 11 is 0 for `left`, 1 for `center` and 2 for `right`, byte 14 is 1 with `thousands: true` and 0 otherwise,
+  byte 15 is the opacity times 255 rounded to the nearest whole number, halves up, and bytes 46 to 63 are zero. Bytes
+  11, 14 and 15 were observed on the device on 2026-11-17, with 0 and 255 for byte 15 only
+* Bar: the tag of its metric, byte 11 is 1, bytes 12-13 are the colour of `background`, bytes 14-15 and 16-17 are both
+  the colour of `color`, bytes 18-19 and 26-27 are `76b0` and the rest is zero. Bytes 12 to 17 were observed on the
+  device on 2026-11-17. Byte 11, bytes 18-19, bytes 20 to 25 and bytes 26-27 are copied from the vendor sample, and
+  changing them showed nothing. A bar adds no resource
 * Datetime: the tag is 21, byte 11 is 1, byte 14 is `0xff`, and the compiled format fills bytes 45 on, followed by zero
   bytes
 
 Whether the device draws a compiled theme as the preview shows it, with these bytes, the tags above 20, the order of
-drawing and the alignment of a number in its box, has not been checked on the device.
+drawing and the bytes of a bar that are copied from the vendor sample, has not been checked on the device.
