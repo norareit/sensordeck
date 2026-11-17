@@ -19,6 +19,16 @@ timestamp: 2026-11-17T11:32:23Z
   `feature-0028-number-alarm-colour`. Every requirement from R1 to R29 has a task. The status stays `approved`
 - 2026-11-17T11:40:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, began the work. The status is
   `in-progress`
+- 2026-11-17T12:40:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, built the unit by the plan and ticked
+  every task. The work went into four commits and not the plan's four implementation commits: the config reading of
+  pairs came first and alone, the compiler with `run` went into one, then the preview with the end-to-end tests, then
+  the documents. Two points the plan did not spell out: the existing config test that gave a mapping as a tag the error
+  of a tag now uses a list, since a mapping is the new form of R15; and `themeimage.drawRecord` takes the entry and the
+  values so that `Preview` and `PreviewWithValues` share one path. Run on `8de561a`: `go test ./...` (which runs the
+  end-to-end tests) passes, `go vet ./...` and `gofmt -l .` report nothing, and `GOOS=windows GOARCH=amd64 go build ./...`
+  and `go vet ./...` succeed and report nothing. The tags files of the built-in themes are unchanged, by the existing
+  built-in theme tests that passed. The device check of D15 was not made and is the human's. The status stays
+  `in-progress`
 
 ## Amendments
 - 2026-11-17T11:33:51Z [Claude Code, anthropic/claude-opus-5-5] read the spec under the delegation in `AGENTS.md`: its method is the
