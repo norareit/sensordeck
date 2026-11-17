@@ -103,3 +103,9 @@ the README. It is a change of `README.md` only.
   which the orchestrating session took, into the requirements: the sentences that say Windows has not been checked
   are to say what was checked on 2026-11-16 and 2026-11-17 and what was not, as the orchestrating session listed it,
   and no more. Removed the section "Beyond the request", which held nothing else. The status stays `draft`
+- 2026-11-17T22:09:46Z [Claude Code, anthropic/claude-opus-5-5] read the record under the delegation in `AGENTS.md`: every change
+  is to the README, rests on what the human saw on Windows on 2026-11-16 and 2026-11-17, and claims nothing that was
+  not checked, and the sentence on the restart after an error is corrected to what the task does. The approval that
+  follows is made under that delegation
+
+## Amendments
