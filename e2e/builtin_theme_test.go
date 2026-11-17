@@ -10,7 +10,10 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/norareit/sensordeck/internal/builtinthemes"
+	"github.com/norareit/sensordeck/internal/config"
 	"github.com/norareit/sensordeck/internal/fakescreen"
+	"github.com/norareit/sensordeck/internal/themecompile"
 	"github.com/norareit/sensordeck/internal/themefile"
 	"github.com/norareit/sensordeck/internal/themeimage"
 )
@@ -32,18 +35,18 @@ tags:
 
 const minimalDarkProbesTagsFile = `# Paste this block into the config file of sensordeck run.
 tags:
-  commander.1.temp: 1
-  commander.2.temp: 2
-  cpu.temp: 3
-  cpu.util: 4
-  gpu.mem.used: 5
-  gpu.temp: 6
-  gpu.util: 7
-  net.down: 8
-  net.up: 9
-  nvme.2.temp: 10
-  ram.used: 11
-  ram.util: 12
+  commander.1.temp: {alarms: [{above: 60, normal: 1, alarm: 2}]}
+  commander.2.temp: {alarms: [{above: 35, normal: 3, alarm: 4}]}
+  cpu.temp: {alarms: [{above: 90, normal: 5, alarm: 6}]}
+  cpu.util: 7
+  gpu.mem.used: 8
+  gpu.temp: {alarms: [{above: 85, normal: 9, alarm: 10}]}
+  gpu.util: 11
+  net.down: 12
+  net.up: 13
+  nvme.2.temp: {alarms: [{above: 70, normal: 14, alarm: 15}]}
+  ram.used: 16
+  ram.util: 17
 `
 
 // configHome gives a temporary config directory, the variable that makes it the one of the executable, and the themes
@@ -129,8 +132,21 @@ func compileAndPreviewByName(test *testing.T, name, wantTagsFile string) {
 	if got.status != 0 || got.stdout != "wrote "+preview+"\n" || got.stderr != "" {
 		test.Fatalf("preview: status %d, stdout %q, stderr %q", got.status, got.stdout, got.stderr)
 	}
+	// The preview draws the normal state, so the widget of the alarm state of each alarm number is hidden.
+	folder, found := builtinthemes.Folder(name)
+	if !found {
+		test.Fatalf("%s is not a built-in theme", name)
+	}
+	compiled, err := themecompile.Compile(folder)
+	if err != nil {
+		test.Fatal(err)
+	}
+	hidden := make(map[int]int16, len(compiled.AlarmSlots))
+	for _, slot := range compiled.AlarmSlots {
+		hidden[slot] = config.HidingValue
+	}
 	var want bytes.Buffer
-	if err := png.Encode(&want, themeimage.Preview(theme)); err != nil {
+	if err := png.Encode(&want, themeimage.PreviewWithValues(theme, hidden)); err != nil {
 		test.Fatal(err)
 	}
 	if written, err := os.ReadFile(preview); err != nil || !bytes.Equal(written, want.Bytes()) {

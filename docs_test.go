@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/norareit/sensordeck/internal/builtinthemes"
+	"github.com/norareit/sensordeck/internal/config"
 	"github.com/norareit/sensordeck/internal/themecompile"
 	"github.com/norareit/sensordeck/internal/themefile"
 	"github.com/norareit/sensordeck/internal/themeimage"
@@ -40,7 +41,12 @@ func TestThePreviewImagesAreWhatTheCodeDrawsNow(test *testing.T) {
 			if err != nil {
 				test.Fatal(err)
 			}
-			want := themeimage.Preview(theme)
+			// The preview draws the normal state, so the widget of the alarm state of each alarm number is hidden.
+			hidden := make(map[int]int16, len(compiled.AlarmSlots))
+			for _, slot := range compiled.AlarmSlots {
+				hidden[slot] = config.HidingValue
+			}
+			want := themeimage.PreviewWithValues(theme, hidden)
 
 			if mismatch := compareWithImage(preview.path, want); mismatch != "" {
 				test.Errorf("%s %s: write the image again with %q", preview.path, mismatch,

@@ -12,13 +12,13 @@ fonts:
 widgets:
   - {type: text, font: label, text: CPU, x: 20, y: 18}
   - {type: text, font: unit, text: "°C", x: 136, y: 18}
-  - {type: number, font: big, metric: cpu.temp, x: 20, y: 44}
+  - {type: number, font: big, metric: cpu.temp, x: 20, y: 44, alarm: {above: 90, color: "#ff3030"}}
   - {type: text, font: label, text: LOAD, x: 20, y: 102}
   - {type: number, font: small, metric: cpu.util, x: 70, y: 101}
   - {type: text, font: unit, text: "%", x: 140, y: 102}
   - {type: text, font: label, text: GPU, x: 176, y: 18}
   - {type: text, font: unit, text: "°C", x: 292, y: 18}
-  - {type: number, font: big, metric: gpu.temp, x: 176, y: 44}
+  - {type: number, font: big, metric: gpu.temp, x: 176, y: 44, alarm: {above: 85, color: "#ff3030"}}
   - {type: text, font: label, text: LOAD, x: 176, y: 102}
   - {type: number, font: small, metric: gpu.util, x: 226, y: 101}
   - {type: text, font: unit, text: "%", x: 296, y: 102}
@@ -32,13 +32,13 @@ widgets:
   - {type: text, font: unit, text: MiB, x: 128, y: 150}
   - {type: number, font: big, metric: gpu.mem.used, digits: 5, x: 20, y: 176}
   - {type: text, font: label, text: DISK, x: 20, y: 234}
-  - {type: number, font: small, metric: nvme.2.temp, x: 76, y: 233}
+  - {type: number, font: small, metric: nvme.2.temp, x: 76, y: 233, alarm: {above: 70, color: "#ff3030"}}
   - {type: text, font: unit, text: "°C", x: 136, y: 234}
   - {type: text, font: label, text: GPU CABLE, x: 176, y: 150}
   - {type: text, font: unit, text: "°C", x: 292, y: 150}
-  - {type: number, font: big, metric: commander.1.temp, x: 176, y: 176}
+  - {type: number, font: big, metric: commander.1.temp, x: 176, y: 176, alarm: {above: 60, color: "#ff3030"}}
   - {type: text, font: label, text: INTAKE, x: 176, y: 234}
-  - {type: number, font: small, metric: commander.2.temp, x: 240, y: 233}
+  - {type: number, font: small, metric: commander.2.temp, x: 240, y: 233, alarm: {above: 35, color: "#ff3030"}}
   - {type: text, font: unit, text: "°C", x: 292, y: 234}
   - {type: text, font: label, text: NETWORK, x: 332, y: 150}
   - {type: text, font: unit, text: KiB/s, x: 424, y: 150}

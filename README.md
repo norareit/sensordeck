@@ -137,7 +137,9 @@ the device.
   first NVMe drive, the network and the clock, each with the number 42 as a sample value](docs/minimal-dark.png)
 
 * `minimal-dark-probes` is `minimal-dark` with the VRAM total replaced by the temperature of the second NVMe drive, and
-  the disk tile replaced by the two probes of a Corsair iCUE Commander Core XT.
+  the disk tile replaced by the two probes of a Corsair iCUE Commander Core XT. It shows its five
+  temperatures in red past their thresholds, in °C: CPU above 90, GPU above 85, DISK above 70, GPU CABLE above 60 and
+  INTAKE above 35, as [Writing a theme](#writing-a-theme) describes for the key `alarm`.
 
   ![The preview of the built-in theme minimal-dark-probes: tiles for the CPU, the GPU, the memory, the VRAM with the
   temperature of the second NVMe drive under it, the two probes GPU CABLE and INTAKE, the network and the clock, each with
@@ -154,7 +156,8 @@ metric the host cannot read behaves as the [quick start](#quick-start) says.
 
 `minimal-dark-probes` is an example to copy and adapt: copy its folder,
 `internal/builtinthemes/themes/minimal-dark-probes` of the repository, into the themes directory under a name of your
-own, and change the labels and the metrics to those of your own hardware.
+own, and change the labels and the metrics to those of your own hardware, and the thresholds in the key `alarm` of its
+`theme.yaml`.
 
 ## Commands
 

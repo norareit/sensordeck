@@ -91,13 +91,13 @@ fonts:
 widgets:
   - {type: text, font: label, text: CPU, x: 20, y: 18}
   - {type: text, font: unit, text: "°C", x: 136, y: 18}
-  - {type: number, font: big, metric: cpu.temp, x: 20, y: 44}
+  - {type: number, font: big, metric: cpu.temp, x: 20, y: 44, alarm: {above: 90, color: "#ff3030"}}
   - {type: text, font: label, text: LOAD, x: 20, y: 102}
   - {type: number, font: small, metric: cpu.util, x: 70, y: 101}
   - {type: text, font: unit, text: "%", x: 140, y: 102}
   - {type: text, font: label, text: GPU, x: 176, y: 18}
   - {type: text, font: unit, text: "°C", x: 292, y: 18}
-  - {type: number, font: big, metric: gpu.temp, x: 176, y: 44}
+  - {type: number, font: big, metric: gpu.temp, x: 176, y: 44, alarm: {above: 85, color: "#ff3030"}}
   - {type: text, font: label, text: LOAD, x: 176, y: 102}
   - {type: number, font: small, metric: gpu.util, x: 226, y: 101}
   - {type: text, font: unit, text: "%", x: 296, y: 102}
@@ -111,13 +111,13 @@ widgets:
   - {type: text, font: unit, text: MiB, x: 128, y: 150}
   - {type: number, font: big, metric: gpu.mem.used, digits: 5, x: 20, y: 176}
   - {type: text, font: label, text: DISK, x: 20, y: 234}
-  - {type: number, font: small, metric: nvme.2.temp, x: 76, y: 233}
+  - {type: number, font: small, metric: nvme.2.temp, x: 76, y: 233, alarm: {above: 70, color: "#ff3030"}}
   - {type: text, font: unit, text: "°C", x: 136, y: 234}
   - {type: text, font: label, text: GPU CABLE, x: 176, y: 150}
   - {type: text, font: unit, text: "°C", x: 292, y: 150}
-  - {type: number, font: big, metric: commander.1.temp, x: 176, y: 176}
+  - {type: number, font: big, metric: commander.1.temp, x: 176, y: 176, alarm: {above: 60, color: "#ff3030"}}
   - {type: text, font: label, text: INTAKE, x: 176, y: 234}
-  - {type: number, font: small, metric: commander.2.temp, x: 240, y: 233}
+  - {type: number, font: small, metric: commander.2.temp, x: 240, y: 233, alarm: {above: 35, color: "#ff3030"}}
   - {type: text, font: unit, text: "°C", x: 292, y: 234}
   - {type: text, font: label, text: NETWORK, x: 332, y: 150}
   - {type: text, font: unit, text: KiB/s, x: 424, y: 150}
@@ -131,39 +131,54 @@ widgets:
 
 const minimalDarkProbesTags = `# Paste this block into the config file of sensordeck run.
 tags:
-  commander.1.temp: 1
-  commander.2.temp: 2
-  cpu.temp: 3
-  cpu.util: 4
-  gpu.mem.used: 5
-  gpu.temp: 6
-  gpu.util: 7
-  net.down: 8
-  net.up: 9
-  nvme.2.temp: 10
-  ram.used: 11
-  ram.util: 12
+  commander.1.temp: {alarms: [{above: 60, normal: 1, alarm: 2}]}
+  commander.2.temp: {alarms: [{above: 35, normal: 3, alarm: 4}]}
+  cpu.temp: {alarms: [{above: 90, normal: 5, alarm: 6}]}
+  cpu.util: 7
+  gpu.mem.used: 8
+  gpu.temp: {alarms: [{above: 85, normal: 9, alarm: 10}]}
+  gpu.util: 11
+  net.down: 12
+  net.up: 13
+  nvme.2.temp: {alarms: [{above: 70, normal: 14, alarm: 15}]}
+  ram.used: 16
+  ram.util: 17
 `
 
 // builtInThemes is the table of the built-in themes, in the order of their names. A new built-in theme is a row.
 var builtInThemes = []struct {
-	name        string
-	themeYAML   string
-	metricNames []string
-	tagsFile    string
+	name      string
+	themeYAML string
+	tags      []config.Mapping
+	alarms    []config.AlarmPair
+	tagsFile  string
 }{
 	{
 		name:      "minimal-dark",
 		themeYAML: minimalDarkYAML,
-		metricNames: []string{"cpu.temp", "cpu.util", "gpu.mem.total", "gpu.mem.used", "gpu.temp", "gpu.util", "net.down",
-			"net.up", "nvme.1.temp", "ram.used", "ram.util"},
+		tags: []config.Mapping{
+			{Name: "cpu.temp", Tag: 1}, {Name: "cpu.util", Tag: 2}, {Name: "gpu.mem.total", Tag: 3},
+			{Name: "gpu.mem.used", Tag: 4}, {Name: "gpu.temp", Tag: 5}, {Name: "gpu.util", Tag: 6},
+			{Name: "net.down", Tag: 7}, {Name: "net.up", Tag: 8}, {Name: "nvme.1.temp", Tag: 9},
+			{Name: "ram.used", Tag: 10}, {Name: "ram.util", Tag: 11},
+		},
 		tagsFile: minimalDarkTags,
 	},
 	{
 		name:      "minimal-dark-probes",
 		themeYAML: minimalDarkProbesYAML,
-		metricNames: []string{"commander.1.temp", "commander.2.temp", "cpu.temp", "cpu.util", "gpu.mem.used", "gpu.temp",
-			"gpu.util", "net.down", "net.up", "nvme.2.temp", "ram.used", "ram.util"},
+		tags: []config.Mapping{
+			{Name: "cpu.util", Tag: 7}, {Name: "gpu.mem.used", Tag: 8}, {Name: "gpu.util", Tag: 11},
+			{Name: "net.down", Tag: 12}, {Name: "net.up", Tag: 13}, {Name: "ram.used", Tag: 16},
+			{Name: "ram.util", Tag: 17},
+		},
+		alarms: []config.AlarmPair{
+			{Name: "commander.1.temp", Threshold: config.Threshold{Above: 60, HasAbove: true}, Normal: 1, Alarm: 2},
+			{Name: "commander.2.temp", Threshold: config.Threshold{Above: 35, HasAbove: true}, Normal: 3, Alarm: 4},
+			{Name: "cpu.temp", Threshold: config.Threshold{Above: 90, HasAbove: true}, Normal: 5, Alarm: 6},
+			{Name: "gpu.temp", Threshold: config.Threshold{Above: 85, HasAbove: true}, Normal: 9, Alarm: 10},
+			{Name: "nvme.2.temp", Threshold: config.Threshold{Above: 70, HasAbove: true}, Normal: 14, Alarm: 15},
+		},
 		tagsFile: minimalDarkProbesTags,
 	},
 }
@@ -269,12 +284,11 @@ func TestEachThemeCompilesWithItsTags(test *testing.T) {
 			if err != nil || len(warnings) != 0 {
 				test.Fatalf("read back: %v, warnings %q", err, warnings)
 			}
-			var want []config.Mapping
-			for index, name := range theme.metricNames {
-				want = append(want, config.Mapping{Name: name, Tag: uint8(index + 1)})
+			if !reflect.DeepEqual(result.Tags, theme.tags) {
+				test.Fatalf("tags %v, want %v", result.Tags, theme.tags)
 			}
-			if !reflect.DeepEqual(result.Tags, want) {
-				test.Fatalf("tags %v", result.Tags)
+			if !reflect.DeepEqual(result.Alarms, theme.alarms) {
+				test.Fatalf("alarms %v, want %v", result.Alarms, theme.alarms)
 			}
 			if got := string(themecompile.TagsFile(result.Tags, result.Alarms)); got != theme.tagsFile {
 				test.Fatalf("tags file %q", got)
