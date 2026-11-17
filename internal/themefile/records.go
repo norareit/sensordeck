@@ -62,15 +62,15 @@ type Text struct {
 
 type Number struct {
 	Head
-	AlignmentGuess byte
-	Colour         Colour
-	DecimalsGuess  byte
-	OpacityGuess   byte
-	Offset         uint32
-	GlyphHeight    uint16
-	GlyphWidths    [12]uint16
-	Bytes46To63    [18]byte
-	Resource       []byte
+	Alignment     byte
+	Colour        Colour
+	ThousandsMode byte
+	Opacity       byte
+	Offset        uint32
+	GlyphHeight   uint16
+	GlyphWidths   [12]uint16
+	Bytes46To63   [18]byte
+	Resource      []byte
 }
 
 type Datetime struct {
@@ -87,9 +87,14 @@ type Datetime struct {
 	Resource []byte
 }
 
+// Bar holds two colours of which one is the fill and the other the frame. The device check did not separate them.
 type Bar struct {
 	Head
-	Bytes11To63 [53]byte
+	Byte11              byte
+	EmptyColour         Colour
+	FillOrFrameColour14 Colour
+	FillOrFrameColour16 Colour
+	Bytes18To63         [46]byte
 }
 
 type Unknown struct {
@@ -190,10 +195,10 @@ func (text Text) Encode() [SlotSize]byte {
 func (number Number) Encode() [SlotSize]byte {
 	var writer slotWriter
 	writer.head(number.Head)
-	writer.slot[11] = number.AlignmentGuess
+	writer.slot[11] = number.Alignment
 	writer.u16(12, uint16(number.Colour))
-	writer.slot[14] = number.DecimalsGuess
-	writer.slot[15] = number.OpacityGuess
+	writer.slot[14] = number.ThousandsMode
+	writer.slot[15] = number.Opacity
 	writer.u32(16, number.Offset)
 	writer.u16(20, number.GlyphHeight)
 	for glyph, width := range number.GlyphWidths {
@@ -222,7 +227,11 @@ func (datetime Datetime) Encode() [SlotSize]byte {
 func (bar Bar) Encode() [SlotSize]byte {
 	var writer slotWriter
 	writer.head(bar.Head)
-	copy(writer.slot[11:], bar.Bytes11To63[:])
+	writer.slot[11] = bar.Byte11
+	writer.u16(12, uint16(bar.EmptyColour))
+	writer.u16(14, uint16(bar.FillOrFrameColour14))
+	writer.u16(16, uint16(bar.FillOrFrameColour16))
+	copy(writer.slot[18:], bar.Bytes18To63[:])
 	return writer.slot
 }
 
@@ -263,8 +272,8 @@ func decodeText(slot *[SlotSize]byte) Text {
 
 func decodeNumber(slot *[SlotSize]byte) Number {
 	reader := slotReader{slot}
-	number := Number{Head: reader.head(), AlignmentGuess: slot[11], Colour: Colour(reader.u16(12)), DecimalsGuess: slot[14],
-		OpacityGuess: slot[15], Offset: reader.u32(16), GlyphHeight: reader.u16(20)}
+	number := Number{Head: reader.head(), Alignment: slot[11], Colour: Colour(reader.u16(12)), ThousandsMode: slot[14],
+		Opacity: slot[15], Offset: reader.u32(16), GlyphHeight: reader.u16(20)}
 	for glyph := range number.GlyphWidths {
 		number.GlyphWidths[glyph] = reader.u16(22 + 2*glyph)
 	}
@@ -284,8 +293,10 @@ func decodeDatetime(slot *[SlotSize]byte) Datetime {
 }
 
 func decodeBar(slot *[SlotSize]byte) Bar {
-	bar := Bar{Head: slotReader{slot}.head()}
-	copy(bar.Bytes11To63[:], slot[11:])
+	reader := slotReader{slot}
+	bar := Bar{Head: reader.head(), Byte11: slot[11], EmptyColour: Colour(reader.u16(12)),
+		FillOrFrameColour14: Colour(reader.u16(14)), FillOrFrameColour16: Colour(reader.u16(16))}
+	copy(bar.Bytes18To63[:], slot[18:])
 	return bar
 }
 

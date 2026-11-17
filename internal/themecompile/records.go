@@ -97,8 +97,8 @@ func buildNumber(input widgetInput, place string) (built, error) {
 	if err := checkBox(place, area); err != nil {
 		return built{}, err
 	}
-	record := themefile.Number{Head: area.head(themefile.TypeNumber, input.index(), input.tag), AlignmentGuess: 1,
-		Colour: input.font.colour, OpacityGuess: 0xff, Offset: input.offset, GlyphHeight: uint16(glyphs.height)}
+	record := themefile.Number{Head: area.head(themefile.TypeNumber, input.index(), input.tag), Alignment: 1,
+		Colour: input.font.colour, Opacity: 0xff, Offset: input.offset, GlyphHeight: uint16(glyphs.height)}
 	var resource []byte
 	for position, character := range themefile.NumberGlyphOrder {
 		mask, width := glyphs.glyphOf(character)

@@ -167,7 +167,7 @@ func TestTheNumberIsReadFromItsBytes(test *testing.T) {
 	record, _ := parseOne(test, slot, resource)
 	got := record.(themefile.Number)
 	expectHead(test, got.Head, slot)
-	if got.AlignmentGuess != slot[11] || got.Colour != colourAt(slot, 12) || got.DecimalsGuess != slot[14] || got.OpacityGuess != slot[15] ||
+	if got.Alignment != slot[11] || got.Colour != colourAt(slot, 12) || got.ThousandsMode != slot[14] || got.Opacity != slot[15] ||
 		got.Offset != 0x1000 || got.GlyphHeight != 3 || !bytes.Equal(got.Bytes46To63[:], slot[46:]) {
 		test.Errorf("fields %+v", got)
 	}
@@ -210,14 +210,18 @@ func TestTheDatetimeIsReadFromItsBytes(test *testing.T) {
 	}
 }
 
-func TestTheBarKeepsItsBytesAfterTheHead(test *testing.T) {
+func TestTheBarIsReadFromItsBytes(test *testing.T) {
 	slot := faketheme.Head(0x8b, 0x31, 0x32, 0x0102, 0x0304, 5, 6)
 	distinctFrom(&slot, 11)
 	record, _ := parseOne(test, slot, nil)
 	got := record.(themefile.Bar)
 	expectHead(test, got.Head, slot)
-	if !bytes.Equal(got.Bytes11To63[:], slot[11:]) {
-		test.Errorf("bytes % x", got.Bytes11To63)
+	if got.Byte11 != slot[11] || got.EmptyColour != colourAt(slot, 12) || got.FillOrFrameColour14 != colourAt(slot, 14) ||
+		got.FillOrFrameColour16 != colourAt(slot, 16) || !bytes.Equal(got.Bytes18To63[:], slot[18:]) {
+		test.Errorf("fields %+v", got)
+	}
+	if encoded := got.Encode(); encoded != slot {
+		test.Errorf("encoded % x", encoded)
 	}
 }
 

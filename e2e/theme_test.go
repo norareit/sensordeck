@@ -131,7 +131,7 @@ func TestThemeDumpJSONHoldsTheFieldsOfEachRecord(test *testing.T) {
 	if err := json.Unmarshal(theme.Records[4]["glyph_widths"], &widths); err != nil || len(widths) != 12 {
 		test.Errorf("glyph_widths %s: %v", theme.Records[4]["glyph_widths"], err)
 	}
-	if string(theme.Records[6]["bytes_11_63_unknown"]) == "" {
+	if string(theme.Records[6]["bytes_18_63_unknown"]) == "" {
 		test.Error("the bar has no unknown bytes")
 	}
 }

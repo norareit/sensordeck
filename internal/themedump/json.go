@@ -86,15 +86,15 @@ type textJSON struct {
 
 type numberJSON struct {
 	head
-	AlignmentGuess byte      `json:"alignment_guess"`
-	Colour         colourHex `json:"colour"`
-	DecimalsGuess  byte      `json:"decimals_guess"`
-	OpacityGuess   byte      `json:"opacity_guess"`
-	Offset         uint32    `json:"offset"`
-	GlyphHeight    uint16    `json:"glyph_height"`
-	GlyphWidths    []uint16  `json:"glyph_widths"`
-	GlyphOrder     string    `json:"glyph_order"`
-	Bytes46To63    hexBytes  `json:"bytes_46_63_unknown"`
+	Alignment     byte      `json:"alignment"`
+	Colour        colourHex `json:"colour"`
+	ThousandsMode byte      `json:"thousands_mode"`
+	Opacity       byte      `json:"opacity"`
+	Offset        uint32    `json:"offset"`
+	GlyphHeight   uint16    `json:"glyph_height"`
+	GlyphWidths   []uint16  `json:"glyph_widths"`
+	GlyphOrder    string    `json:"glyph_order"`
+	Bytes46To63   hexBytes  `json:"bytes_46_63_unknown"`
 	tail
 }
 
@@ -115,7 +115,11 @@ type datetimeJSON struct {
 
 type barJSON struct {
 	head
-	Bytes11To63 hexBytes `json:"bytes_11_63_unknown"`
+	Byte11              byte      `json:"byte_11_unknown"`
+	EmptyColour         colourHex `json:"empty_colour"`
+	FillOrFrameColour14 colourHex `json:"fill_or_frame_colour_14"`
+	FillOrFrameColour16 colourHex `json:"fill_or_frame_colour_16"`
+	Bytes18To63         hexBytes  `json:"bytes_18_63_unknown"`
 	tail
 }
 
@@ -163,8 +167,8 @@ func describe(entry themefile.Entry, files []string) recordJSON {
 		return textJSON{head: describeHead(entry.Slot, typed.Head), Offset: typed.Offset, Colour: colourHex(typed.Colour),
 			OpacityGuess: typed.OpacityGuess, Bytes18To63: typed.Bytes18To63[:], tail: closing}
 	case themefile.Number:
-		return numberJSON{head: describeHead(entry.Slot, typed.Head), AlignmentGuess: typed.AlignmentGuess, Colour: colourHex(typed.Colour),
-			DecimalsGuess: typed.DecimalsGuess, OpacityGuess: typed.OpacityGuess, Offset: typed.Offset, GlyphHeight: typed.GlyphHeight,
+		return numberJSON{head: describeHead(entry.Slot, typed.Head), Alignment: typed.Alignment, Colour: colourHex(typed.Colour),
+			ThousandsMode: typed.ThousandsMode, Opacity: typed.Opacity, Offset: typed.Offset, GlyphHeight: typed.GlyphHeight,
 			GlyphWidths: typed.GlyphWidths[:], GlyphOrder: themefile.NumberGlyphOrder, Bytes46To63: typed.Bytes46To63[:], tail: closing}
 	case themefile.Datetime:
 		return datetimeJSON{head: describeHead(entry.Slot, typed.Head), Byte11: typed.Byte11, Colour: colourHex(typed.Colour),
@@ -172,7 +176,9 @@ func describe(entry themefile.Entry, files []string) recordJSON {
 			OtherGlyphWidths: typed.OtherGlyphWidths[:], OtherGlyphOrder: themefile.DatetimeOtherGlyphOrder,
 			Format: printableFormat(typed.FormatText()), tail: closing}
 	case themefile.Bar:
-		return barJSON{head: describeHead(entry.Slot, typed.Head), Bytes11To63: typed.Bytes11To63[:], tail: closing}
+		return barJSON{head: describeHead(entry.Slot, typed.Head), Byte11: typed.Byte11, EmptyColour: colourHex(typed.EmptyColour),
+			FillOrFrameColour14: colourHex(typed.FillOrFrameColour14), FillOrFrameColour16: colourHex(typed.FillOrFrameColour16),
+			Bytes18To63: typed.Bytes18To63[:], tail: closing}
 	}
 	return unknownJSON{Slot: entry.Slot, Type: raw[0], TypeName: themefile.TypeName(raw[0]), Raw: raw[:], Files: files}
 }

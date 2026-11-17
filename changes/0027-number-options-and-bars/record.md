@@ -1,6 +1,6 @@
 ---
 kind: feature
-status: approved
+status: in-progress
 timestamp: 2026-11-17T11:09:01Z
 supersedes: 0010-theme-file-reader
 ---
@@ -30,6 +30,7 @@ supersedes: 0010-theme-file-reader
 - 2026-11-17T11:15:15Z [Claude Code, anthropic/claude-opus-5-5] as the planner, wrote the plan against the tree of
   `feature-0027-number-options-and-bars`: the reader and the dump first, then the compiler, the preview, the end-to-end
   tests and the documents, in five commits, with every requirement traced to a task. The status stays `approved`
+- 2026-11-17T11:20:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, began the work on `feature-0027-number-options-and-bars`. The status is `in-progress`
 
 ## Amendments
 - 2026-11-17T11:11:42Z [Claude Code, anthropic/claude-opus-5-5] read the spec under the delegation in `AGENTS.md`: its facts are those

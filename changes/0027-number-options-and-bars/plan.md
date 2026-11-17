@@ -82,26 +82,26 @@ requirements of the others in its spec.
 
 ### The reader and the dump
 
-- [ ] In `internal/themefile/records_test.go`, change `TestTheNumberIsReadFromItsBytes` to check `Alignment`,
+- [x] In `internal/themefile/records_test.go`, change `TestTheNumberIsReadFromItsBytes` to check `Alignment`,
   `ThousandsMode` and `Opacity` against bytes 11, 14 and 15, and replace `TestTheBarKeepsItsBytesAfterTheHead` with
   `TestTheBarIsReadFromItsBytes`: a slot filled by `distinctFrom(&slot, 11)` gives `Byte11` as byte 11,
   `EmptyColour` as bytes 12-13, `FillOrFrameColour14` as bytes 14-15, `FillOrFrameColour16` as bytes 16-17 and
   `Bytes18To63` as bytes 18 to 63, and `Encode` of the record gives the slot back. Check that `parseOne` gives no
   warning for it (R10, R11, R12, R22)
-- [ ] In `internal/themefile/records.go`, rename the fields of `Number` to `Alignment`, `ThousandsMode` and `Opacity`,
+- [x] In `internal/themefile/records.go`, rename the fields of `Number` to `Alignment`, `ThousandsMode` and `Opacity`,
   and make `Bar` `{Head; Byte11 byte; EmptyColour Colour; FillOrFrameColour14 Colour; FillOrFrameColour16 Colour;
   Bytes18To63 [46]byte}`, with its `Encode` and `decodeBar` reading and writing the fields at their bytes. A comment on
   `Bar` says that one of the two colours is the fill and the other the frame, which was not separated on the device.
   Change every user found by `go build ./...` (R10, R11)
-- [ ] In `internal/themedump/themedump_test.go`, change the golden JSON of `TestThemeJSONIsWrittenOutInFull`: the
+- [x] In `internal/themedump/themedump_test.go`, change the golden JSON of `TestThemeJSONIsWrittenOutInFull`: the
   number of slot 5 holds `"alignment": 1`, `"thousands_mode": 0` and `"opacity": 255` in the places of the three old
   names, and the bar of slot 7 holds `"byte_11_unknown": 1`, `"empty_colour": "0000"`,
   `"fill_or_frame_colour_14": "a800"`, `"fill_or_frame_colour_16": "a800"` and `"bytes_18_63_unknown"` as
   `76b000000000000076b0` followed by 72 zeros, which is 46 bytes, in place of `bytes_11_63_unknown` (R10, R11, R22)
-- [ ] In `internal/themedump/json.go`, rename the fields and tags of `numberJSON` to `alignment`, `thousands_mode` and
+- [x] In `internal/themedump/json.go`, rename the fields and tags of `numberJSON` to `alignment`, `thousands_mode` and
   `opacity`, and give `barJSON` the five fields of R11 with the tags above, the colours as `colourHex`. Fill them in
   `describe` (R10, R11)
-- [ ] Run `go test ./internal/themefile/... ./internal/themedump/...` and `go vet ./...`
+- [x] Run `go test ./internal/themefile/... ./internal/themedump/...` and `go vet ./...`
 
 Commit point 1.
 
@@ -338,7 +338,7 @@ Commit point 5.
 
 ## Commit Points
 
-- [ ] 1: `feature-0027 Name the bytes of a number and of a bar in the reader and the dump`
+- [x] 1: `feature-0027 Name the bytes of a number and of a bar in the reader and the dump`
 - [ ] 2: `feature-0027 Compile the number options and the bar widget`
 - [ ] 3: `feature-0027 Align, clip and fade numbers and draw bars in the preview`
 - [ ] 4: `feature-0027 Cover the bar and the number options end to end`
