@@ -285,7 +285,11 @@ tags:
 ```
 
 `interval` is the time between two rounds, of at least 100 milliseconds, and is 1 second without the key. A tag is a
-whole number from 0 to 255.
+whole number from 0 to 255. A metric may also map to a mapping with the keys `tag`, the tag it is sent to, and `alarms`, a
+list of alarm pairs, each with `normal` and `alarm`, the two tags, and `above`, `below` or both, as the tags file of a theme
+with an alarm number writes it. At least one of `tag` and `alarms` is given, and every tag of the block is distinct. In
+every round `run` sends, for each pair, the value to the normal tag and -1 to the alarm tag, or when the value is past
+the threshold the reverse.
 
 The key `metrics` defines [custom metrics](#custom-metrics), which a theme or the key `tags` can use as a built-in one.
 
@@ -698,6 +702,19 @@ from 0 to 1, 1 without the key, but only 0 and 1 were seen on the device. `thous
 box, and the minus sign of a negative value takes a place in the box like a digit, so `digits` must count it. The
 [theme folder document](docs/theme-folder.md) has the rest.
 
+A number takes the key `alarm` to change its colour past a threshold, such as a GPU temperature that turns red:
+
+```yaml
+- {type: number, font: value, metric: gpu.temp, x: 176, y: 44, alarm: {above: 80, color: "#ff3030"}}
+```
+
+`above` and `below` are whole numbers, and either or both are given. The number shows in the alarm colour when its value is
+greater than `above` or less than `below`, so with `above: 80` the value 80 is normal and 81 is the alarm. The value is
+compared as it is sent, whole, so a reading of 80.4 is normal and 80.5 is the alarm. An alarm number is left-aligned and
+cannot show a negative value or thousands, because it is made of two number widgets of which the one not shown is sent
+-1, so it counts as two of the 62 widgets. `sensordeck theme preview` shows its normal colour. The
+[theme folder document](docs/theme-folder.md#a-number-with-an-alarm-colour) has the rest.
+
 A bar shows 0 to 100, which `cpu.util`, `gpu.util` and `ram.util` fit as they are. A metric of another range is shown
 through a custom metric whose `scale` makes it 0 to 100. This one reads a temperature of a chip of hwmon in
 millidegrees, so that 90 °C fills the bar, since 0.001 times 100 over 90 is 0.0011111:
@@ -731,6 +748,16 @@ The compiler gives each metric of the number and bar widgets a tag and writes th
 # Paste this block into the config file of sensordeck run.
 tags:
   cpu.temp: 1
+```
+
+A metric with an alarm number gets a normal tag and an alarm tag for each threshold, and the tags file writes them in the
+flow style of YAML, one line for the metric, as the key `tags` takes them:
+
+```yaml
+# Paste this block into the config file of sensordeck run.
+tags:
+  cpu.temp: 1
+  gpu.temp: {tag: 2, alarms: [{above: 80, normal: 3, alarm: 4}]}
 ```
 
 That file is for a config file with `tags`. A config file with the key `theme` needs no tags block, because `run` takes

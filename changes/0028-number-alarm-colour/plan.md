@@ -97,7 +97,7 @@ The design decisions the spec leaves to the plan:
 
 ### The shared types and the key `tags` (R2, R15 to R18)
 
-- [ ] Write `internal/config/alarms_test.go` with tests, failing, of: `Threshold.Alarm` for `above: 80` at 80 and 81,
+- [x] Write `internal/config/alarms_test.go` with tests, failing, of: `Threshold.Alarm` for `above: 80` at 80 and 81,
   `below: 1000` at 999 and 1000, `above: 80, below: 20` at 19, 20, 80 and 81 (R2); `Parse` of a block with
   `cpu.temp: 1` and `gpu.temp: {tag: 2, alarms: [{above: 80, normal: 3, alarm: 4}]}` giving `Mappings`
   `[{cpu.temp 1} {gpu.temp 2}]` and `Alarms` with the one pair; a metric with only `alarms`; a metric with only `tag`
@@ -117,7 +117,7 @@ The design decisions the spec leaves to the plan:
   in the mapping of a metric (`tags: gpu.temp: unknown key "x", the keys are alarms and tag`) and in a pair
   (`tags: gpu.temp: alarms: 1: unknown key "x", the keys are above, alarm, below and normal`); a key given twice in
   either mapping, refused with `refuseRepeatedKeys` as the root is (R16)
-- [ ] Add `internal/config/alarms.go` with `Threshold`, `Alarm`, `AlarmPair`, `HidingValue` and `MetricNames`, and the
+- [x] Add `internal/config/alarms.go` with `Threshold`, `Alarm`, `AlarmPair`, `HidingValue` and `MetricNames`, and the
   reading of a mapping value of `tags`: `tag` read with `parseTag`, `alarms` read item by item, `normal` and `alarm` with
   `parseTag`, `above` and `below` as whole numbers of the `!!int` tag from `math.MinInt16` to `math.MaxInt16`. Change
   `parseTag` to take the place, the metric name for a plain tag and `<name>: alarms: <n>: normal` for a tag of a pair,
@@ -127,7 +127,7 @@ The design decisions the spec leaves to the plan:
 
 ### The key `alarm` (R1, R3 to R6, R11)
 
-- [ ] Add tests, failing, to `internal/themecompile/document_test.go`: `parseWidget` of an alarm number with `above`,
+- [x] Add tests, failing, to `internal/themecompile/document_test.go`: `parseWidget` of an alarm number with `above`,
   with `below` and with both, giving the threshold and the colour; without `align` its alignment is 0, and with
   `align: left` too (R4); `thousands: false` accepted (R5). And each error with its full text, for widget 1:
   `alarm: 3` (`widget 1 (number): alarm: want a mapping with above, below and color`); `alarm: {color: "#ff0000"}`
@@ -137,11 +137,11 @@ The design decisions the spec leaves to the plan:
   under `alarm: color`); an unknown key (`... alarm: unknown key "x", the keys are above, below and color`);
   `align: center` and `align: right` (`... align: an alarm number is left-aligned, want left or no align`);
   `thousands: true` (`... thousands: an alarm number cannot show thousands`) (R1, R3 to R5)
-- [ ] Add tests, failing, of R11 to `internal/themecompile/compile_test.go`: 60 texts and one alarm number compile; 61
+- [x] Add tests, failing, of R11 to `internal/themecompile/compile_test.go`: 60 texts and one alarm number compile; 61
   texts and one alarm number are refused with
   `widgets: 63 widgets, more than the 62 that fit beside the background, an alarm number counting as two`; 63 texts are
   refused with `widgets: 63 widgets, more than the 62 that fit beside the background`, as today (R11)
-- [ ] In `internal/themecompile/document.go`, add `alarm` to the keys of `number` and an `alarm *alarmSpec` to
+- [x] In `internal/themecompile/document.go`, add `alarm` to the keys of `number` and an `alarm *alarmSpec` to
   `widgetSpec`, with `threshold config.Threshold` and `colour config.Colour`. Read it in `readNumberKeys` after
   `readNumberOptions`, with `fields` of the keys `above`, `below` and `color`, `readWholeNumber` from -32768 to 32767
   under the place `join(place, "alarm")`, `required` and `readColour` for `color`. For an alarm number, set the
@@ -152,7 +152,7 @@ The design decisions the spec leaves to the plan:
 
 ### The tags of the compiler and the tags file (R13, R14, R17, R18)
 
-- [ ] Add tests, failing, to `internal/themecompile/tags_test.go`: a plain number, a bar and two alarm numbers of
+- [x] Add tests, failing, to `internal/themecompile/tags_test.go`: a plain number, a bar and two alarm numbers of
   `gpu.temp` with `above: 80` and `above: 90`, and a number of `cpu.temp`, giving `cpu.temp` 1, `gpu.temp` 2 and the
   pairs 3 and 4, then 5 and 6; a pair with no `above` before one with `above: -5`, and within one `above` the
   `below` ordered the same way; two alarm numbers of one metric and thresholds with different colours, boxes and fonts
@@ -162,7 +162,7 @@ The design decisions the spec leaves to the plan:
   `above` and `below`, of a pair with only `below`, of tags with no pair as today, and of a compiled theme with a plain
   entry and two pairs of one metric parsed back with `config.Parse` into `Mappings` and `Alarms` equal to the
   compiler's `Result.Tags` and `Result.Alarms` (R17, R18)
-- [ ] Change `assignTags` in `internal/themecompile/tags.go` to take the widgets and give `[]config.Mapping` and
+- [x] Change `assignTags` in `internal/themecompile/tags.go` to take the widgets and give `[]config.Mapping` and
   `[]config.AlarmPair`, by the entries and the sort of R13, with `clockTag` skipped for each tag given. Change
   `TagsFile(tags []config.Mapping, alarms []config.AlarmPair)` to write the metrics in the order of their lowest tag,
   a metric with no pair as today and one with pairs in the flow form of R17. Remove `metricsOf`, whose job
@@ -170,7 +170,7 @@ The design decisions the spec leaves to the plan:
 
 ### The records of an alarm number (R6 to R10, R12)
 
-- [ ] Add tests, failing, to `internal/themecompile/records_test.go`: a theme of a text, an alarm number with
+- [x] Add tests, failing, to `internal/themecompile/records_test.go`: a theme of a text, an alarm number with
   `digits: 4` and a number after it, compiled and read back with `themefile.Parse`. Check the alarm number's two records
   in slots 3 and 4 with the indexes 2 and 3 and the number after them in slot 5 with index 4; both records byte for byte
   against a slot built from the glyphs of the font as `numberSlot` does, with byte 11 0, byte 14 0, byte 15 as the
@@ -180,101 +180,101 @@ The design decisions the spec leaves to the plan:
   without `alarm` of the same font (R7 to R10). A number without `alarm` compiled to the bytes it had before, by the
   existing `TestNumberRecord` and a check that `Result.AlarmSlots` is empty (R6). An alarm number in a font without
   `-` refused with the error of today for a missing glyph (R12)
-- [ ] Add `hiddenMinus(width int) []byte` to `internal/themecompile/glyphs.go`. In `internal/themecompile/records.go`,
+- [x] Add `hiddenMinus(width int) []byte` to `internal/themecompile/glyphs.go`. In `internal/themecompile/records.go`,
   make `buildWidget` give `[]built`, add `alarmTag` to `widgetInput` and a `buildAlarmNumber` that builds the normal
   record as `buildNumber` does with the glyph of `-` replaced by `hiddenMinus` of the box width, then the alarm record
   in the next slot with its own copy of the resource, the colour of `alarm.color`, the alarm tag, the next index and the
   offset after the first resource. In `internal/themecompile/compile.go`, give each widget its tags from the result of
   `assignTags`, append every record `buildWidget` gives with the slot and offset after the one before, and fill
   `Result.Alarms` and `Result.AlarmSlots`. Make the tests pass (R6 to R10, R12)
-- [ ] Run the five commands of the suite. Commit: `feature-0028 Compile a number with an alarm colour into two records
+- [x] Run the five commands of the suite. Commit: `feature-0028 Compile a number with an alarm colour into two records
   and a pair of tags`
 
 ### What `run` sends (R19 to R21a)
 
-- [ ] Add tests, failing, to `internal/smartmonitor/values_test.go` of `EncodeUnits`: 19 units of one and a unit of two
+- [x] Add tests, failing, to `internal/smartmonitor/values_test.go` of `EncodeUnits`: 19 units of one and a unit of two
   giving two reports, the first of 19 values and the second of the pair; 18 units of one and a pair giving one report
   of 20; 21 units of one giving the two reports `EncodeValues` gave before; no unit giving no report (R21a)
-- [ ] Add `EncodeUnits` to `internal/smartmonitor/values.go` and make `EncodeValues` call it with units of one value.
+- [x] Add `EncodeUnits` to `internal/smartmonitor/values.go` and make `EncodeValues` call it with units of one value.
   Make the tests pass, and the existing tests of `EncodeValues` with them (R21a)
-- [ ] Add `internal/cli/roundvalues_test.go` with tests, failing, of `roundUnits`: a pair with `above: 80` sent with
+- [x] Add `internal/cli/roundvalues_test.go` with tests, failing, of `roundUnits`: a pair with `above: 80` sent with
   the readings 79, 80, 81 and back to 79, giving the value to the normal tag and -1 to the alarm tag in the normal
   state and the reverse in the alarm state; the same with `below: 1000` and 1001, 1000, 999, 1000; readings of 80.4 and
   80.5 with `above: 80`; a metric with no reading giving no unit; a plain entry and a pair of one metric in one round,
   the plain value a unit of one and the pair a unit of two; units ordered by their lowest tag; a block whose pair has
   the tags 2 and 5 with a plain tag 3 between them, giving the units 2 and 5, then 3 (R2, R19 to R21a)
-- [ ] Add `roundUnits` in `internal/cli/roundvalues.go`, pure, taking the settings and the readings by name. In
+- [x] Add `roundUnits` in `internal/cli/roundvalues.go`, pure, taking the settings and the readings by name. In
   `internal/cli/run.go`, make `feeder.read` give the units of `roundUnits` and read the names of `MetricNames`, make
   `round` send `smartmonitor.EncodeUnits` of them, make `probesMapped` and the count of the line `running:` use
   `MetricNames`, and make `reload` copy `Alarms` beside `Mappings`. In `internal/cli/runconfig.go`, set
   `settings.Alarms = compiled.Alarms` and check every name of `MetricNames` with `IsMetric`, with the text of today.
   Make the tests pass (R19 to R21a)
-- [ ] Add tests to `internal/cli/runtheme_test.go`: `run` with the key `theme` naming a folder with an alarm number
+- [x] Add tests to `internal/cli/runtheme_test.go`: `run` with the key `theme` naming a folder with an alarm number
   of a metric of the fake source writes the value report of the normal state; the line `running: 1 metrics every ...`
   for a theme with a plain number and an alarm number of the same metric; a theme whose alarm number names a metric that
   is neither built in nor defined, refused with the error of today (R19, R21). And to `internal/cli/runreload_test.go`
   or `runconfig_test.go`: a config with the key `tags` holding a pair sends both tags of the pair (R19)
-- [ ] Run the five commands of the suite. Commit: `feature-0028 Send the values of an alarm pair by its threshold, in
+- [x] Run the five commands of the suite. Commit: `feature-0028 Send the values of an alarm pair by its threshold, in
   one report`
 
 ### The preview (R22, R23)
 
-- [ ] Add tests, failing, to `internal/themeimage/preview_test.go`: `PreviewWithValues` of a number drawn with the
+- [x] Add tests, failing, to `internal/themeimage/preview_test.go`: `PreviewWithValues` of a number drawn with the
   value -1 from a glyph set whose `-` is transparent and as wide as the box draws no pixel; a number not in the map is
   drawn as 42 as today. And to `internal/cli/theme_test.go`: `theme preview` of an alarm number in a white font with a
   red `alarm.color` has a white pixel in the value and no pixel of the red; the preview of the dump of the same compiled
   theme has the red (R22, R23)
-- [ ] Add `PreviewWithValues` to `internal/themeimage/preview.go` and make `Preview` call it with no values. In
+- [x] Add `PreviewWithValues` to `internal/themeimage/preview.go` and make `Preview` call it with no values. In
   `internal/cli/theme.go`, draw `theme preview` with `config.HidingValue` for each slot of `Result.AlarmSlots`, and
   write the tags file with `TagsFile(result.Tags, result.Alarms)`. Make the tests pass (R22, R23)
 
 ### The end-to-end tests (R28)
 
-- [ ] Add `e2e/alarm_test.go`: compile a folder with an alarm number of `gpu.temp` with `above: 80`, check the tags file
+- [x] Add `e2e/alarm_test.go`: compile a folder with an alarm number of `gpu.temp` with `above: 80`, check the tags file
   byte for byte and read the theme file back with `theme dump`, checking in its `theme.json` the two number records,
   their slots, tags and colours. Then `run` with the key `theme` naming a folder with an alarm number of a custom metric
   read from a file with `above: 80`, as `TestRunSendsNegativeAndClampedCustomMetrics` does: the file at 47, a report with
   the normal tag 47 and the alarm tag `FF FF`; then at 95, a report with the normal tag `FF FF` and the alarm tag 95;
   then at 52, a report with the normal tag 52 and the alarm tag `FF FF`. The tags are read from the tags file of the
   compiled theme (R28)
-- [ ] Run the five commands of the suite. Commit: `feature-0028 Preview the normal state of an alarm number and test it
+- [x] Run the five commands of the suite. Commit: `feature-0028 Preview the normal state of an alarm number and test it
   end to end`
 
 ### The documents (R24 to R26)
 
-- [ ] In `docs/theme-folder.md`: add `alarm` to the keys of a number in the table of "Widgets" and a section "A number
+- [x] In `docs/theme-folder.md`: add `alarm` to the keys of a number in the table of "Widgets" and a section "A number
   with an alarm colour" after "Formats of a datetime", which gives the keys and their errors, the comparison of R2 on
   the value as sent, the left alignment and why (D5), the refusal of `thousands` (D6), how the compiler writes it (R7 to
   R10) on the observation of 2026-11-17 with a link to the format document, that an alarm number cannot show a negative
   value and that `below: 0` hides the value, that `theme preview` draws the normal state and the preview of
   `theme dump` the alarm widgets over the normal ones. In "The tags", the rule of R13 and R14 and the flow form of R17
   with its example. In "The limits", that an alarm number counts as two of the 62 widgets (R24)
-- [ ] In `docs/theme-format.md`: a section of the observation of 2026-11-17, marked **observed on the device**, with
+- [x] In `docs/theme-format.md`: a section of the observation of 2026-11-17, marked **observed on the device**, with
   every fact of "What was observed on the device" of the spec; and in "Open questions", the item on the order in which
   the device draws the records says that the screen was seen to keep its widgets as layers in the order of their slots,
   a later slot over an earlier one, and what stays open: whether a later slot is always drawn over an earlier one, and
   the order of records of other types (R25)
-- [ ] In `README.md`, "Writing a theme": the example of an alarm number of R26 and its paragraph, with a link to the
+- [x] In `README.md`, "Writing a theme": the example of an alarm number of R26 and its paragraph, with a link to the
   folder document; the tags file example extended with a metric with an alarm pair. In the section of the key `tags`
   under "Showing sensor values on the screen", that a metric may map to a mapping with `tag` and `alarms`, as the tags
   file writes it (R26)
-- [ ] Commit: `feature-0028 Document the number with an alarm colour`
+- [x] Commit: `feature-0028 Document the number with an alarm colour`
 
 ## Verification
 
-- [ ] `go test ./...` passes, which runs the end-to-end tests (R27, R28, R29)
-- [ ] `go vet ./...` reports nothing (R29)
-- [ ] `gofmt -l .` prints no file name (R29)
-- [ ] `GOOS=windows GOARCH=amd64 go build ./...` succeeds and reports nothing (R29)
-- [ ] `GOOS=windows GOARCH=amd64 go vet ./...` succeeds and reports nothing (R29)
-- [ ] `npm run check-changes` succeeds
-- [ ] The tags files of the two built-in themes are unchanged, by `e2e/builtin_theme_test.go`, and so are the committed
+- [x] `go test ./...` passes, which runs the end-to-end tests (R27, R28, R29)
+- [x] `go vet ./...` reports nothing (R29)
+- [x] `gofmt -l .` prints no file name (R29)
+- [x] `GOOS=windows GOARCH=amd64 go build ./...` succeeds and reports nothing (R29)
+- [x] `GOOS=windows GOARCH=amd64 go vet ./...` succeeds and reports nothing (R29)
+- [x] `npm run check-changes` succeeds
+- [x] The tags files of the two built-in themes are unchanged, by `e2e/builtin_theme_test.go`, and so are the committed
   preview images, by `docs_test.go` (R13, R23)
 
 ## Commit Points
 
 - [x] `feature-0028 Write the plan of the number with an alarm colour`
-- [ ] `feature-0028 Compile a number with an alarm colour into two records and a pair of tags`
-- [ ] `feature-0028 Send the values of an alarm pair by its threshold, in one report`
-- [ ] `feature-0028 Preview the normal state of an alarm number and test it end to end`
-- [ ] `feature-0028 Document the number with an alarm colour`
+- [x] `feature-0028 Compile a number with an alarm colour into two records and a pair of tags`
+- [x] `feature-0028 Send the values of an alarm pair by its threshold, in one report`
+- [x] `feature-0028 Preview the normal state of an alarm number and test it end to end`
+- [x] `feature-0028 Document the number with an alarm colour`

@@ -224,6 +224,32 @@ What was observed on the device on 2026-11-17:
 * The frame is drawn inside the box of the bar, an outline one pixel wide
 * The tag of a bar is the tag of a metric, and the values were sent to it as to a number
 
+## A threshold colour with two widgets
+
+All of this is **observed on the device** on 2026-11-17.
+
+* No byte of a number or of a bar that was tried gave a threshold colour
+* No value makes a number invisible once it showed a value: 65535 shows `-1` and 32768 shows `-32768`, since the screen
+  reads every value as a signed 16-bit number
+* The test theme was made by hand and had two number widgets on the same spot with the same box, the normal one in white
+  and the alarm one in red, each with a tag of its own, both left-aligned (byte 11 at 0). The alarm widget was later in the
+  order of the slots than the normal one
+* In both widgets the glyph of `-` was fully transparent, every alpha 0, and as wide as the box of the widget. The other
+  glyphs, `0` to `9` and `.`, were as the compiler of sensordeck makes them
+* A negative value draws the transparent minus first, which fills the box, and pushes the digits past the right edge of the
+  box, where the screen clips them. So a widget sent a negative value shows nothing, and such a widget cannot show a
+  negative value of its own, since its digits are clipped as those of -1 are
+* The normal state: the normal widget was sent the value and the alarm widget -1. The screen showed a white 47 and
+  nothing red
+* The alarm state: the normal widget was sent -1 and the alarm widget 95. The screen showed a red 95 and nothing white
+* Back to normal: a white 52 and nothing red
+* The screen keeps its widgets as layers in the order of their slots
+* An earlier design put an opaque cover over the widget to hide it. The cover hid every layer below it and not only the
+  one widget, so covers do not do
+
+[The theme folder document](theme-folder.md#a-number-with-an-alarm-colour) says how the compiler uses this for the key
+`alarm`.
+
 ## Open questions
 
 Each of these needs an experiment on the device, or more samples:
@@ -237,7 +263,11 @@ Each of these needs an experiment on the device, or more samples:
 * the header: what byte 0 means and whether the other bytes matter
 * the index byte of a record, whose value is known and whose purpose is not
 * how a datetime refers to its six CJK glyphs, since its format is ASCII
-* the order in which the device draws the records: the dump draws them in the order of the slots
+* the order in which the device draws the records: the dump draws them in the order of the slots. It was observed on the
+  device on 2026-11-17 that the screen keeps its widgets as layers in the order of their slots, a later slot over an
+  earlier one, for two numbers on the same spot, and that an opaque cover over a widget hid every layer below it. It is
+  still open whether a later slot is always drawn over an earlier one, and in what order records of other types are
+  drawn
 * whether the device clips a number at the top and the bottom of its box, and whether it clips the glyphs of a datetime
 
 ## What the dump of `sensordeck theme dump` shows

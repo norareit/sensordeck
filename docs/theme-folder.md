@@ -76,7 +76,7 @@ names them, and a theme has at most 62 of them, because the background takes one
 | Type | Keys | Meaning |
 |---|---|---|
 | `text` | `font`, `text` | A fixed text. `font` names a font of `fonts`. `text` is a non-empty single line with no control character |
-| `number` | `font`, `metric`, `digits`, `align`, `opacity`, `thousands` | A value that the device fills in. `metric` is the name of a metric. `digits`, a whole number from 1 to 5 and 3 without the key, is how many digits the box of the value holds. `align` is `left`, `center` or `right`, and `center` without the key. `opacity` is a number from 0 to 1, whole or decimal, and 1 without the key. `thousands` is `true` or `false`, and `false` without the key |
+| `number` | `font`, `metric`, `digits`, `align`, `opacity`, `thousands`, `alarm` | A value that the device fills in. `metric` is the name of a metric. `digits`, a whole number from 1 to 5 and 3 without the key, is how many digits the box of the value holds. `align` is `left`, `center` or `right`, and `center` without the key. `opacity` is a number from 0 to 1, whole or decimal, and 1 without the key. `thousands` is `true` or `false`, and `false` without the key. `alarm` is a mapping that changes the colour of the value past a threshold, as [A number with an alarm colour](#a-number-with-an-alarm-colour) says |
 | `datetime` | `font`, `format` | The date and the time, which the device fills in from the clock |
 | `image` | `file` | A PNG in the folder, drawn at its own size |
 | `bar` | `metric`, `width`, `height`, `color`, `background` | A bar that the device fills in from a metric. `metric` is as for a number. `width` and `height`, whole numbers from 1, are the size of its box. `color`, a colour, is the colour of the fill and of the frame. `background`, a colour and `"#000000"` without the key, is the colour of the empty part. A bar has no font |
@@ -116,17 +116,81 @@ it and its position. The compiled format is at most 18 bytes, which leaves one o
 terminator. So `YYYY-MM-DD` compiles to `1-2-3` and `HH:mm:ss` to `4:5:6`. There is no 12-hour form, no name of a day or
 month and no unit character.
 
+### A number with an alarm colour
+
+The screen has no threshold colour of its own, so a number with the key `alarm` is made of two number widgets on the same
+spot, one in the colour of its font and one in the alarm colour, and only one of them shows a value at a time. The value
+is sent to one and a negative value to the other, which shows nothing.
+
+```yaml
+- {type: number, font: value, metric: gpu.temp, x: 176, y: 44, alarm: {above: 80, color: "#ff3030"}}
+```
+
+The keys of `alarm` are:
+
+* `above`, optional: a whole number from -32768 to 32767. The alarm state holds when the value is greater than it
+* `below`, optional: a whole number from -32768 to 32767. The alarm state holds when the value is less than it
+* `color`, required: a colour, the colour of the value in the alarm state
+
+At least one of `above` and `below` is given, and both may be, which makes a band. Any other key is an error that names
+`alarm` and the key, and so is a decimal or a string where a whole number is wanted, such as `above: "80"`. The
+comparison is on the value as it is sent to the screen: the reading rounded, halves away from zero, and clamped to the
+range of a signed 16-bit number. With `above: 80` the value 80 is normal and 81 is the alarm, and a reading of 80.4 is
+normal and 80.5 the alarm. With `below: 1000` the value 999 is the alarm. Since the thresholds are whole and the
+comparison strict, "80 or more" is written `above: 79`.
+
+`digits`, `font`, `metric`, `opacity`, `x` and `y` are as for every number and apply to both widgets. An alarm number is
+left-aligned, and without the key `align` it is `left`, so that the usual case needs no key. `align: center` and
+`align: right` are an error, because a hidden value must push its digits out of the right edge of the box, and a value
+placed from the right or the middle would show. `thousands: true` is an error, because the thousands mode was never tried
+with a negative value, and so it is not known that the widget would be hidden. `thousands: false` is accepted.
+
+An alarm number cannot show a negative value: in the normal state as in the alarm state a negative value shows nothing,
+because that is how the other widget is hidden. So `below: 0` hides the value rather than showing it in the alarm
+colour. A metric that can be negative needs a number without `alarm`, or a custom metric with an `offset`.
+
+The compiler writes an alarm number as two number records in consecutive slots, the normal widget and then the alarm
+widget, which is the later one and so is drawn over the other. Both have the same box, the left alignment and the same
+opacity, and each has a glyph set of its own, the two sets alike. In both sets the glyph of `-` is fully transparent and
+as wide as the box, `digits` digit widths, and the other glyphs are those of a number without `alarm`. The normal widget
+has the colour of the font and the alarm widget the colour of `alarm.color`, and each has a tag of its own, as
+[The tags](#the-tags) says. In the normal state `run` sends the value to the normal widget and -1 to the alarm widget,
+and in the alarm state -1 to the normal widget and the value to the alarm widget. The method rests on what was
+**observed on the device** on 2026-11-17, which [the format document](theme-format.md#a-threshold-colour-with-two-widgets)
+records.
+
+`sensordeck theme preview` draws the normal state: the normal widget with the sample value and the alarm widget with -1,
+which draws no pixel. The preview of `sensordeck theme dump` draws every number of the file as the sample value, because
+the file does not say which records form a pair, so for a compiled theme it shows the alarm widgets over the normal
+ones, in the alarm colour.
+
 ## The tags
 
 The device takes a value for a tag, a number, and not for a metric. The compiler gives the number and bar widgets their tags:
-the distinct metric names of the theme, sorted by their bytes, get 1, 2, 3 and up, with 21 skipped, because 21 is the tag
-of the clock. Two widgets with the same metric, a bar and a number included, have the same tag, and no number or bar gets 0. The tags do not depend on the
-order of the widgets.
+the entries of the theme, sorted by their metric name's bytes, get 1, 2, 3 and up, with 21 skipped, because 21 is the tag
+of the clock. A number without `alarm` and a bar of one metric are one plain entry, which takes one tag, so they share it.
+An alarm number is an alarm pair, which takes two tags, the normal tag and then the alarm tag, and two alarm numbers with
+the same metric, `above` and `below` share a pair, whatever their colours, boxes and fonts. An alarm number never shares a
+tag with a number without `alarm` or with a bar of the same metric, because its normal widget is sent -1 in the alarm
+state. Within one metric name the plain entry comes first and then the pairs, ordered by `above`, none before any
+number and the numbers ascending, then by `below` in the same way. The normal and the alarm tag of a pair may so be 20
+and 22. No entry gets 0, and the tags do not depend on the order of the widgets.
 
 `sensordeck theme compile <name-or-folder> <out.dat>` writes the tags beside the theme file, in a file named like it with its
 extension replaced by `.tags.yaml`, or with `.tags.yaml` added when there is none, so `img.dat` gives `img.tags.yaml`.
 It is a block in the shape of the `tags:` section of the config file of `sensordeck run`, to be pasted into it. For a
-theme with neither a number nor a bar it is `tags: {}`, and such a theme needs no values from `run`.
+theme with neither a number nor a bar it is `tags: {}`, and such a theme needs no values from `run`. A metric that has
+only a plain entry is written `  <metric>: <tag>`. A metric with an alarm pair is one line in the flow style of YAML,
+`  <metric>: {tag: <t>, alarms: [<pair>, <pair>]}`, with `tag, ` left out when the metric has no plain entry, and each pair
+written `{above: <a>, below: <b>, normal: <n>, alarm: <m>}`, with `above: <a>, ` or `below: <b>, ` left out when not
+given. The metrics are in the order of their first tag. For example:
+
+```yaml
+# Paste this block into the config file of sensordeck run.
+tags:
+  cpu.temp: 1
+  gpu.temp: {tag: 2, alarms: [{above: 80, normal: 3, alarm: 4}]}
+```
 
 The tags file is for a config file with `tags`, which is the way to use a vendor theme. A config file with the key
 `theme`, which names this theme by its name or folder, needs no tags block, because `run` compiles the theme and takes
@@ -165,7 +229,7 @@ draws from the top left of the box, except that a number is placed in its box by
 
 * a box must be within the screen of 480 x 320 pixels
 * a background PNG must be exactly 480 x 320
-* at most 62 widgets
+* at most 62 widgets, an alarm number counting as two, because it is two records
 * the compiled file must fit in the 4 MiB (4194304 bytes) of the flash of the device
 * the size of a PNG is read from its header before its pixels, so a PNG too large for the screen is refused before it is
   decoded
