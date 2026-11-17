@@ -120,7 +120,7 @@ month and no unit character.
 
 The device takes a value for a tag, a number, and not for a metric. The compiler gives the number and bar widgets their tags:
 the distinct metric names of the theme, sorted by their bytes, get 1, 2, 3 and up, with 21 skipped, because 21 is the tag
-of the clock. Two widgets with the same metric, a bar and a number included, have the same tag, and no widget gets 0. The tags do not depend on the
+of the clock. Two widgets with the same metric, a bar and a number included, have the same tag, and no number or bar gets 0. The tags do not depend on the
 order of the widgets.
 
 `sensordeck theme compile <name-or-folder> <out.dat>` writes the tags beside the theme file, in a file named like it with its
@@ -159,7 +159,7 @@ because the background record has no alpha. A solid background is a full picture
 The box of each widget is exactly what it draws, from its x and y: an image has the size of its PNG, a text the width of
 its text as the font measures it, rounded up, a number `digits` digit widths, a bar its `width` and `height`, and a datetime the width of its format as
 drawn, each `YYYY` four digit widths and each other token two. All have the glyph height, except an image and a bar. The preview
-draws from the top left of the box, so the box and the preview agree.
+draws from the top left of the box, except that a number is placed in its box by its `align`, so the box and the preview agree.
 
 ## The limits
 
