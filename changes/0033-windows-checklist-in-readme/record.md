@@ -132,5 +132,10 @@ the README. It is a change of `README.md` only.
   three commit points. Deviation: the ticked plan and the implementation log entry went into the commit of the README
   change, `f06afc7`, and the third commit point is this commit, which holds the reconciliation of the plan and this
   entry. The status stays `in-progress`
+- 2026-11-17T22:13:53Z [OpenCode, openai/gpt-6.1-sol] as the reviewer, made a delta review of
+  `0033-windows-checklist-in-readme` at `7d5e7e6814594fa00e340015aa2bf3ca120f8a52`, comparing against
+  `f06afc705572ce4172a1366cb7ccf484ece35fba`. Verified the correction of P1 and returned no new findings;
+  the review is saved in `.reviews/0033-windows-checklist-in-readme/review-2.md`. Independently ran all five project
+  suite commands and `npm run check-changes`; all succeeded. No Windows or physical-device check was repeated.
 
 ## Amendments
