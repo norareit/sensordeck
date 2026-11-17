@@ -108,5 +108,10 @@ the README. It is a change of `README.md` only.
   not checked, and the sentence on the restart after an error is corrected to what the task does. The approval that
   follows is made under that delegation
 - 2026-11-17T22:09:46Z [human] approved the record. The status is `approved`
+- 2026-11-17T22:10:24Z [Claude Code, anthropic/claude-opus-5-5] as the planner, wrote `plan.md` against the README on
+  the unit's branch. It traces the bullets of the record as R1 to R9, and fixes two readings: the sentence of
+  `### Windows` that says nothing of a check stays and the one that says the part is written from the documentation of
+  Windows stays, narrowed to what was not checked; and each section names the checked and unchecked items that concern
+  it, so that the part `### Windows` names nothing as not checked. The status stays `approved`
 
 ## Amendments
