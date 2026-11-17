@@ -1,6 +1,6 @@
 ---
 kind: task
-status: in-progress
+status: implemented
 timestamp: 2026-11-17T15:31:56Z
 ---
 
@@ -117,9 +117,9 @@ names of its menus and options, and nothing of it is copied into the project.
   the quick start has three steps and the Windows section holds the paragraph that begins "To turn on its web server".
   No test reads the README, so the checks are the diff read against the record and the suite. The status stays
   `approved`
-- 2026-11-17T15:40:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, began the work. The status is
+- 2026-11-17T15:34:24Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, began the work. The status is
   `in-progress`
-- 2026-11-17T15:41:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, changed `README.md` on `238dcbb`: the
+- 2026-11-17T15:34:25Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, changed `README.md` on `238dcbb`: the
   Windows step with its six sub-steps is the second step of the quick start, the other steps are renumbered, and the
   paragraph that began "To turn on its web server" is replaced by a link to the quick start. On that tree `go test ./...`,
   `go vet ./...`, `gofmt -l .`, and `go build` and `go vet` with `GOOS=windows GOARCH=amd64` all succeeded. The steps
@@ -130,5 +130,9 @@ names of its menus and options, and nothing of it is copied into the project.
   or code and documentation quality. The five suite commands, an additional uncached end-to-end run and the change
   check passed. The Windows setup was not tried on a real Windows machine. The complete review is saved in
   `.reviews/0031-librehardwaremonitor-in-quick-start/round-1-20261117T153615Z.md`. The status stays `in-progress`
+- 2026-11-17T15:38:34Z [Claude Code, anthropic/claude-opus-5-5] corrected two timestamps of this log that were later than the
+  commit that holds them to the time of that commit, ran the suite of `AGENTS.md` with no failure, and set the unit
+  under the delegation in `AGENTS.md`, with no finding of the review and every task of the plan ticked. The status is
+  `implemented`
 
 ## Amendments
