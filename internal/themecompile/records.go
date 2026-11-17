@@ -12,6 +12,7 @@ import (
 type built struct {
 	record   themefile.Record
 	resource []byte
+	area     box // the box the record draws in, which a later text is compared with
 }
 
 // loadedFont is a font of the theme ready to draw, with its colour as the device holds it.
@@ -23,6 +24,14 @@ type loadedFont struct {
 
 // box is the rectangle of a record, in 64 bits so that no x or y of a theme can overflow it.
 type box struct{ x, y, width, height int64 }
+
+// overlaps tells whether two boxes share at least one pixel. A box that only touches another at its edge shares none,
+// and a box of no width or no height shares none with any.
+func (area box) overlaps(other box) bool {
+	return area.x < other.x+other.width && other.x < area.x+area.width &&
+		area.y < other.y+other.height && other.y < area.y+area.height &&
+		area.width > 0 && area.height > 0 && other.width > 0 && other.height > 0
+}
 
 func (area box) head(recordType, index, tag byte) themefile.Head {
 	return themefile.Head{Type: recordType, Index: index, Tag: tag,
@@ -101,7 +110,7 @@ func buildText(input widgetInput, place string) (built, error) {
 	resource := glyphs.textMask(input.spec.text, width)
 	record := themefile.Text{Head: area.head(themefile.TypeText, input.index(), 0), Offset: input.offset,
 		Colour: input.font.colour, OpacityGuess: 0xff, Resource: resource}
-	return built{record, resource}, nil
+	return built{record, resource, area}, nil
 }
 
 func buildNumber(input widgetInput, place string) (built, error) {
@@ -159,7 +168,7 @@ func numberRecord(input widgetInput, area box, tag byte, colour themefile.Colour
 		resource = append(resource, mask...)
 	}
 	record.Resource = resource
-	return built{record, resource}
+	return built{record, resource, area}
 }
 
 // barSampleBytes are bytes 18-19 and 26-27 of every bar of the vendor sample. The device draws them, and changing them
@@ -180,7 +189,7 @@ func buildBar(input widgetInput, place string) (built, error) {
 		FillOrFrameColour14: colour, FillOrFrameColour16: colour}
 	binary.BigEndian.PutUint16(record.Bytes18To63[0:], barSampleBytes)
 	binary.BigEndian.PutUint16(record.Bytes18To63[8:], barSampleBytes)
-	return built{record: record}, nil
+	return built{record: record, area: area}, nil
 }
 
 // datetimeOthers are the five glyphs after the digits that a format can refer to, in the order of the file; the six
@@ -214,7 +223,7 @@ func buildDatetime(input widgetInput, place string) (built, error) {
 		resource = append(resource, glyphs.blank()...)
 	}
 	record.Resource = resource
-	return built{record, resource}, nil
+	return built{record, resource, area}, nil
 }
 
 // formatWidth is the width of a compiled format as drawn: each year four digit widths, each other token two, each
@@ -254,15 +263,18 @@ func buildImage(input widgetInput, place string) (built, error) {
 	resource := imagePlanes(picture)
 	record := themefile.Image{Head: area.head(themefile.TypeImage, input.index(), 0), Offset: input.offset,
 		FrameCount: 1, Byte16: 1, Resource: resource}
-	return built{record, resource}, nil
+	return built{record, resource, area}, nil
 }
 
 // backgroundOffset is where the first resource starts: right after the record table.
 const backgroundOffset = themefile.TableSize
 
+// backgroundEnd is where the resource after the background starts: the background is a full picture in every theme.
+const backgroundEnd = backgroundOffset + 2*screenWidth*screenHeight
+
 // buildBackground builds the background record. A solid background is a full picture of its colour, and a PNG one is
-// composited over black, so that the record needs no alpha.
-func buildBackground(spec backgroundSpec, picture image.Image) built {
+// composited over black, so that the record needs no alpha. The texts are drawn into the picture, which keeps its size.
+func buildBackground(spec backgroundSpec, picture image.Image, texts []themefile.Text) built {
 	record := themefile.Background{Head: box{0, 0, screenWidth, screenHeight}.head(themefile.TypeBackground, 0, 0),
 		Offset: backgroundOffset}
 	record.Bytes18To63[0] = 1
@@ -274,6 +286,9 @@ func buildBackground(spec backgroundSpec, picture image.Image) built {
 	} else {
 		resource = backgroundPlane(picture)
 	}
+	if len(texts) > 0 {
+		resource = drawTexts(record, resource, texts)
+	}
 	record.Resource = resource
-	return built{record, resource}
+	return built{record, resource, box{0, 0, screenWidth, screenHeight}}
 }

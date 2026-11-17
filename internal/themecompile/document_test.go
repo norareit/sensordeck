@@ -70,7 +70,6 @@ func TestParseDocumentErrors(test *testing.T) {
 		{"format with a letter", "name: a\nbackground: \"#000000\"\n" + goodFonts + "widgets:\n  - {type: datetime, font: body, format: \"HH:mmx\", x: 0, y: 0}\n", `widget 1 (datetime): format: the character "x" at position 6 is not a token or a separator`},
 		{"format too long", "name: a\nbackground: \"#000000\"\n" + goodFonts + "widgets:\n  - {type: datetime, font: body, format: \"" + strings.Repeat("ss:", 9) + ":\", x: 0, y: 0}\n", "widget 1 (datetime): format: compiles to 19 bytes, more than 18"},
 		{"font not in fonts", "name: a\nbackground: \"#000000\"\n" + goodFonts + "widgets:\n  - {type: text, font: head, text: a, x: 0, y: 0}\n", `widget 1 (text): font: "head" is not a font of fonts`},
-		{"63 widgets", "name: a\nbackground: \"#000000\"\n" + goodFonts + "widgets:\n" + strings.Repeat("  - {type: text, font: body, text: a, x: 0, y: 0}\n", 63), "widgets: 63 widgets, more than the 62 that fit beside the background"},
 		{"not a mapping", "- a\n", "want a mapping"},
 		{"empty", "", "want a mapping"},
 	}

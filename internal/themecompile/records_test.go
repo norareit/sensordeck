@@ -74,16 +74,22 @@ func TestBackgroundOnly(test *testing.T) {
 	}
 }
 
+// TestTextRecord is a text over an earlier number, which stays a record in the slot after the number.
 func TestTextRecord(test *testing.T) {
 	glyphs := newGlyphFont(regularFace(test, 20))
 	width := glyphs.textWidth("Hi")
-	result := compileFiles(test, solidTheme+"widgets:\n  - {type: text, font: body, text: Hi, x: 10, y: 20}\n", nil)
-	slot := faketheme.Head(0x93, 1, 0, 10, 20, uint16(width), uint16(glyphs.height))
-	faketheme.Put32(&slot, 11, widgetOffset)
+	theme := solidTheme + "widgets:\n  - {type: number, font: body, metric: cpu.temp, digits: 4, x: 10, y: 20}\n" +
+		"  - {type: text, font: body, text: Hi, x: 10, y: 20}\n"
+	result := compileFiles(test, theme, nil)
+	numberSet := glyphs.height * (10*glyphs.digitWidth + glyphs.advance('.') + glyphs.advance('-'))
+	number := numberSlot(glyphs)
+	copy(number[3:], []byte{0, 10, 0, 20})
+	slot := faketheme.Head(0x93, 2, 0, 10, 20, uint16(width), uint16(glyphs.height))
+	faketheme.Put32(&slot, 11, uint32(widgetOffset+numberSet))
 	faketheme.Put16(&slot, 15, 0xffff)
 	slot[17] = 0xff
-	checkTable(test, result.File, slot)
-	if len(result.File) != widgetOffset+width*glyphs.height {
+	checkTable(test, result.File, number, slot)
+	if len(result.File) != widgetOffset+numberSet+width*glyphs.height {
 		test.Errorf("%d bytes", len(result.File))
 	}
 }
@@ -226,7 +232,7 @@ func TestPNGBackgroundIsCompositedOverBlack(test *testing.T) {
 }
 
 func TestSecondWidgetHasIndex2(test *testing.T) {
-	result := compileFiles(test, solidTheme+"widgets:\n  - {type: text, font: body, text: a, x: 0, y: 0}\n  - {type: text, font: body, text: b, x: 0, y: 30}\n", nil)
+	result := compileFiles(test, solidTheme+"widgets:\n  - {type: number, font: body, metric: cpu.temp, x: 0, y: 0}\n  - {type: number, font: body, metric: gpu.temp, x: 0, y: 30}\n", nil)
 	if result.File[3*64+1] != 2 || result.File[2*64+1] != 1 {
 		test.Errorf("indexes %d, %d", result.File[2*64+1], result.File[3*64+1])
 	}
@@ -256,26 +262,25 @@ func TestAlarmNumberIsTwoRecords(test *testing.T) {
 	glyphs := newGlyphFont(regularFace(test, 20))
 	result := compileFiles(test, alarmFolderTheme, nil)
 	theme, _, err := themefile.Parse(result.File)
-	if err != nil || len(theme.Entries) != 5 {
+	if err != nil || len(theme.Entries) != 4 {
 		test.Fatalf("%v, %d entries", err, len(theme.Entries))
 	}
-	textOffset := uint32(widgetOffset)
 	setSize := glyphs.height * (10*glyphs.digitWidth + glyphs.advance('.') + 4*glyphs.digitWidth)
-	normalOffset := textOffset + uint32(len(result.Records[1].(themefile.Text).Resource))
+	normalOffset := uint32(widgetOffset)
 	alarmOffset := normalOffset + uint32(setSize)
 	red := rgb565(0xff, 0x30, 0x30)
-	normal := alarmSlot(glyphs, 2, 2, uint32(rgb565(0xff, 0xff, 0xff)), normalOffset)
-	alarm := alarmSlot(glyphs, 3, 3, uint32(red), alarmOffset)
-	for slot, want := range map[int][64]byte{3: normal, 4: alarm} {
+	normal := alarmSlot(glyphs, 1, 2, uint32(rgb565(0xff, 0xff, 0xff)), normalOffset)
+	alarm := alarmSlot(glyphs, 2, 3, uint32(red), alarmOffset)
+	for slot, want := range map[int][64]byte{2: normal, 3: alarm} {
 		if got := [64]byte(result.File[slot*64 : slot*64+64]); got != want {
 			test.Errorf("slot %d: got %x\nwant %x", slot, got, want)
 		}
 	}
-	after := result.Records[4].(themefile.Number)
-	if after.Index != 4 || after.Tag != 1 || after.Offset != alarmOffset+uint32(setSize) || after.Alignment != 1 {
+	after := result.Records[3].(themefile.Number)
+	if after.Index != 3 || after.Tag != 1 || after.Offset != alarmOffset+uint32(setSize) || after.Alignment != 1 {
 		test.Errorf("the number after: %+v", after.Head)
 	}
-	if !reflect.DeepEqual(result.AlarmSlots, []int{4}) || len(result.Alarms) != 1 || result.Alarms[0].Normal != 2 || result.Alarms[0].Alarm != 3 {
+	if !reflect.DeepEqual(result.AlarmSlots, []int{3}) || len(result.Alarms) != 1 || result.Alarms[0].Normal != 2 || result.Alarms[0].Alarm != 3 {
 		test.Errorf("alarm slots %v, pairs %+v", result.AlarmSlots, result.Alarms)
 	}
 }
@@ -283,7 +288,7 @@ func TestAlarmNumberIsTwoRecords(test *testing.T) {
 func TestTheGlyphSetsOfAnAlarmNumberHideTheMinus(test *testing.T) {
 	glyphs := newGlyphFont(regularFace(test, 20))
 	result := compileFiles(test, alarmFolderTheme, nil)
-	normal, alarm := result.Records[2].(themefile.Number), result.Records[3].(themefile.Number)
+	normal, alarm := result.Records[1].(themefile.Number), result.Records[2].(themefile.Number)
 	if !bytes.Equal(normal.Resource, alarm.Resource) || normal.GlyphWidths != alarm.GlyphWidths {
 		test.Error("the two glyph sets differ")
 	}

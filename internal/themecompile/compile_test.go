@@ -3,6 +3,7 @@ package themecompile
 import (
 	"bytes"
 	"encoding/binary"
+	"fmt"
 	"hash/crc32"
 	"image"
 	"image/color"
@@ -58,7 +59,7 @@ func TestRoundTrip(test *testing.T) {
 	if err != nil || len(warnings) != 0 {
 		test.Fatalf("%v, %v", err, warnings)
 	}
-	if theme.Header[0] != 0x96 || len(theme.Entries) != 9 || len(result.Records) != 9 {
+	if theme.Header[0] != 0x96 || len(theme.Entries) != 8 || len(result.Records) != 8 {
 		test.Fatalf("header %x, %d entries, %d records", theme.Header[0], len(theme.Entries), len(result.Records))
 	}
 	for position, entry := range theme.Entries {
@@ -71,33 +72,48 @@ func TestRoundTrip(test *testing.T) {
 
 func checkWidgets(test *testing.T, theme themefile.Theme) {
 	test.Helper()
-	text := theme.Entries[1].Record.(themefile.Text)
-	if text.X != 10 || text.Colour != rgb565(0, 0x80, 0xff) {
-		test.Errorf("text %+v", text.Head)
+	for _, entry := range theme.Entries {
+		if _, isText := entry.Record.(themefile.Text); isText {
+			test.Errorf("slot %d is a text record, though the text is drawn into the background", entry.Slot)
+		}
 	}
-	image := theme.Entries[2].Record.(themefile.Image)
+	image := theme.Entries[1].Record.(themefile.Image)
 	if image.X != 100 || image.Y != 100 || image.Frames()[0].Alpha[0] != 255 || image.Frames()[0].Colour[0] != byte(rgb565(1, 2, 3)) {
 		test.Errorf("image %+v", image.Head)
 	}
-	first, second := theme.Entries[3].Record.(themefile.Number), theme.Entries[4].Record.(themefile.Number)
-	third := theme.Entries[5].Record.(themefile.Number)
+	first, second := theme.Entries[2].Record.(themefile.Number), theme.Entries[3].Record.(themefile.Number)
+	third := theme.Entries[4].Record.(themefile.Number)
 	if first.Tag != 3 || second.Tag != 3 || third.Tag != 1 || first.Colour != rgb565(255, 0x80, 0) {
 		test.Errorf("tags %d, %d, %d", first.Tag, second.Tag, third.Tag)
 	}
-	options := theme.Entries[6].Record.(themefile.Number)
+	options := theme.Entries[5].Record.(themefile.Number)
 	if options.Tag != 2 || options.Alignment != 2 || options.Opacity != 128 || options.ThousandsMode != 1 || first.Alignment != 1 || first.Opacity != 255 || first.ThousandsMode != 0 {
 		test.Errorf("number %+v", options)
 	}
-	bar := theme.Entries[7].Record.(themefile.Bar)
+	bar := theme.Entries[6].Record.(themefile.Bar)
 	if bar.X != 10 || bar.Y != 250 || bar.Width != 100 || bar.Height != 8 || bar.Tag != 2 || bar.Byte11 != 1 || bar.EmptyColour != rgb565(255, 0, 0) ||
 		bar.FillOrFrameColour14 != rgb565(0, 255, 0) || bar.FillOrFrameColour16 != rgb565(0, 255, 0) ||
 		bar.Bytes18To63[0] != 0x76 || bar.Bytes18To63[1] != 0xb0 || bar.Bytes18To63[8] != 0x76 || bar.Bytes18To63[9] != 0xb0 {
 		test.Errorf("bar %+v", bar)
 	}
-	datetime := theme.Entries[8].Record.(themefile.Datetime)
+	datetime := theme.Entries[7].Record.(themefile.Datetime)
 	if datetime.Tag != 21 || string(datetime.FormatText()) != "1-2-3 4:5:6" || datetime.Y != 200 {
 		test.Errorf("datetime %+v", datetime.Head)
 	}
+	background := theme.Entries[0].Record.(themefile.Background)
+	if text := rgb565(0, 0x80, 0xff); !planeHas(background.Resource, text) {
+		test.Errorf("no pixel of the background has the colour of the text, %04x", uint16(text))
+	}
+}
+
+// planeHas tells whether a pixel of the plane has the colour.
+func planeHas(plane []byte, colour themefile.Colour) bool {
+	for index := 0; index+1 < len(plane); index += 2 {
+		if themefile.Colour(uint16(plane[index])|uint16(plane[index+1])<<8) == colour {
+			return true
+		}
+	}
+	return false
 }
 
 func compileError(test *testing.T, theme string, files map[string][]byte) string {
@@ -172,28 +188,67 @@ func TestLargeHeaderIsRefusedBeforeDecoding(test *testing.T) {
 	}
 }
 
-func TestWidgetCountAndFlashLimit(test *testing.T) {
-	compileFiles(test, solidTheme+"widgets:\n"+strings.Repeat("  - {type: text, font: body, text: a, x: 0, y: 0}\n", 62), nil)
-	theme := solidTheme + "widgets:\n" + strings.Repeat("  - {type: image, file: i.png, x: 0, y: 0}\n", 9)
+func TestCheckSizeDecidesAtTheLimit(test *testing.T) {
+	if err := checkSize(503808); err != nil {
+		test.Errorf("503808: %v", err)
+	}
+	got := checkSize(503809)
+	want := "widgets: the compiled theme is 503809 bytes, 1 more than the 503808 bytes that the screen draws widgets from; the background takes 307200 of them, each number a glyph set of its font and an alarm number two, each datetime a glyph set and each image 3 bytes a pixel, and a text none"
+	if got == nil || got.Error() != want {
+		test.Errorf("503809: %v", got)
+	}
+}
+
+func TestAThemeOverTheLimitIsRefused(test *testing.T) {
+	theme := solidTheme + "widgets:\n  - {type: image, file: i.png, x: 0, y: 0}\n"
 	got := compileError(test, theme, map[string][]byte{"i.png": solidPNG(test, 480, 320)})
-	if want := "widgets: the compiled file is 4458496 bytes, larger than the flash limit of 4194304 bytes"; got != want {
+	want := "widgets: the compiled theme is 772096 bytes, 268288 more than the 503808 bytes that the screen draws widgets from; the background takes 307200 of them, each number a glyph set of its font and an alarm number two, each datetime a glyph set and each image 3 bytes a pixel, and a text none"
+	if got != want {
 		test.Errorf("got %q", got)
 	}
 }
 
-func TestAnAlarmNumberCountsAsTwoWidgets(test *testing.T) {
-	alarm := "  - {type: number, font: body, metric: cpu.temp, x: 0, y: 0, alarm: {above: 80, color: \"#ff0000\"}}\n"
-	text := "  - {type: text, font: body, text: a, x: 0, y: 0}\n"
-	compileFiles(test, solidTheme+"widgets:\n"+strings.Repeat(text, 60)+alarm, nil)
-	for _, theme := range []string{strings.Repeat(text, 61) + alarm, alarm + strings.Repeat(text, 61)} {
-		got := compileError(test, solidTheme+"widgets:\n"+theme, nil)
-		want := "widgets: 63 widgets, more than the 62 that fit beside the background, an alarm number counting as two"
-		if got != want {
+func recordsError(records int) string {
+	return fmt.Sprintf("widgets: %d records, more than the 62 that fit beside the background; an alarm number is two records and a text drawn into the background none", records)
+}
+
+const (
+	barWidget         = "  - {type: bar, metric: cpu.util, x: 0, y: 0, width: 10, height: 4, color: \"#00ff00\", background: \"#ff0000\"}\n"
+	alarmNumberWidget = "  - {type: number, font: body, metric: cpu.temp, x: 0, y: 0, alarm: {above: 80, color: \"#ff0000\"}}\n"
+	textWidget        = "  - {type: text, font: body, text: a, x: %d, y: %d}\n"
+)
+
+func TestTheRecordsOfAThemeAreLimitedTo62(test *testing.T) {
+	compileFiles(test, solidTheme+"widgets:\n"+strings.Repeat(barWidget, 62), nil)
+	if got := compileError(test, solidTheme+"widgets:\n"+strings.Repeat(barWidget, 63), nil); got != recordsError(63) {
+		test.Errorf("got %q", got)
+	}
+}
+
+func TestAnAlarmNumberCountsAsTwoRecords(test *testing.T) {
+	compileFiles(test, solidTheme+"widgets:\n"+strings.Repeat(barWidget, 60)+alarmNumberWidget, nil)
+	for _, widgets := range []string{strings.Repeat(barWidget, 61) + alarmNumberWidget, alarmNumberWidget + strings.Repeat(barWidget, 61)} {
+		if got := compileError(test, solidTheme+"widgets:\n"+widgets, nil); got != recordsError(63) {
 			test.Errorf("got %q", got)
 		}
 	}
-	got := compileError(test, solidTheme+"widgets:\n"+strings.Repeat(text, 63), nil)
-	if want := "widgets: 63 widgets, more than the 62 that fit beside the background"; got != want {
+}
+
+func TestTextsInTheBackgroundTakeNoSlot(test *testing.T) {
+	var texts strings.Builder
+	for row := range 70 {
+		fmt.Fprintf(&texts, textWidget, 0, 4*row)
+	}
+	result := compileFiles(test, solidTheme+"widgets:\n  - {type: bar, metric: cpu.util, x: 400, y: 0, width: 10, height: 4, color: \"#00ff00\", background: \"#ff0000\"}\n"+texts.String(), nil)
+	if len(result.Records) != 2 {
+		test.Errorf("%d records, want the background and the bar", len(result.Records))
+	}
+}
+
+func TestTheRecordsAreCheckedBeforeTheSize(test *testing.T) {
+	theme := solidTheme + "widgets:\n" + strings.Repeat(barWidget, 62) + "  - {type: image, file: i.png, x: 0, y: 0}\n"
+	got := compileError(test, theme, map[string][]byte{"i.png": solidPNG(test, 480, 320)})
+	if got != recordsError(63) {
 		test.Errorf("got %q", got)
 	}
 }

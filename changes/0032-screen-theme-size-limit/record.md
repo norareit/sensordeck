@@ -1,6 +1,6 @@
 ---
 kind: bug
-status: approved
+status: in-progress
 timestamp: 2026-11-17T19:10:45Z
 supersedes: 0011-theme-compiler
 ---
@@ -32,5 +32,6 @@ supersedes: 0011-theme-compiler
   previews, the end-to-end tests and the documents follow. It checked that rounding any 8-bit channel to RGB565 and
   expanding it back moves it by at most 4 in red and blue and 2 in green, the bounds of R6. Every requirement has a
   task. The status stays `approved`
+- 2026-11-17T19:30:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, began the work on the branch `bugfix-0032-screen-theme-size-limit`. The status is `in-progress`
 
 ## Amendments

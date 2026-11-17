@@ -12,8 +12,15 @@ import (
 	"github.com/norareit/sensordeck/internal/themefile"
 )
 
-// FlashLimit is the size of the flash of the device, which a theme file must fit in.
-const FlashLimit = 4 << 20
+const (
+	// DrawLimit is the size of a theme file up to which the screen draws every widget. The screen left out each widget
+	// whose data ends between 503 692 and 504 015 bytes of the file or later, as observed on 2026-11-17, and 503 808 is
+	// the one multiple of 4096 in that range. The guess and the evidence are in docs/theme-format.md, and a better
+	// measurement changes this line and that document.
+	DrawLimit = 0x7B000
+	// maxRecords is the number of records that fit in the record table beside the header and the background.
+	maxRecords = 62
+)
 
 // Result is a compiled theme.
 type Result struct {
@@ -46,29 +53,17 @@ func Compile(folder fs.FS) (Result, error) {
 		return Result{}, err
 	}
 	tags, alarms := assignTags(parsed.widgets)
-	records := []built{buildBackground(parsed.background, picture)}
-	offset := backgroundOffset + len(records[0].resource)
-	var alarmSlots []int
-	for _, spec := range parsed.widgets {
-		input := widgetInput{spec: spec, font: fontOf(fonts, spec), folder: folder, tag: plainTagOf(tags, spec.metric),
-			slot: len(records) + 1, offset: uint32(offset)}
-		if spec.alarm != nil {
-			pair := pairOf(alarms, spec.metric, spec.alarm.threshold)
-			input.tag, input.alarmTag = pair.Normal, pair.Alarm
-			alarmSlots = append(alarmSlots, input.slot+1)
-		}
-		widgets, err := buildWidget(input)
-		if err != nil {
-			return Result{}, err
-		}
-		for _, widget := range widgets {
-			records = append(records, widget)
-			offset += len(widget.resource)
-		}
+	records, texts, alarmSlots, err := buildRecords(parsed, fonts, folder, tags, alarms)
+	if err != nil {
+		return Result{}, err
+	}
+	records[0] = buildBackground(parsed.background, picture, texts)
+	if len(records)-1 > maxRecords {
+		return Result{}, problem("widgets", "%d records, more than the %d that fit beside the background; an alarm number is two records and a text drawn into the background none", len(records)-1, maxRecords)
 	}
 	file := layout(records)
-	if len(file) > FlashLimit {
-		return Result{}, problem("widgets", "the compiled file is %d bytes, larger than the flash limit of %d bytes", len(file), FlashLimit)
+	if err := checkSize(len(file)); err != nil {
+		return Result{}, err
 	}
 	result := Result{File: file, Tags: tags, Alarms: alarms, AlarmSlots: alarmSlots}
 	for _, each := range records {
@@ -115,4 +110,54 @@ func fontOf(fonts []loadedFont, spec widgetSpec) loadedFont {
 		return loadedFont{}
 	}
 	return fonts[spec.font]
+}
+
+// buildRecords builds the records of the widgets in the order of the list, after a placeholder for the background, which
+// the caller builds once the texts for it are known. A text whose box overlaps no record before it is not a record but
+// goes to the texts for the background, since the background is under every record and the picture stays the same.
+func buildRecords(parsed document, fonts []loadedFont, folder fs.FS, tags []config.Mapping, alarms []config.AlarmPair) ([]built, []themefile.Text, []int, error) {
+	records := []built{{}}
+	var texts []themefile.Text
+	var alarmSlots []int
+	offset := backgroundEnd
+	for _, spec := range parsed.widgets {
+		input := widgetInput{spec: spec, font: fontOf(fonts, spec), folder: folder, tag: plainTagOf(tags, spec.metric),
+			slot: len(records) + 1, offset: uint32(offset)}
+		if spec.alarm != nil {
+			pair := pairOf(alarms, spec.metric, spec.alarm.threshold)
+			input.tag, input.alarmTag = pair.Normal, pair.Alarm
+			alarmSlots = append(alarmSlots, input.slot+1)
+		}
+		widgets, err := buildWidget(input)
+		if err != nil {
+			return nil, nil, nil, err
+		}
+		if text, isText := widgets[0].record.(themefile.Text); isText && !overlapsAny(widgets[0].area, records[1:]) {
+			texts = append(texts, text)
+			continue
+		}
+		for _, widget := range widgets {
+			records = append(records, widget)
+			offset += len(widget.resource)
+		}
+	}
+	return records, texts, alarmSlots, nil
+}
+
+func overlapsAny(area box, records []built) bool {
+	for _, each := range records {
+		if area.overlaps(each.area) {
+			return true
+		}
+	}
+	return false
+}
+
+// checkSize refuses a file that the screen would not draw in full.
+func checkSize(size int) error {
+	if size <= DrawLimit {
+		return nil
+	}
+	return problem("widgets", "the compiled theme is %d bytes, %d more than the %d bytes that the screen draws widgets from; the background takes %d of them, each number a glyph set of its font and an alarm number two, each datetime a glyph set and each image 3 bytes a pixel, and a text none",
+		size, size-DrawLimit, DrawLimit, 2*screenWidth*screenHeight)
 }

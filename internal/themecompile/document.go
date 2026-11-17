@@ -12,7 +12,6 @@ import (
 )
 
 const (
-	maxWidgets   = 62
 	maxFontSize  = 320
 	maxDigits    = 5
 	defaultDigit = 3
@@ -212,9 +211,6 @@ func readWidgets(node *yaml.Node, fonts []fontSpec) ([]widgetSpec, error) {
 	if node.Kind != yaml.SequenceNode {
 		return nil, problem("widgets", "want a list of widgets")
 	}
-	if err := checkWidgetCount(node); err != nil {
-		return nil, err
-	}
 	var widgets []widgetSpec
 	for position, item := range node.Content {
 		widget, err := readWidget(position+1, resolve(item), fonts)
@@ -224,44 +220,6 @@ func readWidgets(node *yaml.Node, fonts []fontSpec) ([]widgetSpec, error) {
 		widgets = append(widgets, widget)
 	}
 	return widgets, nil
-}
-
-// checkWidgetCount refuses a list with more records than fit, before any widget is read. An alarm number is two records.
-func checkWidgetCount(list *yaml.Node) error {
-	records, alarmNumbers := 0, 0
-	for _, item := range list.Content {
-		records++
-		if isAlarmNumber(resolve(item)) {
-			records++
-			alarmNumbers++
-		}
-	}
-	if records <= maxWidgets {
-		return nil
-	}
-	ending := ""
-	if alarmNumbers > 0 {
-		ending = ", an alarm number counting as two"
-	}
-	return problem("widgets", "%d widgets, more than the %d that fit beside the background%s", records, maxWidgets, ending)
-}
-
-// isAlarmNumber tells whether a widget of the list is a number with the key alarm, before it is read in full.
-func isAlarmNumber(node *yaml.Node) bool {
-	if node.Kind != yaml.MappingNode {
-		return false
-	}
-	isNumber, hasAlarm := false, false
-	for position := 0; position+1 < len(node.Content); position += 2 {
-		switch resolve(node.Content[position]).Value {
-		case "type":
-			value := resolve(node.Content[position+1])
-			isNumber = isString(value) && value.Value == "number"
-		case "alarm":
-			hasAlarm = true
-		}
-	}
-	return isNumber && hasAlarm
 }
 
 func widgetPlace(number int, kind string) string {
