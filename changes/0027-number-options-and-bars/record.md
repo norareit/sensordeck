@@ -1,6 +1,6 @@
 ---
 kind: feature
-status: draft
+status: approved
 timestamp: 2026-11-17T11:09:01Z
 supersedes: 0010-theme-file-reader
 ---
@@ -26,6 +26,7 @@ supersedes: 0010-theme-file-reader
   from the left edge. The context, R18 and D12 now record the fill from the left as observed, and keep the exact pixels
   of its edge and a box taller than wide as unknown. The session confirmed that the values of the tests went to the
   tags in byte 2 of the bar records, so R8 stands. The status stays `draft`
+- 2026-11-17T11:11:42Z [human] approved the spec. The status is `approved`
 
 ## Amendments
 - 2026-11-17T11:11:42Z [Claude Code, anthropic/claude-opus-5-5] read the spec under the delegation in `AGENTS.md`: its facts are those
