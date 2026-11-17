@@ -1,6 +1,6 @@
 ---
 kind: bug
-status: approved
+status: in-progress
 timestamp: 2026-11-17T12:05:47Z
 ---
 
@@ -18,6 +18,8 @@ timestamp: 2026-11-17T12:05:47Z
   adds the package `internal/devicelock`, takes the locks where the screen and the controller are opened, and words the
   refusals in the command line; the format of `/proc/locks` it parses was checked in the sandbox. The status stays
   `approved`
+- 2026-11-17T12:20:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, began the work. The status is
+  `in-progress`
 
 ## Amendments
 - 2026-11-17T12:06:08Z [Claude Code, anthropic/claude-opus-5-5] read the spec under the delegation in `AGENTS.md`: its cause is the
