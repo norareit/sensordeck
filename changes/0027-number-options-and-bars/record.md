@@ -21,5 +21,10 @@ supersedes: 0010-theme-file-reader
   bars filled to 42; the JSON names of the dump renamed for what is now known. The unit supersedes unit 0010, whose
   R3, R12, R13, R20 and R21 it changes in part, and changes requirements of the units 0011 and 0012, which the spec
   names. The device check is the human's, and the unit does not wait for it. The status is `draft`
+- 2026-11-17T11:11:13Z [Claude Code, anthropic/claude-opus-5-5] as the specifier, amended the spec on the word of the
+  orchestrating session: the direction of the fill of a bar was observed, on a photo of the screen at 50 and at 100,
+  from the left edge. The context, R18 and D12 now record the fill from the left as observed, and keep the exact pixels
+  of its edge and a box taller than wide as unknown. The session confirmed that the values of the tests went to the
+  tags in byte 2 of the bar records, so R8 stands. The status stays `draft`
 
 ## Amendments

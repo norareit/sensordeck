@@ -51,7 +51,9 @@ Of the bar record (type `0x8B`):
 - **The frame** is drawn inside the box of the bar, seen as an outline one pixel wide
 - **Bytes 18-19 and 26-27** (`76b0`): writing `001f` into both had no visible effect. Writing 50 into bytes 20-21, 22-23
   or 24-25 gave no threshold colour. Byte 11 was 1 in every test
-- How the fill grows in a box taller than it is wide, and where exactly its edge falls in pixels, was not reported
+- **The fill grows from the left**: a photo of the screen at the value 50 showed each bar filled in its colour from the
+  left edge to about the middle, with the right half in the colour of the empty part, and at 100 filled entirely.
+  Where exactly the edge of the fill falls in pixels was not measured, and no bar taller than wide was tried
 
 Values are signed 16-bit numbers, as unit 0026 established.
 
@@ -160,8 +162,9 @@ of the widths of the glyphs of its characters.
       1 and 2 of byte 14 are unknown. It gives the rule of the thousands mode that agrees with the three results as a
       guess, and says that nothing beyond these three results is established
     - the section of the bar gives the common head, a table of bytes 11 to 63 with each field and its status, the range
-      of the value with the results for 0, 50, 100 and 150 and the bar with no value, the frame inside the box, the
-      bytes whose change had no visible effect, and that the tag of a bar is the tag of a metric
+      of the value with the results for 0, 50, 100 and 150 and the bar with no value, the fill from the left edge, the
+      frame inside the box, the bytes whose change had no visible effect, and that the tag of a bar is the tag of a
+      metric
     - it says that the device clips the glyphs of a number to its box, that the minus sign takes a place in the box,
       and that a number that never received a value shows nothing
     - its open questions list what stays unknown: the values of the number bytes named above; byte 11 of a bar, which
@@ -170,8 +173,8 @@ of the widths of the glyphs of its characters.
       and the bottom of its box, and whether it clips the glyphs of a datetime. It no longer lists as open what this
       unit established
     - the section on the dump says how the preview draws numbers and bars, as R13 to R17 say, which of its choices
-      are its own (the rounding of the centre and of the fill, the fill from the left, the colour of bytes 14-15 as the
-      fill, the clipping at the top and bottom), and the new JSON names of R10 and R11
+      are its own (the rounding of the centre and of the fill, the fill from the left in a box taller than wide, the colour
+      of bytes 14-15 as the fill, the clipping at the top and bottom), and the new JSON names of R10 and R11
 - **R19** The folder document:
     - describes `align`, `opacity` and `thousands` in the table of the widgets, with their values and defaults, and
       the bar widget with its keys, defaults and box
@@ -272,8 +275,10 @@ of the widths of the glyphs of its characters.
 - **D11 The sample value of a bar is 42.** It is the sample value of every number, so a preview with a number and a bar
   of the same metric shows them agree, and 42 is neither empty nor full, so the fill, the empty part and their border
   are all visible
-- **D12 The fill grows from the left.** The direction was not reported. A bar from the left is what a share of a
-  horizontal box looks like, and the format document says that the direction in a tall box is unknown
+- **D12 The fill grows from the left.** It was observed so on the screen, at 50 and at 100. The preview fills every box
+  from the left, a tall one included, whose direction on the device was not tried and which the format document lists
+  as unknown. The column at which the screen ends the fill was not measured, so the rounding down of R16 is the
+  preview's own
 - **D13 The names of the dump follow what is known.** Bytes 11, 14 and 15 of a number get plain names, as D5 of unit
   0010 says a confirmed guess does. Byte 14 is `thousands_mode` with the byte's value, not a boolean, so that a dump
   shows the 2 of a vendor theme as it is. The two colours of a bar are named by their first byte because their roles are
