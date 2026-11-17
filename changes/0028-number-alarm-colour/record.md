@@ -1,6 +1,6 @@
 ---
 kind: feature
-status: in-progress
+status: implemented
 timestamp: 2026-11-17T11:32:23Z
 ---
 
@@ -17,9 +17,9 @@ timestamp: 2026-11-17T11:32:23Z
 - 2026-11-17T11:33:51Z [human] approved the spec. The status is `approved`
 - 2026-11-17T11:37:30Z [Claude Code, anthropic/claude-opus-5-5] as the planner, wrote the plan against the tree of
   `feature-0028-number-alarm-colour`. Every requirement from R1 to R29 has a task. The status stays `approved`
-- 2026-11-17T11:40:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, began the work. The status is
+- 2026-11-17T11:38:48Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, began the work. The status is
   `in-progress`
-- 2026-11-17T12:40:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, built the unit by the plan and ticked
+- 2026-11-17T11:45:08Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, built the unit by the plan and ticked
   every task. The work went into four commits and not the plan's four implementation commits: the config reading of
   pairs came first and alone, the compiler with `run` went into one, then the preview with the end-to-end tests, then
   the documents. Two points the plan did not spell out: the existing config test that gave a mapping as a tag the error
@@ -43,3 +43,9 @@ timestamp: 2026-11-17T11:32:23Z
   be tested in the sandbox. Item 6 of "Beyond the request" was taken, because a pair split across two reports would
   flicker every round, and the spec was amended for it; items 1 to 5 are declined. The device check is the human's and
   the unit does not depend on it. The approval that follows is made under that delegation
+- 2026-11-17T11:49:53Z [Claude Code, anthropic/claude-opus-5-5] under the delegation in `AGENTS.md`, decided the findings: round 1
+  returned none, so no blocking finding is open. The timestamps of two entries of the implementer, which did not match
+  their commits, were corrected to the times of the commits that added them. Every task of `plan.md` is ticked, and
+  the five commands of the suite passed on the branch. On the host, a copy of `minimal-dark-probes` with an alarm
+  above 35 on `commander.1.temp` compiled with the pair of tags 1 and 2 in its tags file. The check on the device is
+  the human's and follows the merge. The status is `implemented`
