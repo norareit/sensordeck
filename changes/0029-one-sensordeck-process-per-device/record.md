@@ -14,6 +14,10 @@ timestamp: 2026-11-17T12:05:47Z
   The lock on Linux is `flock` on the device node rather than the lock file under `$XDG_RUNTIME_DIR` the request
   suggested, for the reasons of D2. The status is `draft`
 - 2026-11-17T12:06:09Z [human] approved the spec. The status is `approved`
+- 2026-11-17T12:11:19Z [Claude Code, anthropic/claude-opus-5-5] as the planner, wrote the plan against the tree of the branch. It
+  adds the package `internal/devicelock`, takes the locks where the screen and the controller are opened, and words the
+  refusals in the command line; the format of `/proc/locks` it parses was checked in the sandbox. The status stays
+  `approved`
 
 ## Amendments
 - 2026-11-17T12:06:08Z [Claude Code, anthropic/claude-opus-5-5] read the spec under the delegation in `AGENTS.md`: its cause is the
