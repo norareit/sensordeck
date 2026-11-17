@@ -163,5 +163,12 @@ The five commands of the suite in `AGENTS.md` succeed.
   an uncached `go test -count=1 ./...` including the end-to-end suite, and `npm run check-changes`; all passed.
   Physical-device rendering and Windows execution were not verified. The transient failing test run and scratch
   count check were not independently reconstructible from committed history. The status stays `in-progress`
+- 2026-11-17T15:45:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, applied finding P1 of
+  `review-round-1.md`, which the definition of the orchestrator accepts, and which is not a decision of the human: the
+  declaration of the unchanged files in `plan.md` no longer names `docs_test.go`, which the plan lists as changed. The
+  review also found that the earlier log entry says the spec of the task forbids changing `docs_test.go`, which the
+  text of the record does not say: the record says the test passes with the committed image, and it does, so the
+  earlier entry overstated it. Only `plan.md` changed, so no suite was rerun for this correction. The status stays
+  `in-progress`
 
 ## Amendments
