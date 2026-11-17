@@ -26,5 +26,11 @@ supersedes: 0011-theme-compiler
   of "Beyond the request" are declined. As D10 says, the unit is set to `implemented` only after the human has seen
   the date and the time on the screen with the five alarms. The approval that follows is made under that delegation
 - 2026-11-17T19:11:18Z [human] approved the spec. The status is `approved`
+- 2026-11-17T19:14:57Z [Claude Code, anthropic/claude-opus-5-5] as the planner, wrote the plan against the tree of the head of
+  the default branch: the texts are decided in the one pass of the compiler and drawn into the background through
+  `themeimage.Preview`, the limits are checked after the list, the records before the size, and the built-in
+  previews, the end-to-end tests and the documents follow. It checked that rounding any 8-bit channel to RGB565 and
+  expanding it back moves it by at most 4 in red and blue and 2 in green, the bounds of R6. Every requirement has a
+  task. The status stays `approved`
 
 ## Amendments
