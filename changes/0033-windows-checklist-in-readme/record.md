@@ -1,6 +1,6 @@
 ---
 kind: task
-status: in-progress
+status: implemented
 timestamp: 2026-11-17T22:08:14Z
 ---
 
@@ -113,9 +113,9 @@ the README. It is a change of `README.md` only.
   `### Windows` that says nothing of a check stays and the one that says the part is written from the documentation of
   Windows stays, narrowed to what was not checked; and each section names the checked and unchecked items that concern
   it, so that the part `### Windows` names nothing as not checked. The status stays `approved`
-- 2026-11-17T22:30:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, began the work. The status is
+- 2026-11-17T22:11:40Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, began the work. The status is
   `in-progress`
-- 2026-11-17T22:31:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, changed `README.md` only, as the
+- 2026-11-17T22:11:41Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, changed `README.md` only, as the
   plan says (R1 to R7). Verified: `grep` finds no "not yet been checked" or "not been checked" left; no sentence of the
   README says the Task Scheduler restarts the task after an error; the part `### Linux` is untouched. On the final
   tree `go test ./...`, `go vet ./...`, `gofmt -l .` (no output), `GOOS=windows GOARCH=amd64 go build ./...` and
@@ -126,7 +126,7 @@ the README. It is a change of `README.md` only.
   `origin/master`. Returned non-blocking finding P1 in `.reviews/0033-windows-checklist-in-readme/review-1.md`.
   Independently ran all five commands of the project suite and `npm run check-changes`; all succeeded. Windows and
   physical-device observations were checked against the approved record, not independently repeated on hardware.
-- 2026-11-17T22:20:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, accepted finding P1 of
+- 2026-11-17T22:13:35Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, accepted finding P1 of
   `review-1.md` by the definition of the orchestrator, not as a decision of the human. It is not blocking. Ticked the
   change-check verification, which the reviewer and the implementer ran successfully on the committed branch, and the
   three commit points. Deviation: the ticked plan and the implementation log entry went into the commit of the README
@@ -137,5 +137,9 @@ the README. It is a change of `README.md` only.
   `f06afc705572ce4172a1366cb7ccf484ece35fba`. Verified the correction of P1 and returned no new findings;
   the review is saved in `.reviews/0033-windows-checklist-in-readme/review-2.md`. Independently ran all five project
   suite commands and `npm run check-changes`; all succeeded. No Windows or physical-device check was repeated.
+- 2026-11-17T22:15:37Z [Claude Code, anthropic/claude-opus-5-5] corrected three timestamps of this log that were later than the
+  commits that hold them to the times of those commits, ran the suite of `AGENTS.md` with no failure, and set the unit
+  under the delegation in `AGENTS.md`, with no open blocking finding and every task of the plan ticked. The status is
+  `implemented`
 
 ## Amendments
