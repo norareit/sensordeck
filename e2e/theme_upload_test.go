@@ -277,6 +277,31 @@ func TestAThemeThatDoesNotCompileIsRefusedByThemeUseAndByRun(test *testing.T) {
 	}
 }
 
+func TestThemeUseRefusesAThemeOverTheLimitAndLeavesTheConfigFile(test *testing.T) {
+	setup := newThemeSetup(test)
+	folder := writeOverLimitFolder(test)
+	use := runWith(test, setup.fake, setup.environment, "theme", "use", folder)
+	if use.status != 1 || use.stdout != "" || !strings.HasSuffix(use.stderr, filepath.Join(folder, "theme.yaml")+": "+overLimitError) {
+		test.Errorf("status %d, stdout %q, stderr %q", use.status, use.stdout, use.stderr)
+	}
+	if _, err := os.Stat(setup.configPath); !os.IsNotExist(err) {
+		test.Errorf("theme use created a config file: %v", err)
+	}
+	before := "theme: minimal-dark\n"
+	if err := os.MkdirAll(filepath.Dir(setup.configPath), 0o755); err != nil {
+		test.Fatal(err)
+	}
+	if err := os.WriteFile(setup.configPath, []byte(before), 0o644); err != nil {
+		test.Fatal(err)
+	}
+	if use := runWith(test, setup.fake, setup.environment, "theme", "use", folder); use.status != 1 {
+		test.Errorf("second use: status %d", use.status)
+	}
+	if after, err := os.ReadFile(setup.configPath); err != nil || string(after) != before {
+		test.Errorf("the config file is %q, %v", after, err)
+	}
+}
+
 func TestRunPutsItsThemeBackAfterAnUpload(test *testing.T) {
 	setup := newThemeSetup(test)
 	minimalDark := setup.compiled("minimal-dark")

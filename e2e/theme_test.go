@@ -223,7 +223,7 @@ func TestThemeCompileWritesTheThemeFileAndTheTagsFileWithNoScreen(test *testing.
 		test.Fatalf("status %d, stdout %q, stderr %q", got.status, got.stdout, got.stderr)
 	}
 	theme, warnings, err := themefile.Parse(content)
-	if err != nil || len(warnings) != 0 || len(theme.Entries) != 6 {
+	if err != nil || len(warnings) != 0 || len(theme.Entries) != 5 {
 		test.Fatalf("%v, %v, %d entries", err, warnings, len(theme.Entries))
 	}
 	tags, err := os.ReadFile(tagsFile)
@@ -371,5 +371,91 @@ func checkOptionsDump(test *testing.T, path string) {
 				test.Errorf("record %d, %s is %s, want %s", position, name, got, want)
 			}
 		}
+	}
+}
+
+// overLimitTheme is a theme with an image of the size of the screen, which makes a file of 772 096 bytes.
+const overLimitTheme = "name: too large\nbackground: \"#102030\"\nwidgets:\n  - {type: image, file: full.png, x: 0, y: 0}\n"
+
+const overLimitError = "widgets: the compiled theme is 772096 bytes, 268288 more than the 503808 bytes that the screen draws widgets from; " +
+	"the background takes 307200 of them, each number a glyph set of its font and an alarm number two, each datetime a glyph set and each image 3 bytes a pixel, and a text none\n"
+
+func writeOverLimitFolder(test *testing.T) string {
+	test.Helper()
+	folder := writeThemeFolder(test, overLimitTheme)
+	var full bytes.Buffer
+	if err := png.Encode(&full, image.NewNRGBA(image.Rect(0, 0, 480, 320))); err != nil {
+		test.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(folder, "full.png"), full.Bytes(), 0o644); err != nil {
+		test.Fatal(err)
+	}
+	return folder
+}
+
+func TestThemeCompileRefusesAThemeOverTheLimitAndWritesNoFile(test *testing.T) {
+	folder := writeOverLimitFolder(test)
+	directory := test.TempDir()
+	got := run(test, fakescreen.New(test), "theme", "compile", folder, filepath.Join(directory, "img.dat"))
+	if want := "sensordeck: " + filepath.Join(folder, "theme.yaml") + ": " + overLimitError; got.status != 1 || got.stdout != "" || got.stderr != want {
+		test.Errorf("status %d, stdout %q, stderr %q", got.status, got.stdout, got.stderr)
+	}
+	if names := listDirectory(test, directory); len(names) != 0 {
+		test.Errorf("left %q", names)
+	}
+}
+
+func TestThemeCompileDrawsATextIntoTheBackgroundAndDumpShowsNoTextRecord(test *testing.T) {
+	const theme = "name: one text\nbackground: \"#102030\"\nfonts:\n  body: {file: body.ttf, size: 20, color: \"#ffffff\"}\n" +
+		"widgets:\n  - {type: text, font: body, text: Hello, x: 4, y: 4}\n  - {type: number, font: body, metric: cpu.temp, x: 4, y: 100}\n"
+	folder := writeThemeFolder(test, theme)
+	directory := test.TempDir()
+	out := filepath.Join(directory, "img.dat")
+	if got := run(test, fakescreen.New(test), "theme", "compile", folder, out); got.status != 0 {
+		test.Fatalf("compile: %+v", got)
+	}
+	dumped := filepath.Join(directory, "dump")
+	if got := run(test, fakescreen.New(test), "theme", "dump", out, dumped); got.status != 0 {
+		test.Fatalf("dump: %+v", got)
+	}
+	content, err := os.ReadFile(filepath.Join(dumped, "theme.json"))
+	if err != nil {
+		test.Fatal(err)
+	}
+	var parsed struct {
+		Records []map[string]json.RawMessage `json:"records"`
+	}
+	if err := json.Unmarshal(content, &parsed); err != nil {
+		test.Fatal(err)
+	}
+	if len(parsed.Records) != 2 {
+		test.Errorf("%d records, want the background and the number", len(parsed.Records))
+	}
+	for _, record := range parsed.Records {
+		if string(record["type_name"]) == `"text"` {
+			test.Error("the dump lists a text record")
+		}
+	}
+	file, err := os.Open(filepath.Join(dumped, "slot01-background.png"))
+	if err != nil {
+		test.Fatal(err)
+	}
+	defer file.Close()
+	background, err := png.Decode(file)
+	if err != nil {
+		test.Fatal(err)
+	}
+	solid := color.NRGBA{R: 0x10, G: 0x20, B: 0x30, A: 255}
+	differs := false
+	for y := 4; y < 24 && !differs; y++ {
+		for x := 4; x < 60; x++ {
+			if color.NRGBAModel.Convert(background.At(x, y)).(color.NRGBA) != solid {
+				differs = true
+				break
+			}
+		}
+	}
+	if !differs {
+		test.Error("no pixel of the background inside the text differs from its colour")
 	}
 }
