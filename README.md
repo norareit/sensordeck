@@ -109,13 +109,37 @@ CGO_ENABLED=0 go build -trimpath -o sensordeck .
 
 This takes you from nothing to the built-in theme `minimal-dark` on the screen. On Windows the sensors of the machine are
 read natively and through LibreHardwareMonitor, as [Windows: the sensors of the machine](#windows-the-sensors-of-the-machine)
-says, and the first step is for Linux only.
+says. The first step is for Linux only and the second for Windows only.
 
 1. On Linux, install the udev rule of [Linux: access to the screen](#linux-access-to-the-screen)
-2. Set the theme: `sensordeck theme use minimal-dark`. It writes the key `theme` into the config file, which it creates
+2. On Windows, set up [LibreHardwareMonitor](https://github.com/LibreHardwareMonitor/LibreHardwareMonitor). Without it
+   sensordeck has no CPU temperature, no CPU clock and no temperatures of the NVMe drives and the memory modules on
+   Windows: `cpu.temp`, `cpu.ccd<n>.temp`, `cpu.clock`, `ram.<n>.temp` and `nvme.<n>.temp` appear only with it, and the
+   CPU temperature tile and the disk tile of `minimal-dark` show nothing. sensordeck neither installs nor starts it, as
+   [Windows: the sensors of the machine](#windows-the-sensors-of-the-machine) says
+   1. Download the archive `LibreHardwareMonitor.zip` of the latest release from its
+      [release page](https://github.com/LibreHardwareMonitor/LibreHardwareMonitor/releases), at version 0.9.5 or newer,
+      which the temperatures of the memory modules need. Extract it to a folder where it stays, since its options are
+      kept in a file beside its executable and the startup of sub-step 4 names its path
+   2. Start `LibreHardwareMonitor.exe`. It runs as an administrator, which its driver needs, and Windows asks for that
+      consent. The groups CPU, RAM and Storage Devices of its Options menu must be on, as they are by default
+   3. Check Options > Remote Web Server > Run, which turns on the web server sensordeck reads
+   4. Check Options > Run On Windows Startup, which starts it with Windows at each logon, and Options > Start Minimized,
+      which with Options > Minimize To Tray, on by default, keeps its window out of the way in the notification area.
+      Check Options > Minimize On Close as well, so that closing its window hides it instead of ending it. It must keep
+      running for the readings to be there
+   5. Open `http://localhost:8085/data.json` in a browser on the same machine. It shows a JSON document. When it does
+      not load, the web server is not running, or its port, address or authentication was changed, and then the key
+      `librehardwaremonitor_url` of [the Windows section](#windows-the-sensors-of-the-machine) gives sensordeck the
+      address
+   6. Run `sensordeck.exe sensors`. It now lists `cpu.temp` and `cpu.clock`, and `nvme.<n>.temp`, `ram.<n>.temp` and
+      `cpu.ccd<n>.temp` where the machine has such drives, modules with a thermal sensor and CCDs. When it writes the
+      line `LibreHardwareMonitor cannot be read at <URL>` instead, the web server cannot be read, as
+      [the Windows section](#windows-the-sensors-of-the-machine) says
+3. Set the theme: `sensordeck theme use minimal-dark`. It writes the key `theme` into the config file, which it creates
    when there is none, at the path that [Showing sensor values on the screen](#showing-sensor-values-on-the-screen)
    names
-3. Start `sensordeck run`. It uploads the theme to the screen at each start, which takes about 10 seconds and reboots
+4. Start `sensordeck run`. It uploads the theme to the screen at each start, which takes about 10 seconds and reboots
    the screen, and it sends the values after that
 
 The tiles show the CPU temperature and load, the GPU temperature and load, the share of RAM in use and the GiB used, the
@@ -343,9 +367,7 @@ driver that Windows does not give a program. `cpu.temp`, `cpu.ccd<n>.temp`, `cpu
 that has such a driver and serves its readings over HTTP. sensordeck neither installs nor starts it, and the native
 metrics do not depend on it.
 
-To turn on its web server, start LibreHardwareMonitor as an administrator, which its driver needs, check
-Options > Remote Web Server > Run, and keep it running. Options > Run On Windows Startup starts it with Windows. The
-groups CPU, RAM and Storage Devices of its menu must be on, as they are by default.
+How to set LibreHardwareMonitor up is the Windows step of the [quick start](#quick-start).
 
 The key `librehardwaremonitor_url` of the config file is the address of its document. Its default is
 `http://localhost:8085/data.json`, which is right while the web server is left as it is. Set it when you changed the
