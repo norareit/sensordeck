@@ -121,5 +121,10 @@ the README. It is a change of `README.md` only.
   tree `go test ./...`, `go vet ./...`, `gofmt -l .` (no output), `GOOS=windows GOARCH=amd64 go build ./...` and
   `GOOS=windows GOARCH=amd64 go vet ./...` all succeeded. Not yet run: `npm run check-changes` on the committed branch,
   and a review
+- 2026-11-17T22:12:43Z [OpenCode, openai/gpt-6.1-sol] as the reviewer, made a full review of
+  `0033-windows-checklist-in-readme` at `f06afc705572ce4172a1366cb7ccf484ece35fba` against the merge base with
+  `origin/master`. Returned non-blocking finding P1 in `.reviews/0033-windows-checklist-in-readme/review-1.md`.
+  Independently ran all five commands of the project suite and `npm run check-changes`; all succeeded. Windows and
+  physical-device observations were checked against the approved record, not independently repeated on hardware.
 
 ## Amendments
