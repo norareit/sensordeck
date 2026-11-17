@@ -1,6 +1,6 @@
 ---
 kind: feature
-status: draft
+status: approved
 timestamp: 2026-11-17T11:32:23Z
 ---
 
@@ -14,6 +14,7 @@ timestamp: 2026-11-17T11:32:23Z
   the orchestrating session: item 6 of "Beyond the request", the two values of an alarm pair always in one report of
   the value update, is now R21a with its tests, and D13 gives its reason. Items 1 to 5 are declined and stay in the
   list. The status stays `draft`
+- 2026-11-17T11:33:51Z [human] approved the spec. The status is `approved`
 
 ## Amendments
 - 2026-11-17T11:33:51Z [Claude Code, anthropic/claude-opus-5-5] read the spec under the delegation in `AGENTS.md`: its method is the
