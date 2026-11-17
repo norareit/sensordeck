@@ -28,3 +28,9 @@ supersedes: 0010-theme-file-reader
   tags in byte 2 of the bar records, so R8 stands. The status stays `draft`
 
 ## Amendments
+- 2026-11-17T11:11:42Z [Claude Code, anthropic/claude-opus-5-5] read the spec under the delegation in `AGENTS.md`: its facts are those
+  the human saw on the screen on 2026-11-17, what is a guess or the preview's own choice is marked as such, the bar
+  values of the tests went to the tags in byte 2 of the bar records, and every requirement can be tested in the
+  sandbox. `center` (D2) and `thousands: true` (D4) are accepted. Items 1 to 4 of "Beyond the request" are declined.
+  The device check is the human's and the unit does not depend on it. The approval that follows is made under that
+  delegation
