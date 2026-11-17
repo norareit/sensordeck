@@ -1,6 +1,6 @@
 ---
 kind: task
-status: approved
+status: in-progress
 timestamp: 2026-11-17T22:08:14Z
 ---
 
@@ -113,5 +113,13 @@ the README. It is a change of `README.md` only.
   `### Windows` that says nothing of a check stays and the one that says the part is written from the documentation of
   Windows stays, narrowed to what was not checked; and each section names the checked and unchecked items that concern
   it, so that the part `### Windows` names nothing as not checked. The status stays `approved`
+- 2026-11-17T22:30:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, began the work. The status is
+  `in-progress`
+- 2026-11-17T22:31:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, changed `README.md` only, as the
+  plan says (R1 to R7). Verified: `grep` finds no "not yet been checked" or "not been checked" left; no sentence of the
+  README says the Task Scheduler restarts the task after an error; the part `### Linux` is untouched. On the final
+  tree `go test ./...`, `go vet ./...`, `gofmt -l .` (no output), `GOOS=windows GOARCH=amd64 go build ./...` and
+  `GOOS=windows GOARCH=amd64 go vet ./...` all succeeded. Not yet run: `npm run check-changes` on the committed branch,
+  and a review
 
 ## Amendments

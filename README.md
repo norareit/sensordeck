@@ -16,8 +16,12 @@ CPU load, the memory and the network, and through `nvidia-smi` and LibreHardware
 device path on Windows, as `devices` writes it. Corsair iCUE, or the software of the screen's vendor, may hold the
 device and make the opening fail, and running either at the same time as sensordeck is not supported. `sensordeck service`
 runs `run` on Windows as a startup task of the Task Scheduler that starts at your logon, as
-[Running as a service](#running-as-a-service) says. The Windows transport, the sensors of Windows and the startup task
-have not yet been checked on a real Windows machine.
+[Running as a service](#running-as-a-service) says. On a real Windows machine, on 2026-11-16 and 2026-11-17, `devices`; `sensors`,
+whose readings were listed but not compared value by value; `run` in the foreground and as the startup task, with
+`minimal-dark-probes` showing live values; the lock between sensordeck processes; a replug of the screen while `run`
+runs; and the start of Windows after a boot from Linux were checked. The readings through LibreHardwareMonitor were not,
+and neither was a comparison value by value of the natively read readings or of those of `nvidia-smi` with the Task
+Manager.
 
 ![The preview of the built-in theme minimal-dark: tiles for the CPU, the GPU, the memory, the disk, the network and the
 clock, each with the number 42 as a sample value](docs/minimal-dark.png)
@@ -411,7 +415,10 @@ The commands of [custom metrics](#custom-metrics) run through `cmd.exe`, and eve
 a metric, `nvidia-smi` and those commands, is started with no console window, so that none opens while `run` runs in the
 background.
 
-The sensors of Windows have not yet been checked on a real Windows machine.
+On a real Windows machine, on 2026-11-16 and 2026-11-17, `sensors` listed its readings, which were not compared value
+by value, and `run` showed live values with `minimal-dark-probes`. The readings through LibreHardwareMonitor were not
+checked, and neither was a comparison value by value of the natively read readings or of those of `nvidia-smi` with the
+Task Manager.
 
 ## Custom metrics
 
@@ -598,6 +605,14 @@ Other programs, such as iCUE, liquidctl and OpenLinkHub, are not kept out. Talki
 the same time as sensordeck is not supported: the commands of both mix, readings fail, and the LEDs may show the stored
 lighting or go dark. `run` sets the colour again at its next setup.
 
+With `commander_color`, iCUE running at the same time fights `run` over the controller: the LEDs change between the
+colour of iCUE and the colour of `commander_color` every now and then, and `run` writes lines such as `controller setup
+failed` and `controller lost` to its log. To let sensordeck drive the controller with `commander_color`, close iCUE and
+keep it from starting with Windows.
+
+Other monitoring programs that read the controller can make the LEDs flicker too. This was seen with HWiNFO running at
+the same time as `run`, and was not seen with LibreHardwareMonitor.
+
 What the controller does with fans that it runs, in software mode with no fan settings sent, is not known. sensordeck
 sends no fan settings, and the fans of the machine it was tested on are not run by the controller.
 
@@ -675,8 +690,10 @@ logs in, and is restarted every 10 seconds until then.
 
 ### Windows
 
-On Windows sensordeck runs `run` as a task of the Task Scheduler. None of what follows has been checked on a real
-Windows machine yet. It is written from the documentation of Windows, and a wrong point is to be corrected.
+On Windows sensordeck runs `run` as a task of the Task Scheduler. On a real Windows machine, on 2026-11-16 and 2026-11-17, `run` as the startup task
+was checked with `minimal-dark-probes` showing live values, and so were the lock between sensordeck processes, a replug
+of the screen while `run` runs and the start of Windows after a boot from Linux. What was not checked is written from the
+documentation of Windows, and a wrong point is to be corrected.
 
 `sensordeck service install` creates the task `sensordeck`, which runs `sensordeck run` at each logon of the user, hidden,
 with no administrator rights, and starts it at once. The task runs as the user who ran `install`, with that user's
@@ -697,10 +714,12 @@ most 1 MiB each, `run.log` and the older `run.log.1`.
 
 Running `sensordeck service install` again stops the running `run`, replaces the task and starts it again. That is how to
 apply a moved or replaced executable, another `--config`, or a change of `interval`, `commander_interval` or
-`commander_color`. Each start of the task, at each logon and at each restart after an error, uploads the theme of the
-config, so the values appear about 10 seconds after the start and the screen reboots once. `sensordeck theme use` and
-edits of the config file reach the running `run` within a round, by the reload of `run`, and a new theme is uploaded
-then.
+`commander_color`. The starts of the task are at each logon, by
+`sensordeck service install`, by `schtasks /Run /TN sensordeck`, and each new try of a failed start that `run` makes
+every 10 seconds, as below. Each start uploads the theme of the config, so the values appear about 10 seconds after the
+start and the screen reboots once. `sensordeck theme use` and edits of the config file reach the running `run` within a round, by the reload of `run`, and a new theme is uploaded
+then. A task that runs `run` with `commander_color` needs iCUE closed and kept from starting with Windows, as
+[The Corsair iCUE Commander Core XT](#the-corsair-icue-commander-core-xt) says.
 
 `sensordeck service status` writes four lines: `installed: yes, <task file>`, `enabled:` with `enabled`, `disabled` or
 `unknown`, `active:` with `running`, `stopped` or `unknown`, and `log:` with the path of the log. The task is seen in the
@@ -715,8 +734,8 @@ screen keeps its last values, then deletes the task and removes the task file. I
 has not stopped within 30 seconds. The same stop is made by `install` before it replaces the task.
 
 `schtasks /End /TN sensordeck`, the Task Manager, logging off and shutting down end `run` with no teardown, so that the
-Commander Core XT may stay in the colour of `commander_color` until `run` starts again. `schtasks /Run /TN sensordeck`
-starts the task again.
+Commander Core XT may stay in the colour of `commander_color` until `run` starts again. A `run` ended this way from outside is not started again until the next logon,
+`sensordeck service install` or `schtasks /Run /TN sensordeck`.
 
 The task starts `run` with a console, and `run` detaches from it at once, so a console window may flash at the logon
 before it closes.
