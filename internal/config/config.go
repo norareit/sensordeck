@@ -53,8 +53,9 @@ type Config struct {
 	Theme             string        // the key theme as the file gives it; empty when the file does not give it
 	// LibreHardwareMonitorURL is the key librehardwaremonitor_url, never nil after Parse. Only Windows reads it.
 	LibreHardwareMonitorURL *url.URL
-	Mappings                []Mapping // ordered by tag, ascending; empty with a theme, whose tags the compiler assigns
-	Metrics                 []Metric  // the custom metrics, in the order of the file; empty without the key metrics
+	Mappings                []Mapping   // ordered by tag, ascending; empty with a theme, whose tags the compiler assigns
+	Alarms                  []AlarmPair // ordered by normal tag, ascending; empty with a theme, whose tags the compiler assigns
+	Metrics                 []Metric    // the custom metrics, in the order of the file; empty without the key metrics
 }
 
 // IsMetric tells whether a name is a built-in metric or one defined under metrics.
@@ -111,7 +112,7 @@ func Parse(content []byte) (Config, error) {
 	if err != nil {
 		return Config{}, err
 	}
-	theme, mappings, err := parseThemeOrTags(themeNode, tagsNode, metrics)
+	theme, mappings, alarms, err := parseThemeOrTags(themeNode, tagsNode, metrics)
 	if err != nil {
 		return Config{}, err
 	}
@@ -135,7 +136,7 @@ func Parse(content []byte) (Config, error) {
 		return Config{}, err
 	}
 	return Config{Interval: interval, CommanderInterval: commanderInterval, CommanderColour: colour, Theme: theme,
-		LibreHardwareMonitorURL: monitorURL, Mappings: mappings, Metrics: metrics}, nil
+		LibreHardwareMonitorURL: monitorURL, Mappings: mappings, Alarms: alarms, Metrics: metrics}, nil
 }
 
 var errNotAMapping = errors.New("want a mapping with the keys commander_color, commander_interval, interval, librehardwaremonitor_url, metrics, tags and theme")
@@ -160,18 +161,18 @@ func refuseRepeatedKeys(mapping *yaml.Node) error {
 
 // parseThemeOrTags takes the key theme or the key tags, which exclude each other. A key counts as given when it is
 // present, whatever its value.
-func parseThemeOrTags(themeNode, tagsNode *yaml.Node, metrics []Metric) (string, []Mapping, error) {
+func parseThemeOrTags(themeNode, tagsNode *yaml.Node, metrics []Metric) (string, []Mapping, []AlarmPair, error) {
 	switch {
 	case themeNode != nil && tagsNode != nil:
-		return "", nil, errors.New("theme and tags cannot both be given, the theme gives the tags")
+		return "", nil, nil, errors.New("theme and tags cannot both be given, the theme gives the tags")
 	case themeNode == nil && tagsNode == nil:
-		return "", nil, errors.New("one of theme and tags is needed")
+		return "", nil, nil, errors.New("one of theme and tags is needed")
 	case themeNode != nil:
 		theme, err := parseTheme(themeNode)
-		return theme, nil, err
+		return theme, nil, nil, err
 	}
-	mappings, err := parseTags(tagsNode, metrics)
-	return "", mappings, err
+	mappings, alarms, err := parseTags(tagsNode, metrics)
+	return "", mappings, alarms, err
 }
 
 var errEmptyTheme = errors.New("theme: the theme name or folder path is empty")
@@ -191,43 +192,32 @@ func parseTheme(node *yaml.Node) (string, error) {
 
 const tagsProblem = "tags: want a mapping from metric name to tag, with at least one entry"
 
-func parseTags(node *yaml.Node, metrics []Metric) ([]Mapping, error) {
+func parseTags(node *yaml.Node, metrics []Metric) ([]Mapping, []AlarmPair, error) {
 	if node == nil || node.Kind != yaml.MappingNode || len(node.Content) == 0 {
-		return nil, errors.New(tagsProblem)
+		return nil, nil, errors.New(tagsProblem)
 	}
 	if err := refuseRepeatedKeys(node); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	mappings := make([]Mapping, 0, len(node.Content)/2)
+	var block tagsBlock
 	for position := 0; position+1 < len(node.Content); position += 2 {
 		name := node.Content[position].Value
 		if !isMetric(name, metrics) {
-			return nil, fmt.Errorf("tags: %q is not a metric name", name)
+			return nil, nil, fmt.Errorf("tags: %q is not a metric name", name)
 		}
-		tag, err := parseTag(name, node.Content[position+1])
-		if err != nil {
-			return nil, err
-		}
-		mappings = append(mappings, Mapping{Name: name, Tag: tag})
-	}
-	slices.SortFunc(mappings, func(first, second Mapping) int {
-		if first.Tag != second.Tag {
-			return int(first.Tag) - int(second.Tag)
-		}
-		return strings.Compare(first.Name, second.Name)
-	})
-	for position := 1; position < len(mappings); position++ {
-		if mappings[position-1].Tag == mappings[position].Tag {
-			return nil, fmt.Errorf("tags: %s and %s both have the tag %d",
-				mappings[position-1].Name, mappings[position].Name, mappings[position].Tag)
+		if err := parseMetricEntry(name, node.Content[position+1], &block); err != nil {
+			return nil, nil, err
 		}
 	}
-	return mappings, nil
+	if err := block.finish(); err != nil {
+		return nil, nil, err
+	}
+	return block.mappings, block.alarms, nil
 }
 
-func parseTag(name string, node *yaml.Node) (uint8, error) {
-	notWhole := fmt.Errorf("tags: %s: the tag must be a whole number from 0 to 255", name)
-	outside := fmt.Errorf("tags: %s: the tag %s is outside 0 to 255", name, node.Value)
+func parseTag(place string, node *yaml.Node) (uint8, error) {
+	notWhole := fmt.Errorf("tags: %s: the tag must be a whole number from 0 to 255", place)
+	outside := fmt.Errorf("tags: %s: the tag %s is outside 0 to 255", place, node.Value)
 	if node.Kind != yaml.ScalarNode {
 		return 0, notWhole
 	}
