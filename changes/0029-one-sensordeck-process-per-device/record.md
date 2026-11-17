@@ -62,6 +62,14 @@ timestamp: 2026-11-17T12:05:47Z
   no line of a controller in use. That the reading fails on a channel 0 left open by a killed session is a matter of
   the protocol of the reading, which the spec keeps out of scope, and it is not known whether the real controller
   behaves as the fake does. It is kept as an open check on the device for a later unit, not taken into this one
+- 2026-11-17T14:44:49Z [OpenCode, openai/gpt-6.1-sol] as the reviewer, completed a delta review of unit
+  `0029-one-sensordeck-process-per-device` at `0c071a3a4253a8a5a3491dc90eafc1de78e5ec4c`, from the prior review's
+  commit `3df96a145202d8f77c7fa7a61bb879a776b18333`. Returned no new findings; the verification of the prior findings
+  and the review on all three axes are saved in
+  `.reviews/0029-one-sensordeck-process-per-device/review-round-2-20261117T144449Z.md`. Independently ran the five
+  suite commands, uncached e2e and commandercore tests, `npm run check-changes` and the diff whitespace check;
+  all succeeded. Windows runtime behavior and physical-device behavior, including the first probe reading after
+  SIGKILL, could not be verified. The status remains `in-progress`
 
 ## Amendments
 - 2026-11-17T12:06:08Z [Claude Code, anthropic/claude-opus-5-5] read the spec under the delegation in `AGENTS.md`: its cause is the
