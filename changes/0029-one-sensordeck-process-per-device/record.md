@@ -15,3 +15,9 @@ timestamp: 2026-11-17T12:05:47Z
   suggested, for the reasons of D2. The status is `draft`
 
 ## Amendments
+- 2026-11-17T12:06:08Z [Claude Code, anthropic/claude-opus-5-5] read the spec under the delegation in `AGENTS.md`: its cause is the
+  conflict the human and the orchestrating session saw on 2026-11-16 and 2026-11-17, the lock on the node itself (D2)
+  is accepted over the lock file of the request because every process that opens the device sees it and the kernel
+  releases it at any end, and every requirement can be tested in the sandbox with two processes against the fakes.
+  Items 1 to 3 of "Beyond the request" are declined. The device check and Windows are the human's and the unit does
+  not depend on them. The approval that follows is made under that delegation
