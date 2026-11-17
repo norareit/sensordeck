@@ -31,6 +31,7 @@ supersedes: 0010-theme-file-reader
   `feature-0027-number-options-and-bars`: the reader and the dump first, then the compiler, the preview, the end-to-end
   tests and the documents, in five commits, with every requirement traced to a task. The status stays `approved`
 - 2026-11-17T11:20:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, began the work on `feature-0027-number-options-and-bars`. The status is `in-progress`
+- 2026-11-17T12:30:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, built the unit in five commits following the plan: the reader and the dump, the compiler, the preview, the end-to-end tests and the documents. On `cf5b3a5` the suite of `AGENTS.md` was run: `go test ./...` passed, `go vet ./...` reported nothing, `gofmt -l .` printed no file name, and `GOOS=windows GOARCH=amd64 go build ./...` and `go vet ./...` reported nothing. The tests were written after the code of their task and not before it, in the compiler and the preview tasks. The committed images `docs/minimal-dark.png` and `docs/minimal-dark-probes.png` were drawn again, and the probes image was looked at to see the numbers centred. Not checked: the device, which is the human's (D15). The status stays `in-progress`
 
 ## Amendments
 - 2026-11-17T11:11:42Z [Claude Code, anthropic/claude-opus-5-5] read the spec under the delegation in `AGENTS.md`: its facts are those

@@ -325,13 +325,13 @@ Commit point 5.
 
 ## Verification
 
-- [ ] `go test ./...` passes
-- [ ] `go vet ./...` reports nothing
-- [ ] `gofmt -l .` prints no file name
-- [ ] `GOOS=windows GOARCH=amd64 go build ./...` succeeds and reports nothing
-- [ ] `GOOS=windows GOARCH=amd64 go vet ./...` succeeds and reports nothing
+- [x] `go test ./...` passes
+- [x] `go vet ./...` reports nothing
+- [x] `gofmt -l .` prints no file name
+- [x] `GOOS=windows GOARCH=amd64 go build ./...` succeeds and reports nothing
+- [x] `GOOS=windows GOARCH=amd64 go vet ./...` succeeds and reports nothing
 - [ ] `npm run check-changes` passes on the committed branch
-- [ ] Every requirement has a task: R1 to R3 and R5 in the compiler's document tasks, R4, R6 and R7 in its record
+- [x] Every requirement has a task: R1 to R3 and R5 in the compiler's document tasks, R4, R6 and R7 in its record
   tasks, R8 and R9 in the tags tasks and the test of `run`, R10 to R12 in the reader and dump tasks, R13 to R17 in the
   preview tasks, R18 to R20 in the documents, R21 in the drawing of the images, R22 across the unit tests, R23 in the
   end-to-end tasks and R24 here
