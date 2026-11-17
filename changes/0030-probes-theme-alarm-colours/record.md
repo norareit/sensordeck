@@ -1,6 +1,6 @@
 ---
 kind: task
-status: draft
+status: approved
 timestamp: 2026-11-17T14:51:03Z
 ---
 
@@ -129,5 +129,6 @@ The five commands of the suite in `AGENTS.md` succeed.
 - 2026-11-17T15:07:35Z [Claude Code, anthropic/claude-opus-5-5] read the record and checked its preview against the preview of the
   theme today: the five numbers move to the left of their boxes and no box moves. The human saw the effect, including
   the value of INTAKE close to its label, and approved the task as it stands, with no change of position
+- 2026-11-17T15:07:35Z [human] approved the record. The status is `approved`
 
 ## Amendments
