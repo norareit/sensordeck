@@ -195,17 +195,17 @@ The design decisions the spec leaves to the plan:
 
 ### 3. The locks on Windows
 
-- [ ] Write `internal/cli/heldtransport_test.go`: `Close` of a `heldTransport` closes the inner transport and then
+- [x] Write `internal/cli/heldtransport_test.go`: `Close` of a `heldTransport` closes the inner transport and then
   calls the release once, a second `Close` calls neither again, `Reopen` calls the inner one and not the release, and
   `Write` and `Read` reach the inner transport (R2, R14)
-- [ ] Write `internal/cli/heldtransport.go`, and in `device_windows.go` acquire `screen.lock` before the opening,
+- [x] Write `internal/cli/heldtransport.go`, and in `device_windows.go` acquire `screen.lock` before the opening,
   release it when the opening fails, and give the `heldTransport` (R2, R14)
-- [ ] In `internal/commandercore/hid_test.go`: `HID` with an acquirer that counts gives a node whose `close` releases
+- [x] In `internal/commandercore/hid_test.go`: `HID` with an acquirer that counts gives a node whose `close` releases
   once after the close of the device; an acquirer that gives an `*InUseError` makes `Source.Read` call `Refused` and
   open nothing on the fake seam, and makes `Lighting.Start` give the text of R10; an opening that fails after the
   acquire releases (R2, R3, R8, R9)
-- [ ] Give `HID` the acquirer and `hidNode` the release, and make `Windows()` acquire `controller.lock` (R2)
-- [ ] Run the suite, and commit: `bugfix-0029 Lock the screen and the controller on Windows`
+- [x] Give `HID` the acquirer and `hidNode` the release, and make `Windows()` acquire `controller.lock` (R2)
+- [x] Run the suite, and commit: `bugfix-0029 Lock the screen and the controller on Windows`
 
 ### 4. The lines of the commands
 

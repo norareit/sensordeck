@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/norareit/sensordeck/internal/devicelock"
 	"github.com/norareit/sensordeck/internal/fakehid"
 	"github.com/norareit/sensordeck/internal/sensors"
 	"github.com/norareit/sensordeck/internal/winhid"
@@ -49,7 +50,7 @@ func answering(collection fakehid.Collection) fakehid.Collection {
 
 func findPath(test *testing.T, collections ...fakehid.Collection) (string, error) {
 	test.Helper()
-	return HID(fakehid.New(collections...)).find()
+	return hidFinder(fakehid.New(collections...)).find()
 }
 
 func TestFindGivesTheFirstCollectionOfInterfaceZeroInTheOrderOfThePaths(test *testing.T) {
@@ -57,7 +58,7 @@ func TestFindGivesTheFirstCollectionOfInterfaceZeroInTheOrderOfThePaths(test *te
 	other.Product = 0x0C2B
 	fake := fakehid.New(controller(zeroPathTwo, interfaceZeroCaps), other, controller(onePath, interfaceZeroCaps),
 		controller(zeroPath, interfaceZeroCaps))
-	path, err := HID(fake).find()
+	path, err := hidFinder(fake).find()
 	if err != nil || path != zeroPath {
 		test.Fatalf("got %q, %v", path, err)
 	}
@@ -108,24 +109,24 @@ func TestANearMissBesideAMatchGivesNothing(test *testing.T) {
 	if err != nil || path != zeroPathTwo {
 		test.Fatalf("got %q, %v", path, err)
 	}
-	if HID(fakehid.New(near, controller(zeroPathTwo, interfaceZeroCaps))).Problem() != nil {
+	if hidFinder(fakehid.New(near, controller(zeroPathTwo, interfaceZeroCaps))).Problem() != nil {
 		test.Error("a match gives no problem")
 	}
 }
 
 func TestProblemIsTheErrorOfANearMissAndNilOtherwise(test *testing.T) {
 	near := controller(zeroPath, winhid.Caps{UsagePage: 1, Usage: 1, InputLength: 385, OutputLength: 385})
-	if err := HID(fakehid.New(near)).Problem(); err == nil || !strings.HasPrefix(err.Error(), "no collection of interface 0 matches: ") {
+	if err := hidFinder(fakehid.New(near)).Problem(); err == nil || !strings.HasPrefix(err.Error(), "no collection of interface 0 matches: ") {
 		test.Errorf("got %v", err)
 	}
-	if err := HID(fakehid.New()).Problem(); err != nil {
+	if err := hidFinder(fakehid.New()).Problem(); err != nil {
 		test.Errorf("got %v", err)
 	}
 }
 
 func openNodeOf(test *testing.T, fake *fakehid.Fake) node {
 	test.Helper()
-	finder := HID(fake)
+	finder := hidFinder(fake)
 	path, err := finder.find()
 	if err != nil {
 		test.Fatal(err)
@@ -187,7 +188,7 @@ func TestTheNodeMapsTheTimeoutToNoAnswerAndOtherFailuresToTheirText(test *testin
 }
 
 func hidSource(fake *fakehid.Fake) Source {
-	return Source{Finder: HID(fake), TimeLimit: 200 * time.Millisecond}
+	return Source{Finder: hidFinder(fake), TimeLimit: 200 * time.Millisecond}
 }
 
 func wantAll(string) bool { return true }
@@ -225,7 +226,7 @@ func TestASourceWaitsTheTimeLimitOfTheSourceForAnAnswer(test *testing.T) {
 }
 
 func lighting(fake *fakehid.Fake) Lighting {
-	return Lighting{Finder: HID(fake), TimeLimit: 200 * time.Millisecond, Red: 1, Green: 2, Blue: 3}
+	return Lighting{Finder: hidFinder(fake), TimeLimit: 200 * time.Millisecond, Red: 1, Green: 2, Blue: 3}
 }
 
 func TestLightingStartGivesErrNoControllerWithNoCollection(test *testing.T) {
@@ -261,5 +262,69 @@ func TestLightingStartLightsTheLEDsAndEndReturnsToHardwareMode(test *testing.T) 
 	}
 	if fake.Pending() || !fake.AllClosed() {
 		test.Errorf("pending %v, closed %v", fake.Pending(), fake.AllClosed())
+	}
+}
+
+// hidFinder is the finder of the fake seam, with a lock that nothing holds.
+func hidFinder(seam winhid.Seam) Finder {
+	return HID(seam, func() (func(), error) { return func() {}, nil })
+}
+
+// countingAcquire gives an acquirer that counts its acquires and releases.
+func countingAcquire(acquires, releases *int) func() (func(), error) {
+	return func() (func(), error) {
+		*acquires++
+		return func() { *releases++ }, nil
+	}
+}
+
+func TestTheNodeReleasesTheLockOnceAfterTheClose(test *testing.T) {
+	fake := fakehid.New(answering(controller(zeroPath, interfaceZeroCaps)))
+	var acquires, releases int
+	finder := HID(fake, countingAcquire(&acquires, &releases))
+	opened, err := finder.open(zeroPath)
+	if err != nil {
+		test.Fatal(err)
+	}
+	if acquires != 1 || releases != 0 {
+		test.Fatalf("after the opening: %d acquires, %d releases", acquires, releases)
+	}
+	_ = opened.close()
+	if releases != 1 || !fake.AllClosed() {
+		test.Fatalf("after the close: %d releases, closed %v", releases, fake.AllClosed())
+	}
+}
+
+func TestAnOpeningThatFailsAfterTheAcquireReleases(test *testing.T) {
+	fake := fakehid.New()
+	var acquires, releases int
+	if _, err := HID(fake, countingAcquire(&acquires, &releases)).open(zeroPath); err == nil {
+		test.Fatal("the opening of a missing path succeeded")
+	}
+	if acquires != 1 || releases != 1 {
+		test.Fatalf("%d acquires, %d releases", acquires, releases)
+	}
+}
+
+func TestAControllerHeldByAnotherProcessIsReportedAndNothingIsOpened(test *testing.T) {
+	fake := fakehid.New(answering(controller(zeroPath, interfaceZeroCaps)))
+	refused := func() (func(), error) { return nil, &devicelock.InUseError{} }
+	var refusals []string
+	source := Source{Finder: HID(fake, refused), TimeLimit: 200 * time.Millisecond,
+		Refused: func(err error) { refusals = append(refusals, err.Error()) }}
+	if readings := source.Read(context.Background(), wantAll); readings != nil {
+		test.Fatalf("got %v", readings)
+	}
+	if len(refusals) != 1 {
+		test.Fatalf("refusals %q", refusals)
+	}
+	for _, opening := range fake.Openings() {
+		if opening.ReadWrite {
+			test.Fatalf("the controller was opened for reading and writing: %v", opening)
+		}
+	}
+	_, _, err := Lighting{Finder: HID(fake, refused), TimeLimit: 200 * time.Millisecond}.Start(context.Background())
+	if err == nil || err.Error() != "the controller is in use by another sensordeck process" {
+		test.Fatalf("got %v", err)
 	}
 }

@@ -22,15 +22,22 @@ const (
 // HID is the finder of the systems with the HID API of Windows: interface 0 is the first collection, in the order of
 // the listing, of the controller whose path holds the field mi_00 and whose usage and report lengths are those of
 // interface 0. A collection of interface 0 that does not match is never opened.
-func HID(seam winhid.Seam) Finder {
+//
+// acquire takes the lock of the controller before each opening, and its release is called after the close of the node.
+func HID(seam winhid.Seam, acquire func() (release func(), err error)) Finder {
 	return Finder{
 		find: func() (string, error) { return findCollection(seam) },
 		open: func(path string) (node, error) {
+			release, err := acquire()
+			if err != nil {
+				return nil, controllerOpenError(err)
+			}
 			device, err := winhid.Open(seam, path)
 			if err != nil {
+				release()
 				return nil, err
 			}
-			return hidNode{device: device}, nil
+			return hidNode{device: device, release: release}, nil
 		},
 	}
 }
@@ -78,7 +85,10 @@ func nearMissError(nearMisses []winhid.Collection) error {
 // hidNode is a node of the HID API: it writes the command as the output report of 385 bytes and reads the input
 // report of 385 bytes, whose first byte, the report ID, is dropped, so that the answer is the 384 bytes that Linux
 // reads.
-type hidNode struct{ device *winhid.Device }
+type hidNode struct {
+	device  *winhid.Device
+	release func()
+}
 
 func (node hidNode) send(command []byte) error {
 	return node.device.WriteReport(command, winhid.WriteTimeLimit)
@@ -97,4 +107,8 @@ func (node hidNode) receive(timeLimit time.Duration) ([]byte, error) {
 	return answer, nil
 }
 
-func (node hidNode) close() error { return node.device.Close() }
+func (node hidNode) close() error {
+	err := node.device.Close()
+	node.release()
+	return err
+}
