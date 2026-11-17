@@ -1,6 +1,6 @@
 ---
 kind: task
-status: approved
+status: in-progress
 timestamp: 2026-11-17T14:51:03Z
 ---
 
@@ -134,5 +134,27 @@ The five commands of the suite in `AGENTS.md` succeed.
   branch, with each task traced to the bullets of this record, numbered R1 to R8 in the plan. The tests change first,
   and the table of the built-in themes states the plain tags and the alarm pairs of each theme. The status stays
   `approved`
+- 2026-11-17T15:30:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, began the work. The status is
+  `in-progress`
+- 2026-11-17T15:31:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, changed the tests first and saw
+  the tests of `minimal-dark-probes` fail on its `theme.yaml`, its tags and its tags file, and those of `minimal-dark`
+  pass. Then put the five lines in `theme.yaml` (`git diff --stat`: 5 insertions and 5 deletions in that file only)
+  and the tests of `internal/builtinthemes` and `e2e/` passed
+- 2026-11-17T15:32:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, found necessary work that the
+  plan did not name: the end-to-end test of the preview of a built-in theme and the test of the preview images in
+  `docs_test.go` drew the expected preview with `themeimage.Preview` alone, which draws both widgets of an alarm number,
+  and since unit 0028 `sensordeck theme preview` hides the widget of the alarm state. Both tests failed against the
+  preview the command wrote, so both now draw the expected preview with `themeimage.PreviewWithValues` and the alarm
+  slots of the compilation hidden. The plan was extended with this task and `docs_test.go` in its files. The spec of the
+  task says `docs_test.go` stays as it is; its intent, a preview of the normal state that the test pins, is kept
+- 2026-11-17T15:33:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, checked the compiled theme with
+  `themefile.Parse` in a scratch test that was not committed: 44 entries and no warning, which are the background and
+  the 43 widgets, since the theme of today holds 38 widgets and each of the five alarms adds one. The count of the
+  background among the entries was inferred and not read from a field. The preview written by the command was looked
+  at: the five numbers show 42, CPU, GPU and GPU CABLE are left of where they were, and INTAKE is next to its label
+- 2026-11-17T15:34:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, ran on the tree of commit
+  `1a65b57` `go test ./...`, `go vet ./...`, `gofmt -l .`, `GOOS=windows GOARCH=amd64 go build ./...` and
+  `GOOS=windows GOARCH=amd64 go vet ./...`, and all five succeeded. Not checked: the screen on the device, which is the
+  human's
 
 ## Amendments
