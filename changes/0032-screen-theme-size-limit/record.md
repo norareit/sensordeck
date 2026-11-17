@@ -1,6 +1,6 @@
 ---
 kind: bug
-status: draft
+status: approved
 timestamp: 2026-11-17T19:10:45Z
 supersedes: 0011-theme-compiler
 ---
@@ -25,5 +25,6 @@ supersedes: 0011-theme-compiler
   orchestrating session gave the human, about 496 KB, was wrong; the spec's measured 436 694 bytes stands. Items 1 to 5
   of "Beyond the request" are declined. As D10 says, the unit is set to `implemented` only after the human has seen
   the date and the time on the screen with the five alarms. The approval that follows is made under that delegation
+- 2026-11-17T19:11:18Z [human] approved the spec. The status is `approved`
 
 ## Amendments
