@@ -1,6 +1,6 @@
 ---
 kind: bug
-status: in-progress
+status: implemented
 timestamp: 2026-11-17T12:05:47Z
 ---
 
@@ -18,15 +18,15 @@ timestamp: 2026-11-17T12:05:47Z
   adds the package `internal/devicelock`, takes the locks where the screen and the controller are opened, and words the
   refusals in the command line; the format of `/proc/locks` it parses was checked in the sandbox. The status stays
   `approved`
-- 2026-11-17T12:20:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, began the work. The status is
+- 2026-11-17T12:12:25Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, began the work. The status is
   `in-progress`
-- 2026-11-17T13:40:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, built tasks 1 to 7 of the plan on the
+- 2026-11-17T13:12:56Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, built tasks 1 to 7 of the plan on the
   branch. Verified on this tree: `go test ./...` (the e2e package took about 50 seconds), `go vet ./...`, `gofmt -l .`,
   `GOOS=windows GOARCH=amd64 go build ./...` and `GOOS=windows GOARCH=amd64 go vet ./...` all succeed. The code for
   Windows (`lockfile_windows.go`, `device_windows.go`, its tests) is compiled and vetted only, not run: that, and the
   check of D10 on the device, are the human's. The README sections of the plan are written in the same commit as the
   e2e tests, not in a commit of their own
-- 2026-11-17T13:41:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, logged these departures from the
+- 2026-11-17T13:12:57Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, logged these departures from the
   plan, none of which changes a requirement. `layout_test.go` lists the files that may import `golang.org/x/sys/windows`,
   and the two files of `internal/devicelock` are added to it. `sensors` after a `run` killed with SIGKILL fails to read
   the probes in the e2e test while the fake controller has the LED endpoint of channel 0 left open by the killed
@@ -42,13 +42,13 @@ timestamp: 2026-11-17T12:05:47Z
   suite commands, an uncached `go test -count=1 ./...`, `npm run check-changes` and the diff whitespace check;
   all succeeded. Windows runtime behavior, the physical-device checks of D10 and the test-first red phase could
   not be verified. The status remains `in-progress`
-- 2026-11-17T14:10:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, accepted finding P1 of
+- 2026-11-17T13:24:21Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, accepted finding P1 of
   `review-round-1-20261117T132203Z.md` by the definition of the orchestrator, which accepts the findings the implementer
   agrees with, and not as a decision of the human. Added `TestTheLockEndsWithTheTeardownOfAFailedReadingAndOfAFailedSetup`
   to `internal/commandercore/session_test.go`: the lock of the controller is free after a setup that failed and after a
   keepalive that failed, and is held while the session is held. `go test ./internal/commandercore`, `go vet ./...` and
   `gofmt -l .` report nothing on the tree with this change
-- 2026-11-17T14:11:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, proposes declining finding S1
+- 2026-11-17T13:24:22Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, proposes declining finding S1
   of the same review, as a proposal and not as a decision. What it says holds: the SIGKILL test closes the LED
   endpoint of channel 0 in the fake before `sensors`, which R19 does not say. The session leaves that endpoint open
   between keepalives, so after any kill of a session the next reading of `sensors` fails on the fake, whatever the lock
@@ -70,6 +70,10 @@ timestamp: 2026-11-17T12:05:47Z
   suite commands, uncached e2e and commandercore tests, `npm run check-changes` and the diff whitespace check;
   all succeeded. Windows runtime behavior and physical-device behavior, including the first probe reading after
   SIGKILL, could not be verified. The status remains `in-progress`
+- 2026-11-17T14:48:05Z [Claude Code, anthropic/claude-opus-5-5] corrected five timestamps of this log that were later than the
+  commits that hold them to the times of those commits, ran the suite of `AGENTS.md` with no failure, and set the unit
+  under the delegation in `AGENTS.md`, with no open blocking finding and every task of the plan ticked. The status is
+  `implemented`
 
 ## Amendments
 - 2026-11-17T12:06:08Z [Claude Code, anthropic/claude-opus-5-5] read the spec under the delegation in `AGENTS.md`: its cause is the
