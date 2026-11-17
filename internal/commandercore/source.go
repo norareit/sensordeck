@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/norareit/sensordeck/internal/devicelock"
 	"github.com/norareit/sensordeck/internal/sensors"
 )
 
@@ -19,6 +20,8 @@ const ReplyTimeLimit = time.Second
 type Source struct {
 	Finder    Finder
 	TimeLimit time.Duration
+	// Refused, when it is not nil, is called with the error of an opening that another sensordeck process holds.
+	Refused func(err error)
 }
 
 // Read gives the wanted probes that the controller reports. A missing controller, a node that cannot be opened and
@@ -33,10 +36,18 @@ func (source Source) Read(stop context.Context, wanted func(name string) bool) [
 	}
 	opened, err := source.Finder.open(path)
 	if err != nil {
+		source.report(err)
 		return nil
 	}
 	defer opened.close()
 	return readingsOf(runSequence(stop, opened, source.TimeLimit), wanted)
+}
+
+func (source Source) report(err error) {
+	var inUse *devicelock.InUseError
+	if source.Refused != nil && errors.As(err, &inUse) {
+		source.Refused(err)
+	}
 }
 
 // wantsAProbe asks for every name that an answer can hold. A name beyond maxProbes can never be given, so none that is

@@ -20,7 +20,7 @@ func listScreens(sysfsRoot, devRoot string) ([]string, []string, error) {
 	return lines, winhid.NearMissLines(nearMisses), nil
 }
 
-func openTransport(sysfsRoot, devRoot, device string) (transport, screenRestarter, error) {
+func openTransport(sysfsRoot, devRoot, procRoot, device string) (transport, screenRestarter, error) {
 	var opened *winhid.Transport
 	var err error
 	if device != "" {

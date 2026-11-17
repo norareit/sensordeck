@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/norareit/sensordeck/internal/devicelock"
 	"github.com/norareit/sensordeck/internal/hidraw"
 )
 
@@ -38,7 +39,7 @@ func findNode(sysfsRoot, devRoot string) (string, bool) {
 }
 
 // Hidraw is the finder of Linux: the node of interface 0 under the sysfs and dev roots, opened as hidraw does.
-func Hidraw(sysfsRoot, devRoot string) Finder {
+func Hidraw(sysfsRoot, devRoot, procRoot string) Finder {
 	return Finder{
 		find: func() (string, error) {
 			path, found := findNode(sysfsRoot, devRoot)
@@ -51,6 +52,10 @@ func Hidraw(sysfsRoot, devRoot string) Finder {
 			file, err := hidraw.OpenNode(path)
 			if err != nil {
 				return nil, fmt.Errorf("cannot open %s: %w", path, err)
+			}
+			if err := devicelock.LockNode(file, procRoot); err != nil {
+				_ = file.Close()
+				return nil, controllerOpenError(err)
 			}
 			return hidrawNode{file: file}, nil
 		},

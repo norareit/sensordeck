@@ -4,6 +4,9 @@ package commandercore
 
 import (
 	"context"
+	"errors"
+	"github.com/norareit/sensordeck/internal/devicelock"
+	"os"
 	"path/filepath"
 	"reflect"
 	"strings"
@@ -34,7 +37,7 @@ func newHarness(test *testing.T) *harness {
 	test.Cleanup(cancel)
 	return &harness{
 		fake:     fakecommander.New(test, sysfsRoot, devRoot),
-		source:   Source{Finder: Hidraw(sysfsRoot, devRoot), TimeLimit: testTimeLimit},
+		source:   Source{Finder: Hidraw(sysfsRoot, devRoot, "/nonexistent"), TimeLimit: testTimeLimit},
 		stop:     stop,
 		cancel:   cancel,
 		wantedBy: func(name string) bool { return strings.HasPrefix(name, "commander.") },
@@ -262,5 +265,64 @@ func TestAStopDoneAtTheStartOfTheSequenceWritesNothing(test *testing.T) {
 	}
 	if controller.Mode() != fakecommander.NoMode {
 		test.Fatal("a mode command was written")
+	}
+}
+
+// holdNode takes the lock of the controller's node as another sensordeck process would, until the test ends.
+func holdNode(test *testing.T, devRoot string) *os.File {
+	test.Helper()
+	file, err := hidraw.OpenNode(filepath.Join(devRoot, "hidraw9"))
+	if err != nil {
+		test.Fatal(err)
+	}
+	if err := devicelock.LockNode(file, "/nonexistent"); err != nil {
+		test.Fatal(err)
+	}
+	test.Cleanup(func() { _ = file.Close() })
+	return file
+}
+
+func TestAControllerHeldByAnotherProcessGivesNoReadingAndCallsRefusedOnce(test *testing.T) {
+	harness := newHarness(test)
+	controller := harness.fake.Add(9, 10)
+	holdNode(test, harness.devRoot)
+	var refusals []string
+	harness.source.Refused = func(err error) { refusals = append(refusals, err.Error()) }
+	if readings := harness.read(); readings != nil {
+		test.Fatalf("got %v", readings)
+	}
+	if !reflect.DeepEqual(refusals, []string{"the controller is in use by another sensordeck process"}) {
+		test.Fatalf("got %q", refusals)
+	}
+	if writes := controller.Writes(); len(writes) != 0 {
+		test.Fatalf("got %d writes", len(writes))
+	}
+	harness.source.Refused = nil
+	if readings := harness.read(); readings != nil {
+		test.Fatalf("with Refused nil: got %v", readings)
+	}
+}
+
+func TestAReadingHoldsTheLockWhileItRunsAndReleasesItAfter(test *testing.T) {
+	harness := newHarness(test)
+	controller := harness.fake.Add(9, 10)
+	var duringError error
+	controller.OnStep(3, func() {
+		file, err := hidraw.OpenNode(filepath.Join(harness.devRoot, "hidraw9"))
+		if err != nil {
+			duringError = err
+			return
+		}
+		defer file.Close()
+		duringError = devicelock.LockNode(file, "/nonexistent")
+	})
+	harness.read()
+	var inUse *devicelock.InUseError
+	if !errors.As(duringError, &inUse) {
+		test.Fatalf("during the reading: got %v, want an InUseError", duringError)
+	}
+	holdNode(test, harness.devRoot)
+	if harness.read() != nil {
+		test.Fatal("a held controller gave readings")
 	}
 }

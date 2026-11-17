@@ -11,7 +11,7 @@ func listScreens(sysfsRoot, devRoot string) ([]string, []string, error) {
 	return nil, nil, unsupported()
 }
 
-func openTransport(sysfsRoot, devRoot, device string) (transport, screenRestarter, error) {
+func openTransport(sysfsRoot, devRoot, procRoot, device string) (transport, screenRestarter, error) {
 	return nil, nil, unsupported()
 }
 

@@ -11,6 +11,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/norareit/sensordeck/internal/devicelock"
 	"github.com/norareit/sensordeck/internal/screenlist"
 	"github.com/norareit/sensordeck/internal/smartmonitor"
 )
@@ -37,14 +38,14 @@ type opened struct {
 }
 
 // OpenDiscovered opens the node of the one supported screen under the roots. A Reopen does the discovery anew.
-func OpenDiscovered(sysfsRoot, devRoot string) (*Transport, error) {
-	return openWith(func() (opened, error) { return openDiscovered(sysfsRoot, devRoot) })
+func OpenDiscovered(sysfsRoot, devRoot, procRoot string) (*Transport, error) {
+	return openWith(func() (opened, error) { return openDiscovered(sysfsRoot, devRoot, procRoot) })
 }
 
 // OpenPath opens the node at the path as it is. A Reopen opens the same path.
-func OpenPath(path string) (*Transport, error) {
+func OpenPath(path, procRoot string) (*Transport, error) {
 	return openWith(func() (opened, error) {
-		file, err := openNode(path)
+		file, err := openNode(path, procRoot)
 		if err != nil {
 			return opened{}, err
 		}
@@ -60,7 +61,7 @@ func openWith(open func() (opened, error)) (*Transport, error) {
 	return &Transport{open: open, file: node.file, node: node.node}, nil
 }
 
-func openDiscovered(sysfsRoot, devRoot string) (opened, error) {
+func openDiscovered(sysfsRoot, devRoot, procRoot string) (opened, error) {
 	screens, err := Discover(sysfsRoot, devRoot)
 	if err != nil {
 		return opened{}, err
@@ -69,7 +70,7 @@ func openDiscovered(sysfsRoot, devRoot string) (opened, error) {
 	case 0:
 		return opened{}, errors.New(screenlist.NoneFound)
 	case 1:
-		file, err := openNode(screens[0].Node)
+		file, err := openNode(screens[0].Node, procRoot)
 		return opened{file: file, node: screens[0].Node}, err
 	}
 	lines := make([]string, len(screens))
@@ -117,11 +118,17 @@ func OpenNode(path string) (*os.File, error) {
 	return file, nil
 }
 
-// openNode opens the node of the screen and words the failure for the user.
-func openNode(path string) (*os.File, error) {
+// openNode opens the node of the screen, takes its lock and words an opening that failed for the user. A lock held by
+// another sensordeck process closes the node again and gives the error of the lock as it is, so that it is not taken
+// for an opening that failed.
+func openNode(path, procRoot string) (*os.File, error) {
 	file, err := OpenNode(path)
 	if err != nil {
 		return nil, openError(path, err)
+	}
+	if err := devicelock.LockNode(file, procRoot); err != nil {
+		_ = file.Close()
+		return nil, err
 	}
 	return file, nil
 }

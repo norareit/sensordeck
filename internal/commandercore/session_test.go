@@ -10,7 +10,9 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/norareit/sensordeck/internal/devicelock"
 	"github.com/norareit/sensordeck/internal/fakecommander"
+	"github.com/norareit/sensordeck/internal/hidraw"
 )
 
 type sessionHarness struct {
@@ -20,6 +22,7 @@ type sessionHarness struct {
 	lighting   Lighting
 	stop       context.Context
 	cancel     context.CancelFunc
+	devRoot    string
 }
 
 func newSessionHarness(test *testing.T) *sessionHarness {
@@ -30,8 +33,8 @@ func newSessionHarness(test *testing.T) *sessionHarness {
 	test.Cleanup(cancel)
 	fake := fakecommander.New(test, sysfsRoot, devRoot)
 	return &sessionHarness{
-		test: test, fake: fake, controller: fake.Add(9, 10), stop: stop, cancel: cancel,
-		lighting: Lighting{Finder: Hidraw(sysfsRoot, devRoot), TimeLimit: testTimeLimit, Red: 0xFF},
+		test: test, fake: fake, controller: fake.Add(9, 10), stop: stop, cancel: cancel, devRoot: devRoot,
+		lighting: Lighting{Finder: Hidraw(sysfsRoot, devRoot, "/nonexistent"), TimeLimit: testTimeLimit, Red: 0xFF},
 	}
 }
 
@@ -314,7 +317,7 @@ func TestAStopBeforeTheSetupWritesNothing(test *testing.T) {
 
 func TestNoControllerGivesErrNoControllerAndWritesNothing(test *testing.T) {
 	root := test.TempDir()
-	lighting := Lighting{Finder: Hidraw(filepath.Join(root, "sys"), filepath.Join(root, "dev")), TimeLimit: testTimeLimit}
+	lighting := Lighting{Finder: Hidraw(filepath.Join(root, "sys"), filepath.Join(root, "dev"), "/nonexistent"), TimeLimit: testTimeLimit}
 	if _, _, err := lighting.Start(context.Background()); !errors.Is(err, ErrNoController) {
 		test.Fatalf("got %v", err)
 	}
@@ -499,5 +502,35 @@ func TestEverySetupOfASessionThatIsSetUpAgainReadsTheConfigurationAndReadingsWri
 	want := join(repairedWrites(), readingWrites(), teardownWithClose, setupWrites(16, 11), teardownWithClose)
 	if got := harness.writes(); !reflect.DeepEqual(got, want) {
 		test.Fatalf("got %d writes, want %d", len(got), len(want))
+	}
+}
+
+func TestASetupOfAControllerHeldByAnotherProcessFailsWithNoWrite(test *testing.T) {
+	harness := newSessionHarness(test)
+	file := holdNode(test, harness.devRoot)
+	_, _, err := harness.lighting.Start(harness.stop)
+	var inUse *devicelock.InUseError
+	if !errors.As(err, &inUse) || err.Error() != "the controller is in use by another sensordeck process" {
+		test.Fatalf("got %v", err)
+	}
+	if writes := harness.controller.Writes(); len(writes) != 0 {
+		test.Fatalf("got %d writes", len(writes))
+	}
+	_ = file.Close()
+	session, _, err := harness.lighting.Start(harness.stop)
+	if err != nil {
+		test.Fatal(err)
+	}
+	other, err := hidraw.OpenNode(filepath.Join(harness.devRoot, "hidraw9"))
+	if err != nil {
+		test.Fatal(err)
+	}
+	defer other.Close()
+	if err := devicelock.LockNode(other, "/nonexistent"); !errors.As(err, &inUse) {
+		test.Fatalf("while the session is held: got %v", err)
+	}
+	session.End()
+	if err := devicelock.LockNode(other, "/nonexistent"); err != nil {
+		test.Fatalf("after End: %v", err)
 	}
 }

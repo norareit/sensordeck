@@ -13,6 +13,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/norareit/sensordeck/internal/devicelock"
 	"github.com/norareit/sensordeck/internal/fakescreen"
 	"github.com/norareit/sensordeck/internal/smartmonitor"
 )
@@ -27,7 +28,7 @@ func reportOf(data ...byte) smartmonitor.Report {
 
 func openFake(test *testing.T, fake *fakescreen.Fake) *Transport {
 	test.Helper()
-	transport, err := OpenDiscovered(fake.SysfsRoot, fake.DevRoot)
+	transport, err := OpenDiscovered(fake.SysfsRoot, fake.DevRoot, "/nonexistent")
 	if err != nil {
 		test.Fatal(err)
 	}
@@ -154,12 +155,12 @@ func TestReopenWithNoScreenFailsAndASecondOneSucceeds(test *testing.T) {
 
 func TestOpenDiscoveredErrors(test *testing.T) {
 	fake := fakescreen.New(test)
-	if _, err := OpenDiscovered(fake.SysfsRoot, fake.DevRoot); err == nil || err.Error() != "no supported screen found" {
+	if _, err := OpenDiscovered(fake.SysfsRoot, fake.DevRoot, "/nonexistent"); err == nil || err.Error() != "no supported screen found" {
 		test.Fatalf("got %v", err)
 	}
 	fake.Add(2, "llhmi.com llTechCo.,Ltd", "")
 	fake.Add(10, "other", "S1")
-	_, err := OpenDiscovered(fake.SysfsRoot, fake.DevRoot)
+	_, err := OpenDiscovered(fake.SysfsRoot, fake.DevRoot, "/nonexistent")
 	want := "more than one supported screen is connected, name one with --device:\n" +
 		fake.DevRoot + "/hidraw2\t0483:0065\tllhmi.com llTechCo.,Ltd\t-\n" +
 		fake.DevRoot + "/hidraw10\t0483:0065\tother\tS1"
@@ -172,7 +173,7 @@ func TestOpenPathOpensTheNodeGiven(test *testing.T) {
 	fake := fakescreen.New(test)
 	first := fake.Add(2, "name", "")
 	second := fake.Add(4, "name", "")
-	transport, err := OpenPath(second.Node())
+	transport, err := OpenPath(second.Node(), "/nonexistent")
 	if err != nil {
 		test.Fatal(err)
 	}
@@ -196,7 +197,7 @@ func TestOpenPathOnANodeWithoutATimeLimit(test *testing.T) {
 	if err := os.WriteFile(path, nil, 0o644); err != nil {
 		test.Fatal(err)
 	}
-	_, err := OpenPath(path)
+	_, err := OpenPath(path, "/nonexistent")
 	if err == nil || !strings.Contains(err.Error(), "does not support a time limit for reading") {
 		test.Fatalf("got %v", err)
 	}
@@ -221,7 +222,7 @@ func TestOpenErrorForOtherFailures(test *testing.T) {
 	if !errors.Is(err, fs.ErrNotExist) {
 		test.Error("the system error is not reachable")
 	}
-	_, err = OpenPath(filepath.Join(test.TempDir(), "missing"))
+	_, err = OpenPath(filepath.Join(test.TempDir(), "missing"), "/nonexistent")
 	if err == nil || !strings.HasSuffix(err.Error(), ": no such file or directory") || !strings.HasPrefix(err.Error(), "cannot open ") {
 		test.Errorf("got %v", err)
 	}
@@ -246,19 +247,79 @@ func TestNodeIsTheNodeOpenedLast(test *testing.T) {
 	if discovered.Node() != screen.Node() {
 		test.Errorf("after OpenDiscovered: got %q", discovered.Node())
 	}
-	byPath, err := OpenPath(screen.Node())
+	// The screen is held by one transport at a time, so the one opened by path is opened once the other is closed.
+	_ = discovered.Close()
+	byPath, err := OpenPath(screen.Node(), "/nonexistent")
 	if err != nil {
 		test.Fatal(err)
 	}
-	defer byPath.Close()
 	if byPath.Node() != screen.Node() {
 		test.Errorf("after OpenPath: got %q", byPath.Node())
 	}
+	_ = byPath.Close()
 	screen.Move(7)
 	if err := discovered.Reopen(); err != nil {
 		test.Fatal(err)
 	}
 	if discovered.Node() != screen.Node() || discovered.Node() == byPath.Node() {
 		test.Errorf("after Reopen: got %q", discovered.Node())
+	}
+}
+
+func TestANodeHeldByAnotherTransportIsRefusedUntilItIsClosed(test *testing.T) {
+	fake := fakescreen.New(test)
+	screen := fake.Add(3, "name", "")
+	first, err := OpenPath(screen.Node(), "/nonexistent")
+	if err != nil {
+		test.Fatal(err)
+	}
+	resolved, err := filepath.EvalSymlinks(screen.Node())
+	if err != nil {
+		test.Fatal(err)
+	}
+	var inUse *devicelock.InUseError
+	for name, open := range map[string]func() (*Transport, error){
+		"the same path":  func() (*Transport, error) { return OpenPath(screen.Node(), "/nonexistent") },
+		"the resolved":   func() (*Transport, error) { return OpenPath(resolved, "/nonexistent") },
+		"the discovered": func() (*Transport, error) { return OpenDiscovered(fake.SysfsRoot, fake.DevRoot, "/nonexistent") },
+	} {
+		if _, err := open(); !errors.As(err, &inUse) {
+			test.Errorf("%s: got %v, want an InUseError", name, err)
+		}
+	}
+	if got := screen.Received(); len(got) != 0 {
+		test.Errorf("the screen got %d bytes", len(got))
+	}
+	_ = first.Close()
+	second, err := OpenPath(screen.Node(), "/nonexistent")
+	if err != nil {
+		test.Fatalf("after the close: %v", err)
+	}
+	_ = second.Close()
+}
+
+func TestAReopenThatFindsTheNodeHeldHoldsNoNodeAndTriesAgain(test *testing.T) {
+	fake := fakescreen.New(test)
+	screen := fake.Add(3, "name", "")
+	transport, err := OpenPath(screen.Node(), "/nonexistent")
+	if err != nil {
+		test.Fatal(err)
+	}
+	defer transport.Close()
+	_ = transport.Close()
+	other, err := OpenPath(screen.Node(), "/nonexistent")
+	if err != nil {
+		test.Fatal(err)
+	}
+	var inUse *devicelock.InUseError
+	if err := transport.Reopen(); !errors.As(err, &inUse) {
+		test.Fatalf("got %v, want an InUseError", err)
+	}
+	if err := transport.Write(reportOf(0x01)); err == nil {
+		test.Fatal("a transport that holds no node wrote")
+	}
+	_ = other.Close()
+	if err := transport.Reopen(); err != nil {
+		test.Fatalf("after the other closed: %v", err)
 	}
 }

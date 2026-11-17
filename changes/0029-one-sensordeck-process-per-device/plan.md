@@ -132,66 +132,66 @@ The design decisions the spec leaves to the plan:
 
 ### 1. The package devicelock
 
-- [ ] Write `internal/devicelock/devicelock_test.go`: `HolderText(42, "sensordeck run --config c.yaml", true)` is
+- [x] Write `internal/devicelock/devicelock_test.go`: `HolderText(42, "sensordeck run --config c.yaml", true)` is
   ` (process 42: sensordeck run --config c.yaml)`, `HolderText(42, "", false)` and `HolderText(42, "", true)` are
   ` (process 42)`; `(&InUseError{Holder: " (process 42)"}).Error()` is
   `in use by another sensordeck process (process 42)`, and with an empty holder
   `in use by another sensordeck process` (R6)
-- [ ] Write `internal/devicelock/proclocks_test.go` with a fake proc root in a temporary directory: a `locks` with a
+- [x] Write `internal/devicelock/proclocks_test.go` with a fake proc root in a temporary directory: a `locks` with a
   `POSIX` line, a `->` line and a `FLOCK` line for `00:85:627` with pid 496, and `496/cmdline` of
   `sensordeck\x00run\x00--config\x00c.yaml\x00`, gives ` (process 496: sensordeck run --config c.yaml)` for
   major 0, minor 0x85, inode 627; the same without `496/cmdline` gives ` (process 496)`; an empty `cmdline` gives
   ` (process 496)`; another inode, another device, a missing `locks` and a pid field of `-1` give `` (R6, R20)
-- [ ] Write `internal/devicelock/content_test.go`: `holderOfContent(encodeContent(42, "sensordeck run"))` is
+- [x] Write `internal/devicelock/content_test.go`: `holderOfContent(encodeContent(42, "sensordeck run"))` is
   ` (process 42: sensordeck run)`; an empty content, `x\nsensordeck\n`, `0\nsensordeck\n`, a content of one line and
   a content of three lines give `` (R6, R20)
-- [ ] Write `internal/devicelock/flock_linux_test.go`: two openings of one temporary file, `LockNode` of the first
+- [x] Write `internal/devicelock/flock_linux_test.go`: two openings of one temporary file, `LockNode` of the first
   gives nil and of the second an `*InUseError`; after the close of the first, `LockNode` of the second gives nil
   (R1, R3); an opening through a symbolic link to the file is refused while the other holds it (R1); with `/proc` as
   the proc root and `/proc/locks` readable, the holder of the refusal is the process of the test, its pid and its
   command line, and the test is skipped when `/proc/locks` cannot be read (R6); `lockResult` gives nil for nil, an
   `*InUseError` whose holder is what the function gave for `unix.EWOULDBLOCK`, and `cannot lock /dev/x: bad file
   descriptor` for `unix.EBADF` (R5)
-- [ ] Write `internal/devicelock/lockfile_windows_test.go`: `acquireIn` of a temporary directory and `screen.lock`
+- [x] Write `internal/devicelock/lockfile_windows_test.go`: `acquireIn` of a temporary directory and `screen.lock`
   succeeds and the file holds the content of the process; a second `acquireIn` of the same file in the same process
   gives an `*InUseError` whose holder names the process; the content stays readable with `os.ReadFile` while held;
   after `release`, `acquireIn` succeeds again; a second `release` does nothing; a directory that is a file gives an
   error that names the path (R2, R3, R5, R6). It is compiled by `GOOS=windows GOARCH=amd64 go vet ./...` and run by
   the human on Windows
-- [ ] Write `devicelock.go`, `proclocks.go`, `content.go`, `flock_linux.go` and `lockfile_windows.go` as the approach
+- [x] Write `devicelock.go`, `proclocks.go`, `content.go`, `flock_linux.go` and `lockfile_windows.go` as the approach
   says, until the tests pass and both builds and vets of the suite succeed (R1 to R6)
-- [ ] Commit: `bugfix-0029 Add the advisory locks of the devices and the naming of their holder`
+- [x] Commit: `bugfix-0029 Add the advisory locks of the devices and the naming of their holder`
 
 ### 2. The locks on Linux
 
-- [ ] In `internal/hidraw/transport_test.go`, test with the fake screen: while a transport of `OpenPath(node,
+- [x] In `internal/hidraw/transport_test.go`, test with the fake screen: while a transport of `OpenPath(node,
   procRoot)` is open, a second `OpenPath` of the node, and an `OpenPath` of the `/dev/pts/<n>` the link resolves to,
   give an `*devicelock.InUseError` (the test checks it with `errors.As`) and leave the fake screen with no report;
   after the first `Close`, the second opening succeeds (R1, R3); `OpenDiscovered` is refused the same way; a
   transport whose `Reopen` finds the node held by another transport gives the `*InUseError`, holds no node, and a later
   `Reopen` after the other's `Close` succeeds (R14)
-- [ ] Change `openNode` to take the proc root and call `devicelock.LockNode` after `OpenNode`, closing the file and
+- [x] Change `openNode` to take the proc root and call `devicelock.LockNode` after `OpenNode`, closing the file and
   giving the error of the lock as it is when it fails; pass the proc root through `OpenDiscovered`, `OpenPath` and
   `openDiscovered`, and update `internal/fakescreen/fakescreen_test.go` and the other callers. `OpenNode` stays
   without a lock (R1, R3, R5)
-- [ ] In `internal/commandercore/source_test.go`, with the fake controller and a file of the test that holds the
+- [x] In `internal/commandercore/source_test.go`, with the fake controller and a file of the test that holds the
   `flock` of `hidraw9`: `Source.Read` gives no reading, writes nothing to the controller, and calls `Refused` once
   with an error whose text is `the controller is in use by another sensordeck process`; with `Refused` nil it does the
   same and calls nothing (R7, R9, R11); with `OnStep(3, ...)` trying the lock of `hidraw9` from the test, the try is
   refused, so the reading holds the lock while it runs, and after the reading the test takes it (R7)
-- [ ] In `internal/commandercore/session_test.go`: `Lighting.Start` while the test holds the lock gives an error that
+- [x] In `internal/commandercore/session_test.go`: `Lighting.Start` while the test holds the lock gives an error that
   holds an `*devicelock.InUseError`, whose text is `the controller is in use by another sensordeck process`, and writes
   nothing; while a session is held the test is refused the lock, after a failed keepalive, a setup that failed and
   `End` it is not (R8, R10)
-- [ ] Add `controllerOpenError` to `node.go`; give `Hidraw` the proc root, and call `devicelock.LockNode` in its
+- [x] Add `controllerOpenError` to `node.go`; give `Hidraw` the proc root, and call `devicelock.LockNode` in its
   `open` after `hidraw.OpenNode`, closing the file on a failure and giving its error through `controllerOpenError`;
   add `Refused` to `Source` and call it in `Read` when the error of the opening holds an `*InUseError` (R1, R3, R7,
   R8, R9)
-- [ ] Add `procRoot` to `environment.openTransport` and to `openTransport` in `device_linux.go`, `device_windows.go`
+- [x] Add `procRoot` to `environment.openTransport` and to `openTransport` in `device_linux.go`, `device_windows.go`
   and `device_other.go`, pass `current.env.procRoot` in `session.open`, pass it to `commandercore.Hidraw` in
   `sources_linux.go`, and update the harness of `internal/cli/commands_test.go`, which checks that the proc root
   arrives as `/procroot`
-- [ ] Run the suite, and commit: `bugfix-0029 Lock the nodes of the screen and the controller on Linux`
+- [x] Run the suite, and commit: `bugfix-0029 Lock the nodes of the screen and the controller on Linux`
 
 ### 3. The locks on Windows
 

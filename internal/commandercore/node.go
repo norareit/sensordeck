@@ -2,7 +2,10 @@ package commandercore
 
 import (
 	"errors"
+	"fmt"
 	"time"
+
+	"github.com/norareit/sensordeck/internal/devicelock"
 )
 
 // errNoAnswer is a receive whose time limit passed with no answer.
@@ -33,6 +36,16 @@ func (finder Finder) Problem() error {
 	_, err := finder.find()
 	if errors.Is(err, ErrNoController) {
 		return nil
+	}
+	return err
+}
+
+// controllerOpenError words an error of an opening: the lock of the controller held by another sensordeck process is
+// worded as the controller being in use, and every other error is kept as it is.
+func controllerOpenError(err error) error {
+	var inUse *devicelock.InUseError
+	if errors.As(err, &inUse) {
+		return fmt.Errorf("the controller is %w", err)
 	}
 	return err
 }

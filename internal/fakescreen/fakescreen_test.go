@@ -69,7 +69,7 @@ func TestAcceptUploadAnswersAnUploadThatStartsAfterOtherReports(test *testing.T)
 	screen := fake.Add(3, "name", "")
 	theme := make([]byte, 2500)
 	screen.AcceptUpload(theme)
-	transport, err := hidraw.OpenDiscovered(fake.SysfsRoot, fake.DevRoot)
+	transport, err := hidraw.OpenDiscovered(fake.SysfsRoot, fake.DevRoot, "/nonexistent")
 	if err != nil {
 		test.Fatal(err)
 	}

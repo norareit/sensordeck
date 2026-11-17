@@ -10,7 +10,7 @@ import (
 // This file and sources_other.go do nothing but choose the sources of the readings.
 
 func newSources(sysfsRoot, devRoot, procRoot string) (sourceSet, error) {
-	set := commanderSources(commandercore.Hidraw(sysfsRoot, devRoot))
+	set := commanderSources(commandercore.Hidraw(sysfsRoot, devRoot, procRoot))
 	set.others = linuxsensors.Sources(sysfsRoot, procRoot)
 	return set, nil
 }

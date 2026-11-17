@@ -41,7 +41,7 @@ func (current *session) elapsed() time.Duration { return current.env.now().Sub(c
 
 // open opens the transport, traced when asked, and closes it when the returned function is called.
 func (current *session) open() (transport, screenRestarter, func(), error) {
-	opened, restarter, err := current.env.openTransport(current.env.sysfsRoot, current.env.devRoot, current.options.device)
+	opened, restarter, err := current.env.openTransport(current.env.sysfsRoot, current.env.devRoot, current.env.procRoot, current.options.device)
 	if err != nil {
 		return nil, nil, nil, err
 	}

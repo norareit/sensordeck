@@ -100,7 +100,7 @@ func (harness *harness) run(args ...string) int {
 		listScreens: func(sysfsRoot, devRoot string) ([]string, []string, error) {
 			return harness.screens, harness.nearMisses, nil
 		},
-		openTransport: func(sysfsRoot, devRoot, device string) (transport, screenRestarter, error) {
+		openTransport: func(sysfsRoot, devRoot, procRoot, device string) (transport, screenRestarter, error) {
 			harness.opened = append(harness.opened, device)
 			if harness.openErr != nil {
 				return nil, nil, harness.openErr

@@ -23,13 +23,13 @@ func listScreens(sysfsRoot, devRoot string) ([]string, []string, error) {
 	return lines, nil, nil
 }
 
-func openTransport(sysfsRoot, devRoot, device string) (transport, screenRestarter, error) {
+func openTransport(sysfsRoot, devRoot, procRoot, device string) (transport, screenRestarter, error) {
 	var opened *hidraw.Transport
 	var err error
 	if device != "" {
-		opened, err = hidraw.OpenPath(device)
+		opened, err = hidraw.OpenPath(device, procRoot)
 	} else {
-		opened, err = hidraw.OpenDiscovered(sysfsRoot, devRoot)
+		opened, err = hidraw.OpenDiscovered(sysfsRoot, devRoot, procRoot)
 	}
 	if err != nil {
 		// Return a nil interface and not the nil pointer, so that the check of the error is the only check.
