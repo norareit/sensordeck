@@ -152,6 +152,9 @@ var builtInThemes = []struct {
 	tags      []config.Mapping
 	alarms    []config.AlarmPair
 	tagsFile  string
+	// fileSize is the size of the compiled theme and records the number of its records beside the background: every
+	// text is drawn into the background, so none is a record.
+	fileSize, records int
 }{
 	{
 		name:      "minimal-dark",
@@ -163,6 +166,7 @@ var builtInThemes = []struct {
 			{Name: "ram.used", Tag: 10}, {Name: "ram.util", Tag: 11},
 		},
 		tagsFile: minimalDarkTags,
+		fileSize: 418716, records: 13,
 	},
 	{
 		name:      "minimal-dark-probes",
@@ -180,6 +184,7 @@ var builtInThemes = []struct {
 			{Name: "nvme.2.temp", Threshold: config.Threshold{Above: 70, HasAbove: true}, Normal: 14, Alarm: 15},
 		},
 		tagsFile: minimalDarkProbesTags,
+		fileSize: 492828, records: 19,
 	},
 }
 
@@ -280,9 +285,18 @@ func TestEachThemeCompilesWithItsTags(test *testing.T) {
 			if err != nil {
 				test.Fatal(err)
 			}
-			_, warnings, err := themefile.Parse(result.File)
+			parsed, warnings, err := themefile.Parse(result.File)
 			if err != nil || len(warnings) != 0 {
 				test.Fatalf("read back: %v, warnings %q", err, warnings)
+			}
+			if len(result.File) != theme.fileSize || len(parsed.Entries) != theme.records+1 {
+				test.Fatalf("%d bytes and %d records beside the background, want %d and %d",
+					len(result.File), len(parsed.Entries)-1, theme.fileSize, theme.records)
+			}
+			for _, entry := range parsed.Entries {
+				if _, isText := entry.Record.(themefile.Text); isText {
+					test.Errorf("slot %d is a text record", entry.Slot)
+				}
 			}
 			if !reflect.DeepEqual(result.Tags, theme.tags) {
 				test.Fatalf("tags %v, want %v", result.Tags, theme.tags)
