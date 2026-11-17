@@ -2,6 +2,7 @@ package themecompile
 
 import (
 	"fmt"
+	"math"
 	"strings"
 
 	"go.yaml.in/yaml/v3"
@@ -35,14 +36,20 @@ type fontSpec struct {
 }
 
 type widgetSpec struct {
-	number       int    // counted from 1
-	kind         string // "text", "number", "datetime" or "image"
-	x, y         int64
-	font         int // the position of its font in document.fonts
-	text, metric string
-	digits       int
-	format       []byte // compiled
-	file         string
+	number        int    // counted from 1
+	kind          string // "text", "number", "datetime", "image" or "bar"
+	x, y          int64
+	font          int // the position of its font in document.fonts
+	text, metric  string
+	digits        int
+	alignment     byte          // of a number, as byte 11 of its record holds it
+	opacity       byte          // of a number, as byte 15 of its record holds it
+	thousands     bool          // of a number
+	width, height int64         // of a bar
+	colour        config.Colour // of a bar, the fill and the frame
+	background    config.Colour // of a bar, the empty part
+	format        []byte        // compiled
+	file          string
 }
 
 var (
@@ -50,9 +57,10 @@ var (
 	fontKeys   = []string{"builtin", "color", "file", "size"}
 	widgetKeys = map[string][]string{
 		"text":     {"font", "text", "type", "x", "y"},
-		"number":   {"digits", "font", "metric", "type", "x", "y"},
+		"number":   {"align", "digits", "font", "metric", "opacity", "thousands", "type", "x", "y"},
 		"datetime": {"font", "format", "type", "x", "y"},
 		"image":    {"file", "type", "x", "y"},
+		"bar":      {"background", "color", "height", "metric", "type", "width", "x", "y"},
 	}
 )
 
@@ -218,6 +226,14 @@ func widgetPlace(number int, kind string) string {
 	return fmt.Sprintf("widget %d (%s)", number, kind)
 }
 
+func widgetTypes() []string {
+	types := make([]string, 0, len(widgetKeys))
+	for kind := range widgetKeys {
+		types = append(types, kind)
+	}
+	return types
+}
+
 // widgetKind reads the type of a widget, which decides the keys that the rest of it may have.
 func widgetKind(number int, node *yaml.Node) (string, error) {
 	place := widgetPlace(number, "")
@@ -234,7 +250,7 @@ func widgetKind(number int, node *yaml.Node) (string, error) {
 			return "", err
 		}
 		if _, known := widgetKeys[kind]; !known {
-			return "", problem(place, "type: %q is not a widget type, the types are datetime, image, number and text", kind)
+			return "", problem(place, "type: %q is not a widget type, the types are %s", kind, listOf(widgetTypes()))
 		}
 		return kind, nil
 	}
@@ -261,6 +277,8 @@ func readWidget(number int, node *yaml.Node, fonts []fontSpec) (widgetSpec, erro
 	switch kind {
 	case "image":
 		err = readImageKeys(&widget, values, place)
+	case "bar":
+		err = readBarKeys(&widget, values, place)
 	default:
 		err = readFontReference(&widget, values, place, fonts)
 		if err == nil {
@@ -339,7 +357,7 @@ func readTypeKeys(widget *widgetSpec, values map[string]*yaml.Node, place string
 	return nil
 }
 
-func readNumberKeys(widget *widgetSpec, values map[string]*yaml.Node, place string) error {
+func readMetric(widget *widgetSpec, values map[string]*yaml.Node, place string) error {
 	node, err := required(values, place, "metric")
 	if err != nil {
 		return err
@@ -350,6 +368,18 @@ func readNumberKeys(widget *widgetSpec, values map[string]*yaml.Node, place stri
 	if !sensors.IsWellFormedName(widget.metric) {
 		return problem(join(place, "metric"), "%q is not a metric name", widget.metric)
 	}
+	return nil
+}
+
+var alignments = map[string]byte{"left": 0, "center": 1, "right": 2}
+
+func readNumberKeys(widget *widgetSpec, values map[string]*yaml.Node, place string) error {
+	if err := readMetric(widget, values, place); err != nil {
+		return err
+	}
+	if err := readNumberOptions(widget, values, place); err != nil {
+		return err
+	}
 	if digits, found := values["digits"]; found {
 		number, err := readWholeNumber(digits, place, "digits", 1, maxDigits)
 		if err != nil {
@@ -358,4 +388,61 @@ func readNumberKeys(widget *widgetSpec, values map[string]*yaml.Node, place stri
 		widget.digits = int(number)
 	}
 	return nil
+}
+
+// readNumberOptions reads align, opacity and thousands, whose defaults are the values every theme compiled before them
+// holds: centred, opaque and not in thousands.
+func readNumberOptions(widget *widgetSpec, values map[string]*yaml.Node, place string) error {
+	widget.alignment, widget.opacity = alignments["center"], 0xff
+	if node, found := values["align"]; found {
+		alignment, known := alignments[node.Value]
+		if !isString(node) || !known {
+			return problem(join(place, "align"), "want left, center or right")
+		}
+		widget.alignment = alignment
+	}
+	if node, found := values["opacity"]; found {
+		opacity, err := readFraction(node, place, "opacity")
+		if err != nil {
+			return err
+		}
+		widget.opacity = byte(math.Floor(opacity*255 + 0.5))
+	}
+	if node, found := values["thousands"]; found {
+		thousands, err := readBoolean(node, place, "thousands")
+		if err != nil {
+			return err
+		}
+		widget.thousands = thousands
+	}
+	return nil
+}
+
+func readBarKeys(widget *widgetSpec, values map[string]*yaml.Node, place string) error {
+	if err := readMetric(widget, values, place); err != nil {
+		return err
+	}
+	for _, size := range []struct {
+		key   string
+		value *int64
+	}{{"width", &widget.width}, {"height", &widget.height}} {
+		node, err := required(values, place, size.key)
+		if err != nil {
+			return err
+		}
+		if *size.value, err = readWholeNumber(node, place, size.key, 1, -1); err != nil {
+			return err
+		}
+	}
+	node, err := required(values, place, "color")
+	if err != nil {
+		return err
+	}
+	if widget.colour, err = readColour(node, place, "color"); err != nil {
+		return err
+	}
+	if node, found := values["background"]; found {
+		widget.background, err = readColour(node, place, "background")
+	}
+	return err
 }

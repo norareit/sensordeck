@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strings"
 	"testing"
+
+	"github.com/norareit/sensordeck/internal/config"
 )
 
 const goodFonts = "fonts:\n  body: {builtin: go-regular, size: 20, color: \"#ffffff\"}\n"
@@ -36,7 +38,26 @@ func TestParseDocumentErrors(test *testing.T) {
 		{"widgets as a mapping", "name: a\nbackground: \"#000000\"\nwidgets: {a: b}\n", "widgets: want a list of widgets"},
 		{"widget not a mapping", "name: a\nbackground: \"#000000\"\nwidgets: [a]\n", "widget 1: want a mapping"},
 		{"widget without type", "name: a\nbackground: \"#000000\"\nwidgets:\n  - {x: 0}\n", "widget 1: the key type is missing"},
-		{"widget of type gauge", "name: a\nbackground: \"#000000\"\nwidgets:\n  - {type: gauge}\n", `widget 1: type: "gauge" is not a widget type, the types are datetime, image, number and text`},
+		{"widget of type gauge", "name: a\nbackground: \"#000000\"\nwidgets:\n  - {type: gauge}\n", `widget 1: type: "gauge" is not a widget type, the types are bar, datetime, image, number and text`},
+		{"align middle", "name: a\nbackground: \"#000000\"\n" + goodFonts + "widgets:\n  - {type: number, font: body, metric: cpu.temp, align: middle, x: 0, y: 0}\n", "widget 1 (number): align: want left, center or right"},
+		{"align 1", "name: a\nbackground: \"#000000\"\n" + goodFonts + "widgets:\n  - {type: number, font: body, metric: cpu.temp, align: 1, x: 0, y: 0}\n", "widget 1 (number): align: want left, center or right"},
+		{"opacity: 1.5", "name: a\nbackground: \"#000000\"\n" + goodFonts + "widgets:\n  - {type: number, font: body, metric: cpu.temp, opacity: 1.5, x: 0, y: 0}\n", "widget 1 (number): opacity: want a number from 0 to 1"},
+		{"opacity: -0.1", "name: a\nbackground: \"#000000\"\n" + goodFonts + "widgets:\n  - {type: number, font: body, metric: cpu.temp, opacity: -0.1, x: 0, y: 0}\n", "widget 1 (number): opacity: want a number from 0 to 1"},
+		{"opacity as a string", "name: a\nbackground: \"#000000\"\n" + goodFonts + "widgets:\n  - {type: number, font: body, metric: cpu.temp, opacity: \"0.5\", x: 0, y: 0}\n", "widget 1 (number): opacity: want a number from 0 to 1"},
+		{"opacity: 50%", "name: a\nbackground: \"#000000\"\n" + goodFonts + "widgets:\n  - {type: number, font: body, metric: cpu.temp, opacity: 50%, x: 0, y: 0}\n", "widget 1 (number): opacity: want a number from 0 to 1"},
+		{"opacity: .nan", "name: a\nbackground: \"#000000\"\n" + goodFonts + "widgets:\n  - {type: number, font: body, metric: cpu.temp, opacity: .nan, x: 0, y: 0}\n", "widget 1 (number): opacity: want a number from 0 to 1"},
+		{"thousands: yes", "name: a\nbackground: \"#000000\"\n" + goodFonts + "widgets:\n  - {type: number, font: body, metric: cpu.temp, thousands: yes, x: 0, y: 0}\n", "widget 1 (number): thousands: want true or false"},
+		{"thousands: 1", "name: a\nbackground: \"#000000\"\n" + goodFonts + "widgets:\n  - {type: number, font: body, metric: cpu.temp, thousands: 1, x: 0, y: 0}\n", "widget 1 (number): thousands: want true or false"},
+		{"thousands as a string", "name: a\nbackground: \"#000000\"\n" + goodFonts + "widgets:\n  - {type: number, font: body, metric: cpu.temp, thousands: \"true\", x: 0, y: 0}\n", "widget 1 (number): thousands: want true or false"},
+		{"bar without metric", "name: a\nbackground: \"#000000\"\nwidgets:\n  - {type: bar, width: 10, height: 5, color: \"#00ff00\", x: 0, y: 0}\n", `widget 1 (bar): the key metric is missing`},
+		{"bar without width", "name: a\nbackground: \"#000000\"\nwidgets:\n  - {type: bar, metric: cpu.util, height: 5, color: \"#00ff00\", x: 0, y: 0}\n", `widget 1 (bar): the key width is missing`},
+		{"bar without height", "name: a\nbackground: \"#000000\"\nwidgets:\n  - {type: bar, metric: cpu.util, width: 10, color: \"#00ff00\", x: 0, y: 0}\n", `widget 1 (bar): the key height is missing`},
+		{"bar without color", "name: a\nbackground: \"#000000\"\nwidgets:\n  - {type: bar, metric: cpu.util, width: 10, height: 5, x: 0, y: 0}\n", `widget 1 (bar): the key color is missing`},
+		{"bar width 0", "name: a\nbackground: \"#000000\"\nwidgets:\n  - {type: bar, metric: cpu.util, width: 0, height: 5, color: \"#00ff00\", x: 0, y: 0}\n", `widget 1 (bar): width: want a whole number from 1`},
+		{"bar height 0", "name: a\nbackground: \"#000000\"\nwidgets:\n  - {type: bar, metric: cpu.util, width: 10, height: 0, color: \"#00ff00\", x: 0, y: 0}\n", `widget 1 (bar): height: want a whole number from 1`},
+		{"bar with a font", "name: a\nbackground: \"#000000\"\nwidgets:\n  - {type: bar, metric: cpu.util, width: 10, height: 5, color: \"#00ff00\", x: 0, y: 0, font: body}\n", `widget 1 (bar): unknown key "font", the keys are background, color, height, metric, type, width, x and y`},
+		{"bar metric misspelt", "name: a\nbackground: \"#000000\"\nwidgets:\n  - {type: bar, metric: cpu..temp, width: 10, height: 5, color: \"#00ff00\", x: 0, y: 0}\n", `widget 1 (bar): metric: "cpu..temp" is not a metric name`},
+		{"bar colour malformed", "name: a\nbackground: \"#000000\"\nwidgets:\n  - {type: bar, metric: cpu.util, width: 10, height: 5, color: \"#12345\", x: 0, y: 0}\n", `widget 1 (bar): color: "#12345" is not a colour such as "#1e1e2e"`},
 		{"x negative", "name: a\nbackground: \"#000000\"\n" + goodFonts + "widgets:\n  - {type: text, font: body, text: a, x: -1, y: 0}\n", "widget 1 (text): x: want a whole number from 0"},
 		{"x a letter", "name: a\nbackground: \"#000000\"\n" + goodFonts + "widgets:\n  - {type: text, font: body, text: a, x: a, y: 0}\n", "widget 1 (text): x: want a whole number from 0"},
 		{"y missing", "name: a\nbackground: \"#000000\"\n" + goodFonts + "widgets:\n  - {type: text, font: body, text: a, x: 0}\n", "widget 1 (text): the key y is missing"},
@@ -89,4 +110,50 @@ func TestParseDocumentGivesTheSameFaultEachTime(test *testing.T) {
 func parseError(theme string) error {
 	_, err := parseDocument([]byte(theme))
 	return err
+}
+
+func parseWidget(test *testing.T, widget string) widgetSpec {
+	test.Helper()
+	parsed, err := parseDocument([]byte("name: a\nbackground: \"#000000\"\n" + goodFonts + "widgets:\n  - " + widget + "\n"))
+	if err != nil {
+		test.Fatal(err)
+	}
+	return parsed.widgets[0]
+}
+
+func TestParseDocumentReadsTheNumberOptions(test *testing.T) {
+	cases := []struct {
+		keys               string
+		alignment, opacity byte
+		thousands          bool
+	}{
+		{"", 1, 255, false},
+		{", align: left", 0, 255, false},
+		{", align: center", 1, 255, false},
+		{", align: right", 2, 255, false},
+		{", opacity: 0", 1, 0, false},
+		{", opacity: 0.5", 1, 128, false},
+		{", opacity: 1", 1, 255, false},
+		{", opacity: 0.0", 1, 0, false},
+		{", thousands: true", 1, 255, true},
+		{", thousands: false", 1, 255, false},
+	}
+	for _, each := range cases {
+		widget := parseWidget(test, "{type: number, font: body, metric: cpu.temp, x: 0, y: 0"+each.keys+"}")
+		if widget.alignment != each.alignment || widget.opacity != each.opacity || widget.thousands != each.thousands {
+			test.Errorf("%q: got %d, %d, %v", each.keys, widget.alignment, widget.opacity, widget.thousands)
+		}
+	}
+}
+
+func TestParseDocumentReadsABar(test *testing.T) {
+	widget := parseWidget(test, `{type: bar, metric: cpu.util, x: 3, y: 4, width: 100, height: 10, color: "#00ff00", background: "#ff0000"}`)
+	if widget.kind != "bar" || widget.metric != "cpu.util" || widget.x != 3 || widget.y != 4 || widget.width != 100 || widget.height != 10 ||
+		widget.colour.Green != 0xff || widget.background.Red != 0xff {
+		test.Errorf("%+v", widget)
+	}
+	plain := parseWidget(test, `{type: bar, metric: cpu.util, x: 3, y: 4, width: 100, height: 10, color: "#00ff00"}`)
+	if plain.background != (config.Colour{}) {
+		test.Errorf("background %+v", plain.background)
+	}
 }

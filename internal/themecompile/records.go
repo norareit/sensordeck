@@ -1,6 +1,7 @@
 package themecompile
 
 import (
+	"encoding/binary"
 	"image"
 	"io/fs"
 
@@ -66,6 +67,8 @@ func buildWidget(input widgetInput) (built, error) {
 		return buildNumber(input, place)
 	case "datetime":
 		return buildDatetime(input, place)
+	case "bar":
+		return buildBar(input, place)
 	}
 	return buildImage(input, place)
 }
@@ -97,8 +100,11 @@ func buildNumber(input widgetInput, place string) (built, error) {
 	if err := checkBox(place, area); err != nil {
 		return built{}, err
 	}
-	record := themefile.Number{Head: area.head(themefile.TypeNumber, input.index(), input.tag), Alignment: 1,
-		Colour: input.font.colour, Opacity: 0xff, Offset: input.offset, GlyphHeight: uint16(glyphs.height)}
+	record := themefile.Number{Head: area.head(themefile.TypeNumber, input.index(), input.tag), Alignment: input.spec.alignment,
+		Colour: input.font.colour, Opacity: input.spec.opacity, Offset: input.offset, GlyphHeight: uint16(glyphs.height)}
+	if input.spec.thousands {
+		record.ThousandsMode = 1
+	}
 	var resource []byte
 	for position, character := range themefile.NumberGlyphOrder {
 		mask, width := glyphs.glyphOf(character)
@@ -107,6 +113,27 @@ func buildNumber(input widgetInput, place string) (built, error) {
 	}
 	record.Resource = resource
 	return built{record, resource}, nil
+}
+
+// barSampleBytes are bytes 18-19 and 26-27 of every bar of the vendor sample. The device draws them, and changing them
+// had no visible effect.
+const barSampleBytes = 0x76b0
+
+// buildBar writes one colour into both of the colours of the fill and the frame, since the device check did not
+// separate them, and the bytes the device check did not decode as the vendor sample holds them.
+func buildBar(input widgetInput, place string) (built, error) {
+	spec := input.spec
+	area := box{spec.x, spec.y, spec.width, spec.height}
+	if err := checkBox(place, area); err != nil {
+		return built{}, err
+	}
+	colour := rgb565(spec.colour.Red, spec.colour.Green, spec.colour.Blue)
+	record := themefile.Bar{Head: area.head(themefile.TypeBar, input.index(), input.tag), Byte11: 1,
+		EmptyColour:         rgb565(spec.background.Red, spec.background.Green, spec.background.Blue),
+		FillOrFrameColour14: colour, FillOrFrameColour16: colour}
+	binary.BigEndian.PutUint16(record.Bytes18To63[0:], barSampleBytes)
+	binary.BigEndian.PutUint16(record.Bytes18To63[8:], barSampleBytes)
+	return built{record: record}, nil
 }
 
 // datetimeOthers are the five glyphs after the digits that a format can refer to, in the order of the file; the six

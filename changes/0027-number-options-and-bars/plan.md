@@ -107,7 +107,7 @@ Commit point 1.
 
 ### The compiler
 
-- [ ] In `internal/themecompile/document_test.go`, add to `TestParseDocumentErrors` the cases, each with the full text
+- [x] In `internal/themecompile/document_test.go`, add to `TestParseDocumentErrors` the cases, each with the full text
   it must start with:
     - `align: middle` and `align: 1` give `widget 1 (number): align: want left, center or right`
     - `opacity: 1.5`, `opacity: -0.1`, `opacity: "0.5"`, `opacity: 50%` and `opacity: .nan` give
@@ -124,16 +124,16 @@ Commit point 1.
     - change the case `widget of type gauge` to want `the types are bar, datetime, image, number and text`
 
   (R1, R2, R5, R22)
-- [ ] In `internal/themecompile/document_test.go`, add `TestParseDocumentReadsTheNumberOptions`, which reads the
+- [x] In `internal/themecompile/document_test.go`, add `TestParseDocumentReadsTheNumberOptions`, which reads the
   widget spec of numbers with `align` `left`, `center` and `right` (alignment 0, 1 and 2), `opacity` 0, 0.5, 1 and the
   integer 0 and 1 (opacity 0, 128, 255, 0 and 255), and `thousands` `true` and `false`, and of a number with none of
   the keys (alignment 1, opacity 255, thousands false); and `TestParseDocumentReadsABar`, which reads a bar with and
   without `background` (black without it) (R1, R3, R5)
-- [ ] In `internal/themecompile/nodes.go`, add `readFraction(node, place, key string) (float64, error)`, which accepts
+- [x] In `internal/themecompile/nodes.go`, add `readFraction(node, place, key string) (float64, error)`, which accepts
   a scalar of the tag `!!int` or `!!float` decoded into a `float64` with `!(value >= 0 && value <= 1)` refused, so that
   NaN is refused, with the text `want a number from 0 to 1`; and `readBoolean(node, place, key string) (bool, error)`,
   which accepts a scalar of the tag `!!bool` only, with the text `want true or false` (R1, R2)
-- [ ] In `internal/themecompile/document.go`:
+- [x] In `internal/themecompile/document.go`:
     - add `alignment byte`, `opacity byte`, `thousands bool`, `width, height int64`, `colour, background
       config.Colour` to `widgetSpec`
     - add `align`, `opacity` and `thousands` to the keys of `number`, and the entry `"bar": {"background", "color",
@@ -149,7 +149,7 @@ Commit point 1.
       `color` required with `readColour`, and `background` optional with `readColour`, black without it
 
   (R1, R2, R5)
-- [ ] In `internal/themecompile/records_test.go`, add:
+- [x] In `internal/themecompile/records_test.go`, add:
     - `TestNumberRecordOptions`: a table of numbers with `align: left`, `align: right`, `opacity: 0`, `opacity: 0.5`
       and `thousands: true`, each compared slot for slot with `checkTable` against the slot of `TestNumberRecord` with
       byte 11, 15 or 14 changed to 0, 2, 0, 128 or 1. Move the building of that slot into a helper shared by both
@@ -164,26 +164,26 @@ Commit point 1.
       `widget 1 (bar)`
 
   (R3, R4, R6, R7, R22)
-- [ ] In `internal/themecompile/records.go`, write `Alignment`, `Opacity` and `ThousandsMode` (1 when `thousands`)
+- [x] In `internal/themecompile/records.go`, write `Alignment`, `Opacity` and `ThousandsMode` (1 when `thousands`)
   from the spec in `buildNumber`, and add `buildBar` and its case in `buildWidget`: the box of the spec's x, y, width
   and height checked with `checkBox`, then a `themefile.Bar` with the head of `TypeBar`, the index and the tag, `Byte11`
   1, `EmptyColour` the RGB565 of `background`, both colours the RGB565 of `colour`, and bytes 18-19 and 26-27 of
   `Bytes18To63` set to `76b0` through one named constant whose comment says these are the bytes of every bar of the
   vendor sample (D10). It returns no resource (R3, R4, R6, R7)
-- [ ] In `internal/themecompile/tags_test.go` or `compile_test.go`, add `TestABarGetsTheTagOfItsMetric`: a theme with a
+- [x] In `internal/themecompile/tags_test.go` or `compile_test.go`, add `TestABarGetsTheTagOfItsMetric`: a theme with a
   bar of `cpu.util` and a number of `cpu.util` gives both tag 1 and `Result.Tags` `[{cpu.util 1}]`, a theme with a
   bar of `gpu.util` alone gives `[{gpu.util 1}]` and its record tag 1, and `TagsFile` of the second holds
   `  gpu.util: 1` (R8, R22)
-- [ ] In `internal/themecompile/compile.go`, take the metrics of the `bar` widgets as well in `metricsOf`, give a bar
+- [x] In `internal/themecompile/compile.go`, take the metrics of the `bar` widgets as well in `metricsOf`, give a bar
   no font in `fontOf`, and change the comment of `tagOf` to a widget with no metric (R8, R9)
-- [ ] In `internal/themecompile/compile_test.go`, extend `roundTripFolder` with a number of `cpu.util` with `align:
+- [x] In `internal/themecompile/compile_test.go`, extend `roundTripFolder` with a number of `cpu.util` with `align:
   right`, `opacity: 0.5` and `thousands: true`, and a bar of `cpu.util` with `background`, and extend `checkWidgets`
   to find them again field by field: the alignment 2, the opacity 128 and the thousands mode 1 of the number, and the
   box, the tag, `Byte11`, the three colours and `Bytes18To63` of the bar. Adjust the counts and the tags of the
   existing checks to the new metric (`cpu.temp` 1, `cpu.util` 2, `gpu.temp` 3) (R22)
-- [ ] In `internal/cli/runcustom_linux_test.go`, add `TestLoadConfigRefusesABarMetricThatIsNeitherBuiltInNorDefined`,
+- [x] In `internal/cli/runcustom_linux_test.go`, add `TestLoadConfigRefusesABarMetricThatIsNeitherBuiltInNorDefined`,
   a theme folder with a bar of `water.temp` and the error of the number case (R8)
-- [ ] Run `go test ./internal/themecompile/... ./internal/cli/...`
+- [x] Run `go test ./internal/themecompile/... ./internal/cli/...`
 
 Commit point 2.
 
@@ -339,7 +339,7 @@ Commit point 5.
 ## Commit Points
 
 - [x] 1: `feature-0027 Name the bytes of a number and of a bar in the reader and the dump`
-- [ ] 2: `feature-0027 Compile the number options and the bar widget`
+- [x] 2: `feature-0027 Compile the number options and the bar widget`
 - [ ] 3: `feature-0027 Align, clip and fade numbers and draw bars in the preview`
 - [ ] 4: `feature-0027 Cover the bar and the number options end to end`
 - [ ] 5: `feature-0027 Document the number options, the bar and the observations of the device`

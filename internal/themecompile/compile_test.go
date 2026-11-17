@@ -37,6 +37,8 @@ widgets:
   - {type: number, font: mono, metric: gpu.temp, x: 10, y: 60}
   - {type: number, font: mono, metric: gpu.temp, x: 100, y: 60, digits: 2}
   - {type: number, font: body, metric: cpu.temp, x: 200, y: 60}
+  - {type: number, font: mono, metric: cpu.util, x: 300, y: 60, align: right, opacity: 0.5, thousands: true}
+  - {type: bar, metric: cpu.util, x: 10, y: 250, width: 100, height: 8, color: "#00ff00", background: "#ff0000"}
   - {type: datetime, font: body, format: "YYYY-MM-DD HH:mm:ss", x: 10, y: 200}
 `
 	return fstest.MapFS{
@@ -56,7 +58,7 @@ func TestRoundTrip(test *testing.T) {
 	if err != nil || len(warnings) != 0 {
 		test.Fatalf("%v, %v", err, warnings)
 	}
-	if theme.Header[0] != 0x96 || len(theme.Entries) != 7 || len(result.Records) != 7 {
+	if theme.Header[0] != 0x96 || len(theme.Entries) != 9 || len(result.Records) != 9 {
 		test.Fatalf("header %x, %d entries, %d records", theme.Header[0], len(theme.Entries), len(result.Records))
 	}
 	for position, entry := range theme.Entries {
@@ -79,10 +81,20 @@ func checkWidgets(test *testing.T, theme themefile.Theme) {
 	}
 	first, second := theme.Entries[3].Record.(themefile.Number), theme.Entries[4].Record.(themefile.Number)
 	third := theme.Entries[5].Record.(themefile.Number)
-	if first.Tag != 2 || second.Tag != 2 || third.Tag != 1 || first.Colour != rgb565(255, 0x80, 0) {
+	if first.Tag != 3 || second.Tag != 3 || third.Tag != 1 || first.Colour != rgb565(255, 0x80, 0) {
 		test.Errorf("tags %d, %d, %d", first.Tag, second.Tag, third.Tag)
 	}
-	datetime := theme.Entries[6].Record.(themefile.Datetime)
+	options := theme.Entries[6].Record.(themefile.Number)
+	if options.Tag != 2 || options.Alignment != 2 || options.Opacity != 128 || options.ThousandsMode != 1 || first.Alignment != 1 || first.Opacity != 255 || first.ThousandsMode != 0 {
+		test.Errorf("number %+v", options)
+	}
+	bar := theme.Entries[7].Record.(themefile.Bar)
+	if bar.X != 10 || bar.Y != 250 || bar.Width != 100 || bar.Height != 8 || bar.Tag != 2 || bar.Byte11 != 1 || bar.EmptyColour != rgb565(255, 0, 0) ||
+		bar.FillOrFrameColour14 != rgb565(0, 255, 0) || bar.FillOrFrameColour16 != rgb565(0, 255, 0) ||
+		bar.Bytes18To63[0] != 0x76 || bar.Bytes18To63[1] != 0xb0 || bar.Bytes18To63[8] != 0x76 || bar.Bytes18To63[9] != 0xb0 {
+		test.Errorf("bar %+v", bar)
+	}
+	datetime := theme.Entries[8].Record.(themefile.Datetime)
 	if datetime.Tag != 21 || string(datetime.FormatText()) != "1-2-3 4:5:6" || datetime.Y != 200 {
 		test.Errorf("datetime %+v", datetime.Head)
 	}

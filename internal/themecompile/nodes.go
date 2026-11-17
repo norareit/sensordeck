@@ -127,6 +127,26 @@ func readWholeNumber(node *yaml.Node, place, key string, low, high int64) (int64
 	return 0, problem(join(place, key), "want a whole number from %d to %d", low, high)
 }
 
+// readFraction reads a number from 0 to 1, whole or decimal. The comparison is written so that NaN fails it.
+func readFraction(node *yaml.Node, place, key string) (float64, error) {
+	var number float64
+	tag := node.ShortTag()
+	valid := node.Kind == yaml.ScalarNode && (tag == "!!int" || tag == "!!float") && node.Decode(&number) == nil
+	if !valid || !(number >= 0 && number <= 1) {
+		return 0, problem(join(place, key), "want a number from 0 to 1")
+	}
+	return number, nil
+}
+
+// readBoolean reads true or false, and nothing else: yes and 1 are no booleans.
+func readBoolean(node *yaml.Node, place, key string) (bool, error) {
+	var value bool
+	if node.Kind != yaml.ScalarNode || node.ShortTag() != "!!bool" || node.Decode(&value) != nil {
+		return false, problem(join(place, key), "want true or false")
+	}
+	return value, nil
+}
+
 // readColour reads a colour written as #rrggbb. An unquoted # starts a comment in YAML, so the likeliest mistake
 // arrives as an empty value and gets a text of its own.
 func readColour(node *yaml.Node, place, key string) (config.Colour, error) {

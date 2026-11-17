@@ -97,9 +97,9 @@ func loadFonts(folder fs.FS, specs []fontSpec) ([]loadedFont, error) {
 	return fonts, nil
 }
 
-// fontOf gives the font of a widget, and none for an image, which has no font.
+// fontOf gives the font of a widget, and none for an image or a bar, which have no font.
 func fontOf(fonts []loadedFont, spec widgetSpec) loadedFont {
-	if spec.kind == "image" {
+	if spec.kind == "image" || spec.kind == "bar" {
 		return loadedFont{}
 	}
 	return fonts[spec.font]
@@ -108,14 +108,14 @@ func fontOf(fonts []loadedFont, spec widgetSpec) loadedFont {
 func metricsOf(widgets []widgetSpec) []string {
 	var metrics []string
 	for _, spec := range widgets {
-		if spec.kind == "number" {
+		if spec.kind == "number" || spec.kind == "bar" {
 			metrics = append(metrics, spec.metric)
 		}
 	}
 	return metrics
 }
 
-// tagOf gives the tag of a metric, and 0 for a widget that is no number.
+// tagOf gives the tag of a metric, and 0 for a widget with no metric.
 func tagOf(tags []config.Mapping, metric string) byte {
 	for _, mapping := range tags {
 		if mapping.Name == metric {

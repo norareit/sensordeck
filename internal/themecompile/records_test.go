@@ -2,8 +2,10 @@ package themecompile
 
 import (
 	"bytes"
+	"encoding/binary"
 	"image"
 	"image/color"
+	"strings"
 	"testing"
 	"testing/fstest"
 
@@ -81,9 +83,8 @@ func TestTextRecord(test *testing.T) {
 	}
 }
 
-func TestNumberRecord(test *testing.T) {
-	glyphs := newGlyphFont(regularFace(test, 20))
-	result := compileFiles(test, solidTheme+"widgets:\n  - {type: number, font: body, metric: cpu.temp, digits: 4, x: 1, y: 2}\n", nil)
+// numberSlot is the slot of the number of numberTheme with `keys` after its metric, and byte 11, 14 and 15 of today.
+func numberSlot(glyphs glyphFont) [64]byte {
 	slot := faketheme.Head(0x92, 1, 1, 1, 2, uint16(4*glyphs.digitWidth), uint16(glyphs.height))
 	slot[11], slot[15] = 1, 0xff
 	faketheme.Put16(&slot, 12, 0xffff)
@@ -94,9 +95,78 @@ func TestNumberRecord(test *testing.T) {
 	}
 	faketheme.Put16(&slot, 42, uint16(glyphs.advance('.')))
 	faketheme.Put16(&slot, 44, uint16(glyphs.advance('-')))
-	checkTable(test, result.File, slot)
+	return slot
+}
+
+func numberTheme(options string) string {
+	return solidTheme + "widgets:\n  - {type: number, font: body, metric: cpu.temp, digits: 4, x: 1, y: 2" + options + "}\n"
+}
+
+func TestNumberRecord(test *testing.T) {
+	glyphs := newGlyphFont(regularFace(test, 20))
+	result := compileFiles(test, numberTheme(""), nil)
+	checkTable(test, result.File, numberSlot(glyphs))
 	if want := widgetOffset + glyphs.height*(10*glyphs.digitWidth+glyphs.advance('.')+glyphs.advance('-')); len(result.File) != want {
 		test.Errorf("%d bytes, want %d", len(result.File), want)
+	}
+}
+
+func TestNumberRecordOptions(test *testing.T) {
+	glyphs := newGlyphFont(regularFace(test, 20))
+	cases := []struct {
+		options  string
+		position int
+		value    byte
+	}{
+		{", align: left", 11, 0}, {", align: center", 11, 1}, {", align: right", 11, 2},
+		{", opacity: 0", 15, 0}, {", opacity: 0.5", 15, 128}, {", opacity: 1", 15, 255},
+		{", thousands: true", 14, 1}, {", thousands: false", 14, 0},
+	}
+	for _, each := range cases {
+		slot := numberSlot(glyphs)
+		slot[each.position] = each.value
+		checkTable(test, compileFiles(test, numberTheme(each.options), nil).File, slot)
+	}
+}
+
+func barTheme(options string) string {
+	return solidTheme + "widgets:\n  - {type: bar, metric: cpu.util, x: 3, y: 4, width: 100, height: 10, color: \"#00ff00\"" + options + "}\n"
+}
+
+func barSlot(empty uint16) [64]byte {
+	slot := faketheme.Head(0x8b, 1, 1, 3, 4, 100, 10)
+	slot[11] = 1
+	faketheme.Put16(&slot, 12, empty)
+	faketheme.Put16(&slot, 14, 0x07e0)
+	faketheme.Put16(&slot, 16, 0x07e0)
+	faketheme.Put16(&slot, 18, 0x76b0)
+	faketheme.Put16(&slot, 26, 0x76b0)
+	return slot
+}
+
+func TestBarRecord(test *testing.T) {
+	with := compileFiles(test, barTheme(", background: \"#ff0000\""), nil)
+	checkTable(test, with.File, barSlot(0xf800))
+	without := compileFiles(test, barTheme(""), nil)
+	checkTable(test, without.File, barSlot(0))
+	if len(without.File) != 0x1000+2*480*320 {
+		test.Errorf("%d bytes", len(without.File))
+	}
+}
+
+func TestABarBeforeANumberMovesNoOffset(test *testing.T) {
+	theme := solidTheme + "widgets:\n  - {type: bar, metric: cpu.util, x: 0, y: 0, width: 5, height: 5, color: \"#00ff00\"}\n" +
+		"  - {type: number, font: body, metric: cpu.util, x: 0, y: 10}\n"
+	result := compileFiles(test, theme, nil)
+	if offset := binary.BigEndian.Uint32(result.File[3*64+16:]); offset != widgetOffset {
+		test.Errorf("the number starts at %#x, want %#x", offset, widgetOffset)
+	}
+}
+
+func TestABarOutsideTheScreenIsRefused(test *testing.T) {
+	theme := solidTheme + "widgets:\n  - {type: bar, metric: cpu.util, x: 400, y: 0, width: 81, height: 5, color: \"#00ff00\"}\n"
+	if message := compileError(test, theme, nil); !strings.HasPrefix(message, "widget 1 (bar): the box at 400,0 of 81 x 5 is not within the screen") {
+		test.Errorf("got %q", message)
 	}
 }
 

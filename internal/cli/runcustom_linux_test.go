@@ -32,6 +32,17 @@ func TestLoadConfigRefusesAThemeMetricThatIsNeitherBuiltInNorDefined(test *testi
 	}
 }
 
+func TestLoadConfigRefusesABarMetricThatIsNeitherBuiltInNorDefined(test *testing.T) {
+	theme := strings.Replace(compiledTheme, "  - {type: number, font: body, metric: cpu.temp, x: 4, y: 40}\n",
+		"  - {type: bar, metric: water.temp, x: 4, y: 40, width: 100, height: 8, color: \"#00ff00\"}\n", 1)
+	folder := writeThemeFolder(test, theme)
+	_, err := newSession().loadConfig("/c/config.yaml", []byte("theme: '"+folder+"'\n"))
+	want := "theme: " + folder + `: the metric "water.temp" is neither built in nor defined under metrics`
+	if err == nil || err.Error() != want {
+		test.Errorf("error %v, want %q", err, want)
+	}
+}
+
 func TestLoadConfigAllowsABuiltInMetricThatTheMachineLacks(test *testing.T) {
 	folder := writeThemeFolder(test, customTheme("nvme.9.temp"))
 	if _, err := newSession().loadConfig("/c/config.yaml", []byte("theme: '"+folder+"'\n")); err != nil {

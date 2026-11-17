@@ -3,6 +3,7 @@ package themecompile
 import (
 	"fmt"
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/norareit/sensordeck/internal/config"
@@ -53,5 +54,24 @@ func TestTagsFile(test *testing.T) {
 	}
 	if got := string(TagsFile(nil)); got != "# Paste this block into the config file of sensordeck run.\ntags: {}\n" {
 		test.Errorf("no tags: %q", got)
+	}
+}
+
+func TestABarGetsTheTagOfItsMetric(test *testing.T) {
+	shared := compileFiles(test, solidTheme+"widgets:\n"+
+		"  - {type: bar, metric: cpu.util, x: 0, y: 0, width: 5, height: 5, color: \"#00ff00\"}\n"+
+		"  - {type: number, font: body, metric: cpu.util, x: 0, y: 10}\n", nil)
+	if want := []config.Mapping{{Name: "cpu.util", Tag: 1}}; !reflect.DeepEqual(shared.Tags, want) {
+		test.Errorf("tags %+v", shared.Tags)
+	}
+	if shared.File[2*64+2] != 1 || shared.File[3*64+2] != 1 {
+		test.Errorf("tags of the records %d, %d", shared.File[2*64+2], shared.File[3*64+2])
+	}
+	alone := compileFiles(test, solidTheme+"widgets:\n  - {type: bar, metric: gpu.util, x: 0, y: 0, width: 5, height: 5, color: \"#00ff00\"}\n", nil)
+	if want := []config.Mapping{{Name: "gpu.util", Tag: 1}}; !reflect.DeepEqual(alone.Tags, want) || alone.File[2*64+2] != 1 {
+		test.Errorf("tags %+v, record tag %d", alone.Tags, alone.File[2*64+2])
+	}
+	if !strings.Contains(string(TagsFile(alone.Tags)), "  gpu.util: 1\n") {
+		test.Errorf("tags file %q", TagsFile(alone.Tags))
 	}
 }
