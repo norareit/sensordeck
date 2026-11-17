@@ -106,5 +106,10 @@ names of its menus and options, and nothing of it is copied into the project.
 - 2026-11-17T15:32:47Z [Claude Code, anthropic/claude-opus-5-5] as the specifier, folded the one item of "Beyond the
   request", Options > Minimize On Close, into the fourth sub-step of the Windows step, since the orchestrating session
   took it, and removed the section "Beyond the request", which held nothing else. The status stays `draft`
+- 2026-11-17T15:33:05Z [Claude Code, anthropic/claude-opus-5-5] read the record under the delegation in `AGENTS.md`: the move of the
+  paragraph into the quick start keeps every fact and leaves a link, the option names are taken from the source of
+  LibreHardwareMonitor, which is MPL and may be read, and nothing in it needs the device. The item of "Beyond the
+  request" was taken into the record before this reading. The steps on Windows are the human's to try, and the task
+  does not depend on them. The approval that follows is made under that delegation
 
 ## Amendments
