@@ -75,12 +75,16 @@ func TestThemeDumpWritesTheFilesOfTheSampleWithNoScreenConnected(test *testing.T
 	if preview.Bounds().Dx() != 480 || preview.Bounds().Dy() != 320 {
 		test.Errorf("preview bounds %v", preview.Bounds())
 	}
-	// The background of the sample is drawn first with its pixel 7 at 3,1, and the bar outlines its box in magenta.
+	// The background of the sample is drawn first with its pixel 7 at 3,1, and the bar of 6 x 4 at 50,50 is drawn with its frame, one column of fill and an empty part, whose
+	// colours are #ad0000 for bytes 14-17 and black for bytes 12-13.
 	if got := color.NRGBAModel.Convert(preview.At(3, 1)).(color.NRGBA); got != (color.NRGBA{0, 227, 189, 255}) {
 		test.Errorf("background pixel %v", got)
 	}
-	if got := color.NRGBAModel.Convert(preview.At(50, 50)).(color.NRGBA); got != (color.NRGBA{255, 0, 255, 255}) {
-		test.Errorf("bar pixel %v", got)
+	for point, want := range map[image.Point]color.NRGBA{
+		{50, 50}: {0xad, 0, 0, 255}, {51, 51}: {0xad, 0, 0, 255}, {52, 51}: {0, 0, 0, 255}} {
+		if got := color.NRGBAModel.Convert(preview.At(point.X, point.Y)).(color.NRGBA); got != want {
+			test.Errorf("bar pixel at %v is %v, want %v", point, got, want)
+		}
 	}
 }
 
@@ -111,9 +115,10 @@ func TestThemeDumpJSONHoldsTheFieldsOfEachRecord(test *testing.T) {
 		{"type_name": `"startup"`, "frame_count": "2", "duration_ms_guess": "1500", "files": `["slot02-startup-frame1.png","slot02-startup-frame2.png"]`},
 		{"type_name": `"image"`, "frame_count": "2", "frame_period_ms_guess": "200"},
 		{"type_name": `"text"`, "colour": `"ffff"`, "opacity_guess": "255", "files": `["slot04-text.png"]`},
-		{"type_name": `"number"`, "tag": "1", "glyph_order": `"0123456789.-"`, "colour": `"07e0"`},
+		{"type_name": `"number"`, "tag": "1", "glyph_order": `"0123456789.-"`, "colour": `"07e0"`, "alignment": "1", "thousands_mode": "0", "opacity": "255"},
 		{"type_name": `"datetime"`, "format": `"1-2-3 4:5:6"`, "other_glyph_order": `".-/ :年月日时分秒"`},
-		{"type_name": `"bar"`, "files": "[]"},
+		{"type_name": `"bar"`, "files": "[]", "byte_11_unknown": "1", "empty_colour": `"0000"`, "fill_or_frame_colour_14": `"a800"`,
+			"fill_or_frame_colour_16": `"a800"`},
 		{"type_name": `"unknown"`, "type": "119", "files": "[]"},
 	}
 	for position, record := range theme.Records {
@@ -133,6 +138,11 @@ func TestThemeDumpJSONHoldsTheFieldsOfEachRecord(test *testing.T) {
 	}
 	if string(theme.Records[6]["bytes_18_63_unknown"]) == "" {
 		test.Error("the bar has no unknown bytes")
+	}
+	for position, name := range map[int]string{4: "alignment_guess", 6: "bytes_11_63_unknown"} {
+		if _, found := theme.Records[position][name]; found {
+			test.Errorf("record %d still has %s", position, name)
+		}
 	}
 }
 
@@ -276,6 +286,90 @@ func TestThemeCompileAndPreviewIgnoreTheDeviceOption(test *testing.T) {
 		got := run(test, fakescreen.New(test), "--device", "/nonexistent", "theme", command, folder, out)
 		if got.status != 0 || got.stderr != "" {
 			test.Errorf("%s: status %d, stderr %q", command, got.status, got.stderr)
+		}
+	}
+}
+
+const optionsTheme = `name: options
+background: "#102030"
+fonts:
+  body: {file: body.ttf, size: 20, color: "#ffffff"}
+widgets:
+  - {type: number, font: body, metric: cpu.util, x: 4, y: 40, align: right, opacity: 0.5, thousands: true}
+  - {type: number, font: body, metric: cpu.util, x: 4, y: 80, align: left}
+  - {type: bar, metric: gpu.util, x: 4, y: 120, width: 100, height: 8, color: "#00ff00", background: "#ff0000"}
+`
+
+func TestThemeWithABarAndNumberOptionsCompilesPreviewsAndDumps(test *testing.T) {
+	folder := writeThemeFolder(test, optionsTheme)
+	directory := test.TempDir()
+	out, preview, dumped := filepath.Join(directory, "img.dat"), filepath.Join(directory, "preview.png"), filepath.Join(directory, "dump")
+	if got := run(test, fakescreen.New(test), "theme", "compile", folder, out); got.status != 0 {
+		test.Fatalf("compile: %+v", got)
+	}
+	content, err := os.ReadFile(out)
+	if err != nil {
+		test.Fatal(err)
+	}
+	theme, warnings, err := themefile.Parse(content)
+	if err != nil || len(warnings) != 0 || len(theme.Entries) != 4 {
+		test.Fatalf("%v, %v, %d entries", err, warnings, len(theme.Entries))
+	}
+	first, second := theme.Entries[1].Record.(themefile.Number), theme.Entries[2].Record.(themefile.Number)
+	bar := theme.Entries[3].Record.(themefile.Bar)
+	if first.Alignment != 2 || first.ThousandsMode != 1 || first.Opacity != 128 || second.Alignment != 0 || second.ThousandsMode != 0 || second.Opacity != 255 {
+		test.Errorf("numbers %+v, %+v", first, second)
+	}
+	if bar.X != 4 || bar.Y != 120 || bar.Width != 100 || bar.Height != 8 || bar.Tag != 2 || bar.EmptyColour != 0xf800 ||
+		bar.FillOrFrameColour14 != 0x07e0 || bar.FillOrFrameColour16 != 0x07e0 {
+		test.Errorf("bar %+v", bar)
+	}
+	tags, err := os.ReadFile(filepath.Join(directory, "img.tags.yaml"))
+	if err != nil {
+		test.Fatal(err)
+	}
+	parsed, err := config.Parse(tags)
+	if err != nil || !reflect.DeepEqual(parsed.Mappings, []config.Mapping{{Name: "cpu.util", Tag: 1}, {Name: "gpu.util", Tag: 2}}) {
+		test.Errorf("tags %+v, %v", parsed.Mappings, err)
+	}
+	if got := run(test, fakescreen.New(test), "theme", "preview", folder, preview); got.status != 0 {
+		test.Fatalf("preview: %+v", got)
+	}
+	var want bytes.Buffer
+	if err := png.Encode(&want, themeimage.Preview(theme)); err != nil {
+		test.Fatal(err)
+	}
+	if written, _ := os.ReadFile(preview); !bytes.Equal(written, want.Bytes()) {
+		test.Error("the preview differs from the preview of the compiled file")
+	}
+	if got := run(test, fakescreen.New(test), "theme", "dump", out, dumped); got.status != 0 {
+		test.Fatalf("dump: %+v", got)
+	}
+	checkOptionsDump(test, filepath.Join(dumped, "theme.json"))
+}
+
+func checkOptionsDump(test *testing.T, path string) {
+	test.Helper()
+	content, err := os.ReadFile(path)
+	if err != nil {
+		test.Fatal(err)
+	}
+	var dump struct {
+		Records []map[string]json.RawMessage `json:"records"`
+	}
+	if err := json.Unmarshal(content, &dump); err != nil {
+		test.Fatal(err)
+	}
+	wanted := map[int]map[string]string{
+		1: {"alignment": "2", "thousands_mode": "1", "opacity": "128"},
+		2: {"alignment": "0", "thousands_mode": "0", "opacity": "255"},
+		3: {"empty_colour": `"f800"`, "fill_or_frame_colour_14": `"07e0"`, "fill_or_frame_colour_16": `"07e0"`},
+	}
+	for position, fields := range wanted {
+		for name, want := range fields {
+			if got := string(dump.Records[position][name]); got != want {
+				test.Errorf("record %d, %s is %s, want %s", position, name, got, want)
+			}
 		}
 	}
 }

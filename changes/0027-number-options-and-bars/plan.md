@@ -240,13 +240,13 @@ Commit point 3.
 
 ### End to end
 
-- [ ] In `e2e/theme_test.go`, change `TestThemeDumpWritesTheFilesOfTheSampleWithNoScreenConnected` to check the bar
+- [x] In `e2e/theme_test.go`, change `TestThemeDumpWritesTheFilesOfTheSampleWithNoScreenConnected` to check the bar
   of the sample at 50,50 as `#ad0000` (frame), at 51,51 as `#ad0000` (fill) and at 52,51 as black (empty), with its
   comment; and in `TestThemeDumpJSONHoldsTheFieldsOfEachRecord` check the number for `"alignment": 1`,
   `"thousands_mode": 0` and `"opacity": 255` and the absence of `alignment_guess`, and the bar for
   `"byte_11_unknown": 1`, `"empty_colour": "0000"`, `"fill_or_frame_colour_14": "a800"`,
   `"fill_or_frame_colour_16": "a800"` and `bytes_18_63_unknown`, and the absence of `bytes_11_63_unknown` (R23)
-- [ ] In `e2e/theme_test.go`, add `TestThemeWithABarAndNumberOptionsCompilesPreviewsAndDumps` with a folder theme
+- [x] In `e2e/theme_test.go`, add `TestThemeWithABarAndNumberOptionsCompilesPreviewsAndDumps` with a folder theme
   holding a number with `align: right`, `opacity: 0.5` and `thousands: true`, a number with `align: left`, and a bar
   of `cpu.util` with `background`: `theme compile` succeeds, the file read back with `themefile.Parse` gives the
   number's bytes 11, 14 and 15 as 2, 1 and 128, the second number's byte 11 as 0 and the bar's record with its box,
@@ -254,7 +254,7 @@ Commit point 3.
   compared as in `TestThemePreviewIsThePreviewOfTheCompiledFile`; and `theme dump` of the compiled file writes a
   `theme.json` whose number holds `alignment` 2, `thousands_mode` 1 and `opacity` 128 and whose bar holds
   `empty_colour` and both `fill_or_frame_colour` names with the colours of the theme (R23)
-- [ ] Run `go test ./e2e/...`
+- [x] Run `go test ./e2e/...`
 
 Commit point 4.
 
@@ -341,5 +341,5 @@ Commit point 5.
 - [x] 1: `feature-0027 Name the bytes of a number and of a bar in the reader and the dump`
 - [x] 2: `feature-0027 Compile the number options and the bar widget`
 - [x] 3: `feature-0027 Align, clip and fade numbers and draw bars in the preview`
-- [ ] 4: `feature-0027 Cover the bar and the number options end to end`
+- [x] 4: `feature-0027 Cover the bar and the number options end to end`
 - [ ] 5: `feature-0027 Document the number options, the bar and the observations of the device`
