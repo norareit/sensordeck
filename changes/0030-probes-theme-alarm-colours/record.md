@@ -156,5 +156,12 @@ The five commands of the suite in `AGENTS.md` succeed.
   `1a65b57` `go test ./...`, `go vet ./...`, `gofmt -l .`, `GOOS=windows GOARCH=amd64 go build ./...` and
   `GOOS=windows GOARCH=amd64 go vet ./...`, and all five succeeded. Not checked: the screen on the device, which is the
   human's
+- 2026-11-17T15:15:44Z [OpenCode, openai/gpt-6.1-sol] as the reviewer, performed a full review of unit
+  `0030-probes-theme-alarm-colours` at commit `e6c79a2e8cb95153f244de7de958f4f7eecf583f`, against merge base
+  `26c31e09005267c8cad63842691fc4632a2c3081` with `origin/master`. Returned non-blocking finding P1, saved in
+  `.reviews/0030-probes-theme-alarm-colours/review-round-1.md`. Independently ran the five required suite commands,
+  an uncached `go test -count=1 ./...` including the end-to-end suite, and `npm run check-changes`; all passed.
+  Physical-device rendering and Windows execution were not verified. The transient failing test run and scratch
+  count check were not independently reconstructible from committed history. The status stays `in-progress`
 
 ## Amendments
