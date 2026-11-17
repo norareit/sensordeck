@@ -40,5 +40,6 @@ supersedes: 0011-theme-compiler
   of the review of round 1, as for the same finding in earlier units: the order of the commits cannot be changed
   without rewriting history, the record states how the work was done, and the tests now cover the behaviour the spec
   asks for. It is recorded as an exception to the order of tests first for this unit
+- 2026-11-17T19:27:26Z [OpenCode, openai/gpt-6.1-sol] as the reviewer, completed a delta review of `0032-screen-theme-size-limit` at `25f796828bf1811e57355b1966755a0fed8584d4`, from the previous reviewed commit `02585046a15a39474efb79e4f42aba888457ea26`. Verified the corrections for S1, S2, S3 and P1 and read the recorded exception for C1. Returned no new findings; the complete delta review is `.reviews/0032-screen-theme-size-limit/review-20261117T192726Z.md`. The five required suite commands, an uncached `go test -count=1 ./...`, `npm run check-changes` and the delta whitespace check passed. R14 on the physical screen and Windows runtime behavior could not be verified. The status stays `in-progress`
 
 ## Amendments
