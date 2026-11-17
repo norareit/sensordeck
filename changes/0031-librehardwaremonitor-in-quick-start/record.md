@@ -59,7 +59,8 @@ names of its menus and options, and nothing of it is copied into the project.
   3. Check Options > Remote Web Server > Run, which turns on the web server sensordeck reads
   4. Check Options > Run On Windows Startup, which starts it with Windows at each logon, and Options > Start Minimized,
      which with Options > Minimize To Tray, on by default, keeps its window out of the way in the notification area.
-     It must keep running for the readings to be there
+     Check Options > Minimize On Close as well, so that closing its window hides it instead of ending it. It must keep
+     running for the readings to be there
   5. Open `http://localhost:8085/data.json` in a browser on the same machine. It shows a JSON document. When it does
      not load, the web server is not running, or its port, address or authentication was changed, and then the key
      `librehardwaremonitor_url` of the Windows section, linked, gives sensordeck the address
@@ -93,13 +94,6 @@ names of its menus and options, and nothing of it is copied into the project.
 * No check on a real Windows machine. Whether the steps read right against LibreHardwareMonitor on Windows is the
   human's to check
 
-## Beyond the request
-
-1. The Windows step could also tell to check Options > Minimize On Close, so that closing the window hides it instead of
-   ending LibreHardwareMonitor. It costs one sentence. Without it, a user who closes the window ends the web server
-   until the next logon or a start by hand, and `sensors` and `run` say so with the line of the Windows section, which
-   is seen and recovered from by starting it again
-
 ## Log
 
 - 2026-11-17T15:31:56Z [Claude Code, anthropic/claude-opus-5-5] as the specifier, wrote the record of the task from the
@@ -109,5 +103,8 @@ names of its menus and options, and nothing of it is copied into the project.
   and start it with Windows, in the Windows section; the record moves that paragraph into the new step of the quick
   start and leaves a link in its place, keeping every fact. No test reads the README text. The steps were not tried on
   Windows. The status is `draft`
+- 2026-11-17T15:32:47Z [Claude Code, anthropic/claude-opus-5-5] as the specifier, folded the one item of "Beyond the
+  request", Options > Minimize On Close, into the fourth sub-step of the Windows step, since the orchestrating session
+  took it, and removed the section "Beyond the request", which held nothing else. The status stays `draft`
 
 ## Amendments
