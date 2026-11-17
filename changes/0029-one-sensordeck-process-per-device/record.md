@@ -56,6 +56,12 @@ timestamp: 2026-11-17T12:05:47Z
   this unit and which the spec rules out of its scope, or a correction of R19 by the specifier. The lock itself is
   shown free by the test (`values` succeeds and `sensors` writes no line of a controller in use). The human decides
   between declining S1 with R19 read as it is tested, a correction of R19, or a new unit for the reading after a kill
+- 2026-11-17T14:42:54Z [Claude Code, anthropic/claude-opus-5-5] decided under the delegation in `AGENTS.md` to decline finding S1
+  of the review of round 1, with R19 read as the test checks it. The cause of this unit is two processes at once, and
+  the test shows what R19 is for: after a kill with SIGKILL the lock is free, `values` succeeds and `sensors` writes
+  no line of a controller in use. That the reading fails on a channel 0 left open by a killed session is a matter of
+  the protocol of the reading, which the spec keeps out of scope, and it is not known whether the real controller
+  behaves as the fake does. It is kept as an open check on the device for a later unit, not taken into this one
 
 ## Amendments
 - 2026-11-17T12:06:08Z [Claude Code, anthropic/claude-opus-5-5] read the spec under the delegation in `AGENTS.md`: its cause is the
