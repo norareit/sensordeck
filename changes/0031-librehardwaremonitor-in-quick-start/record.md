@@ -1,6 +1,6 @@
 ---
 kind: task
-status: approved
+status: in-progress
 timestamp: 2026-11-17T15:31:56Z
 ---
 
@@ -117,5 +117,12 @@ names of its menus and options, and nothing of it is copied into the project.
   the quick start has three steps and the Windows section holds the paragraph that begins "To turn on its web server".
   No test reads the README, so the checks are the diff read against the record and the suite. The status stays
   `approved`
+- 2026-11-17T15:40:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, began the work. The status is
+  `in-progress`
+- 2026-11-17T15:41:00Z [Claude Code, anthropic/claude-sonnet-5-5] as the implementer, changed `README.md` on `238dcbb`: the
+  Windows step with its six sub-steps is the second step of the quick start, the other steps are renumbered, and the
+  paragraph that began "To turn on its web server" is replaced by a link to the quick start. On that tree `go test ./...`,
+  `go vet ./...`, `gofmt -l .`, and `go build` and `go vet` with `GOOS=windows GOARCH=amd64` all succeeded. The steps
+  were not tried on Windows, and the change check is not yet run
 
 ## Amendments
