@@ -760,6 +760,12 @@ from 0 to 1, 1 without the key, but only 0 and 1 were seen on the device. `thous
 box, and the minus sign of a negative value takes a place in the box like a digit, so `digits` must count it. The
 [theme folder document](docs/theme-folder.md) has the rest.
 
+The screen draws a theme of at most 503 808 bytes in full, and leaves out each widget whose data ends past that size. The
+compiler refuses a larger theme and says by how much. The background takes 307 200 of the bytes, a number costs the glyphs
+of its font and an alarm number twice that, a datetime its glyphs and an image 3 bytes a pixel, and a text costs
+nothing, since the compiler draws it into the background. The
+[theme folder document](docs/theme-folder.md#what-costs-bytes) has the sizes.
+
 A number takes the key `alarm` to change its colour past a threshold, such as a GPU temperature that turns red:
 
 ```yaml
@@ -770,7 +776,7 @@ A number takes the key `alarm` to change its colour past a threshold, such as a 
 greater than `above` or less than `below`, so with `above: 80` the value 80 is normal and 81 is the alarm. The value is
 compared as it is sent, whole, so a reading of 80.4 is normal and 80.5 is the alarm. An alarm number is left-aligned and
 cannot show a negative value or thousands, because it is made of two number widgets of which the one not shown is sent
--1, so it counts as two of the 62 widgets. `sensordeck theme preview` shows its normal colour. The
+-1, so it is two records and two glyph sets. `sensordeck theme preview` shows its normal colour. The
 [theme folder document](docs/theme-folder.md#a-number-with-an-alarm-colour) has the rest.
 
 A bar shows 0 to 100, which `cpu.util`, `gpu.util` and `ram.util` fit as they are. A metric of another range is shown

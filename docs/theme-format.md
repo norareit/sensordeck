@@ -39,7 +39,27 @@ Each rule below carries one of these marks:
 * An unused slot is all zero. The used slots are not always contiguous, and the order of the slots is not always the
   order of their index bytes. Known
 * The flash of the device is 4 MB, so a theme file must fit in 4 MB. This comes from the plan of the project and the
-  reader does not check it
+  reader does not check it. The screen draws far less than that, as the next item says
+* **Observed on the device** on 2026-11-17, with themes laid out as the compiler of sensordeck lays them out (the record
+  table, the background of 307 200 bytes, then the data of the widgets in the order of their slots, back to back): the
+  screen draws a widget only when its data ends within the first 503 692 to 504 015 bytes of the theme file. "The data
+  of a widget" is its resource, from its offset to the offset of the next resource, or to the end of the file for the
+  last one. The facts:
+    * a theme of 508 370 bytes showed every widget but the date and the time, its last two widgets and last two
+      resources. Every other part of the upload succeeded
+    * with the time and the date moved to later slots, the time was drawn when its data ended at 503 369 and at 503 692
+      bytes and not drawn when it ended at 504 015. The date, the last resource of each of these themes, ended past
+      505 000 bytes and was never drawn
+    * a number in slot 42 whose data ended at 496 566 bytes was drawn, so the number of slots is not what limits the
+      screen
+    * a copy of the theme without one alarm, 505 094 bytes, put the end of the data of the time at 501 062 bytes and that
+      of the date at 505 094. The screen showed the time and not the date, as predicted
+    * the same theme before the alarm colours of its five temperatures, 436 694 bytes, showed the date and the time
+
+  The one multiple of 4096 in the range of 503 692 to 504 015 is 503 808, `0x7B000`, which the compiler takes as the limit
+  and refuses a larger file for. **That choice is a guess within the range.** What sets the limit in the device is not
+  known, and the vendor's tool-made sample, 524 070 bytes and laid out otherwise (its background has no data and a
+  full-screen image of 460 800 bytes follows it), was not checked against it
 
 ## The header (slot 0)
 
@@ -262,6 +282,9 @@ Each of these needs an experiment on the device, or more samples:
 * the opacity bytes: byte 17 of a text and byte 14 of a datetime
 * the header: what byte 0 means and whether the other bytes matter
 * the index byte of a record, whose value is known and whose purpose is not
+* the exact size limit within 503 692 to 504 015 bytes, and what the device limits: the end of the data in the file, or a
+  budget of another shape that the layout of the compiler cannot tell apart
+* whether the vendor samples, one of which is larger than the limit, are drawn in full
 * how a datetime refers to its six CJK glyphs, since its format is ASCII
 * the order in which the device draws the records: the dump draws them in the order of the slots. It was observed on the
   device on 2026-11-17 that the screen keeps its widgets as layers in the order of their slots, a later slot over an

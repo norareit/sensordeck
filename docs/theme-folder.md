@@ -71,7 +71,7 @@ machine. A second font with the same file and another colour is how a widget get
 
 A widget is a mapping with `type`, `x` and `y`, where `x` and `y` are whole numbers from 0 and give the top left corner
 of its box, and the keys of its type. The widgets are numbered from 1 in the order of the list, which is how an error
-names them, and a theme has at most 62 of them, because the background takes one of the 63 records of a theme file.
+names them, and a theme has at most 62 records beside the background, which the limits say more of.
 
 | Type | Keys | Meaning |
 |---|---|---|
@@ -229,8 +229,14 @@ draws from the top left of the box, except that a number is placed in its box by
 
 * a box must be within the screen of 480 x 320 pixels
 * a background PNG must be exactly 480 x 320
-* at most 62 widgets, an alarm number counting as two, because it is two records
-* the compiled file must fit in the 4 MiB (4194304 bytes) of the flash of the device
+* at most 62 records beside the background, because the background takes one of the 63 slots of a theme file for
+  records. An alarm number is two records and a text drawn into the background none, so the list may have more than 62
+  widgets
+* the compiled file must be at most 503 808 bytes, `0x7B000`, because the screen draws no widget whose data ends past
+  that size, as [the format document](theme-format.md#layout) records from the device. The flash of the device is 4 MiB
+  and is never reached first. The compiler refuses a larger theme with `widgets: the compiled theme is <size> bytes,
+  <over> more than the 503808 bytes that the screen draws widgets from`, and a list of what costs bytes. The record table
+  and the background take 311 296 bytes, so a theme has 192 512 bytes for the data of its widgets
 * the size of a PNG is read from its header before its pixels, so a PNG too large for the screen is refused before it is
   decoded
 * every character of a text must have a glyph in its font, a number needs the glyphs of `0` to `9`, `.` and `-`, and a
@@ -241,13 +247,37 @@ from 0`, and a folder with several faults gives one of them, the same each time.
 files, run after run of the same executable. Byte identity across processor architectures is not promised, because the
 rasteriser computes in floating point.
 
+## What costs bytes
+
+* a number: its glyph set, the glyph height times the widths of the ten digits, `.` and `-`
+* an alarm number: two such sets, each with a minus as wide as the box
+* a datetime: its glyph set
+* an image: 3 bytes a pixel
+* a bar: nothing
+* a text drawn into the background: nothing
+
+For example in `minimal-dark-probes`, a number of the font `big` (`go-bold` at 46) takes 16 200 bytes, and 18 954 as one of
+the two records of an alarm number, a number of the font `small` (`go-medium` at 17) takes 2 436, and 2 856 in an alarm
+number, the time takes 7 772 bytes and the date 4 032. `sensordeck theme dump` shows the size of each resource.
+
+## Texts in the background
+
+A text never changes, so the compiler draws it into the background picture, which is a full picture of 307 200 bytes in
+every theme, instead of writing it as a record with a mask of its own. It then costs no bytes and no slot. The text is
+drawn over the picture as the preview draws a text, and the result is rounded to RGB565 once.
+
+The background is under every widget, so this changes nothing when no widget before the text in the list shares a pixel
+with it. A text whose box shares at least one pixel with the box of a widget before it that is a record stays a record,
+written as the next section says, so that the picture of a theme does not change. A box that only touches another at its
+edge shares no pixel. A text that overlaps only texts drawn into the background is drawn into it too.
+
 ## The bytes the compiler writes where the meaning is unknown
 
 Many bytes of a theme file have no known meaning, as [the format document](theme-format.md) says. The compiler writes
 the values that the three vendor samples agree on. **They come from the samples and are not confirmed on the device.**
 
-* The header is byte 0 `0x96` and 63 zeros. Slot 1 is the background and slot 2 and up are the widgets in the order of
-  the list. The index byte is 0 for the background and the slot number minus 1 for a widget
+* The header is byte 0 `0x96` and 63 zeros. Slot 1 is the background and slot 2 and up are the records of the widgets in
+  the order of the list, which a text drawn into the background has none of. The index byte is 0 for the background and the slot number minus 1 for a widget
 * Background: byte 11 is 0, the colour guess is the colour of a solid background and `0000` for a PNG one, byte 18 is 1
   and the rest of 18 to 63 is zero. Its offset is never 0
 * Image: one frame, byte 16 is 1, bytes 17 to 18 are 0, bytes 19 to 63 are zero

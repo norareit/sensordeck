@@ -105,6 +105,9 @@ The steps, in order:
    session
 5. The device reboots again. Opening it again needs several attempts, and an I/O error while it enumerates is normal
 
+The upload of a file larger than 503 808 bytes succeeds, and the screen then draws no widget whose data ends past that
+size. [The format document](theme-format.md#layout) has the observation.
+
 ## YMODEM block
 
 This is the public layout of the YMODEM protocol:
