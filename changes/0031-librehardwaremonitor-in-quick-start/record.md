@@ -112,5 +112,10 @@ names of its menus and options, and nothing of it is copied into the project.
   request" was taken into the record before this reading. The steps on Windows are the human's to try, and the task
   does not depend on them. The approval that follows is made under that delegation
 - 2026-11-17T15:33:05Z [human] approved the record. The status is `approved`
+- 2026-11-17T15:34:01Z [Claude Code, anthropic/claude-opus-5-5] as the planner, wrote `plan.md` against the tree of the
+  branch, with each task traced to the bullets of this record, numbered R1 to R8 in the plan. The record fits the tree:
+  the quick start has three steps and the Windows section holds the paragraph that begins "To turn on its web server".
+  No test reads the README, so the checks are the diff read against the record and the suite. The status stays
+  `approved`
 
 ## Amendments
