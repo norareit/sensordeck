@@ -126,5 +126,8 @@ The five commands of the suite in `AGENTS.md` succeed.
   five alarms with the installed `sensordeck` on the host, which gave the tags file of the record, and drew its preview,
   which showed the five numbers left-aligned as R4 of unit 0028 makes every alarm number. The Go toolchain of the
   project could not be run on the host, so the tests were not run. The status is `draft`
+- 2026-11-17T15:07:35Z [Claude Code, anthropic/claude-opus-5-5] read the record and checked its preview against the preview of the
+  theme today: the five numbers move to the left of their boxes and no box moves. The human saw the effect, including
+  the value of INTAKE close to its label, and approved the task as it stands, with no change of position
 
 ## Amendments
