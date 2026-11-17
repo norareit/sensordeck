@@ -47,7 +47,6 @@ func TestATextOverAnEarlierRecordStaysARecord(test *testing.T) {
 	cases := []struct{ name, before string }{
 		{"number", numberAt(10, 20)},
 		{"image", "  - {type: image, file: i.png, x: 10, y: 20}\n"},
-		{"text kept as a record", numberAt(10, 20) + textAt("Hi", 12, 22)},
 	}
 	for _, each := range cases {
 		theme := solidTheme + "widgets:\n" + each.before + textAt("Hi", 14, 24)
@@ -56,6 +55,27 @@ func TestATextOverAnEarlierRecordStaysARecord(test *testing.T) {
 		if !isTextRecord(last.Record) || last.Slot != len(entries) || int(last.Record.(themefile.Text).Index) != len(entries)-1 {
 			test.Errorf("%s: last is slot %d, %T", each.name, last.Slot, last.Record)
 		}
+	}
+}
+
+// TestATextOverAnEarlierTextKeptAsARecordStaysARecord puts the last text where it overlaps only the first text, which
+// is a record because it overlaps the number, so that a compiler that forgot the boxes of the texts it keeps fails.
+func TestATextOverAnEarlierTextKeptAsARecordStaysARecord(test *testing.T) {
+	glyphs := newGlyphFont(regularFace(test, 20))
+	numberRight := 10 + 4*glyphs.digitWidth
+	theme := solidTheme + "widgets:\n" + numberAt(10, 20) + textAt("Hi", numberRight-2, 20) + textAt("Hi", numberRight+glyphs.textWidth("H"), 20)
+	entries := parsedRecords(test, compileFiles(test, theme, nil))
+	if len(entries) != 4 {
+		test.Fatalf("%d entries", len(entries))
+	}
+	last := entries[3]
+	if _, isText := last.Record.(themefile.Text); !isText || last.Slot != 4 || last.Record.(themefile.Text).Index != 3 {
+		test.Errorf("last is slot %d, %T", last.Slot, last.Record)
+	}
+	number := entries[1].Record.(themefile.Number)
+	first := entries[2].Record.(themefile.Text)
+	if int(last.Record.(themefile.Text).Offset) != int(first.Offset)+len(first.Resource) || number.Index != 1 {
+		test.Errorf("offset %d, first at %d of %d bytes", last.Record.(themefile.Text).Offset, first.Offset, len(first.Resource))
 	}
 }
 

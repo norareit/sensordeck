@@ -47,12 +47,13 @@ Each rule below carries one of these marks:
   last one. The facts:
     * a theme of 508 370 bytes showed every widget but the date and the time, its last two widgets and last two
       resources. Every other part of the upload succeeded
-    * with the time and the date moved to later slots, the time was drawn when its data ended at 503 369 and at 503 692
-      bytes and not drawn when it ended at 504 015. The date, the last resource of each of these themes, ended past
+    * with the time and the date moved to the slots 40 and 41, 41 and 42, 42 and 43, and 43 and 44, which moved the end of
+      their data, the time was drawn when its data ended at 503 369 and at 503 692 bytes and not drawn when it ended at
+      504 015. The date, the last resource of each of these themes, ended past
       505 000 bytes and was never drawn
     * a number in slot 42 whose data ended at 496 566 bytes was drawn, so the number of slots is not what limits the
       screen
-    * a copy of the theme without one alarm, 505 094 bytes, put the end of the data of the time at 501 062 bytes and that
+    * a copy of the theme without the alarm of INTAKE, 505 094 bytes, put the end of the data of the time at 501 062 bytes and that
       of the date at 505 094. The screen showed the time and not the date, as predicted
     * the same theme before the alarm colours of its five temperatures, 436 694 bytes, showed the date and the time
 

@@ -207,7 +207,7 @@ The limits:
 - [x] `gofmt -l .` prints no file name (R23)
 - [x] `GOOS=windows GOARCH=amd64 go build ./...` succeeds and reports nothing (R23)
 - [x] `GOOS=windows GOARCH=amd64 go vet ./...` succeeds and reports nothing (R23)
-- [ ] `npm run check-changes` passes on the committed branch
+- [x] `npm run check-changes` passes on the committed branch
 - [ ] On the screen of the human, `minimal-dark-probes` shows the date, the time, every label and the five temperatures
   with their alarms, as its preview shows it. This is the human's check (R14)
 
@@ -219,4 +219,4 @@ The limits:
 - [x] `bugfix-0032 Write the previews of the built-in themes again`
 - [x] `bugfix-0032 Cover the theme limit and the texts in the end-to-end tests`
 - [x] `bugfix-0032 Document the limit of the screen and the texts in the background`
-- [ ] `bugfix-0032 Record the implementation`
+- [x] `bugfix-0032 Record the implementation`

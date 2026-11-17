@@ -445,7 +445,11 @@ func TestThemeCompileDrawsATextIntoTheBackgroundAndDumpShowsNoTextRecord(test *t
 	if err != nil {
 		test.Fatal(err)
 	}
-	solid := color.NRGBA{R: 0x10, G: 0x20, B: 0x30, A: 255}
+	// The background is RGB565, so the untouched pixels are the colour as the screen expands it and not the one written.
+	solid := color.NRGBA{R: 0x10, G: 0x20, B: 0x31, A: 255}
+	if untouched := color.NRGBAModel.Convert(background.At(400, 300)).(color.NRGBA); untouched != solid {
+		test.Fatalf("an untouched pixel is %v, want %v", untouched, solid)
+	}
 	differs := false
 	for y := 4; y < 24 && !differs; y++ {
 		for x := 4; x < 60; x++ {

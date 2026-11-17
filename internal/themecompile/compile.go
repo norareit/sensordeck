@@ -25,14 +25,15 @@ const (
 // Result is a compiled theme.
 type Result struct {
 	File    []byte             // the bytes of the theme file
-	Records []themefile.Record // slots 1 and up in the order of the slots, each with its offset and resource
+	Records []themefile.Record // slots 1 and up in the order of the slots, each with its offset and resource; no text drawn into the background is among them
 	Tags    []config.Mapping   // the plain entries, ascending by tag
 	Alarms  []config.AlarmPair // ascending by normal tag
 	// AlarmSlots are the slots of the alarm widgets of the alarm numbers, in the numbering of themefile.Entry.Slot.
 	AlarmSlots []int
 }
 
-// Compile compiles the theme folder. Its error is "<place>: <problem>", or "<problem>" for a fault of theme.yaml as a
+// Compile compiles the theme folder. A text whose box overlaps no record before it is drawn into the background and has
+// no record. Its error is "<place>: <problem>", or "<problem>" for a fault of theme.yaml as a
 // whole, and names no path of the folder other than the paths the theme gives. Each step stops at its first fault, so
 // that a folder with several faults gives the same one each time.
 func Compile(folder fs.FS) (Result, error) {
