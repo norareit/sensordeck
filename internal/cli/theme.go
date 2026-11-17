@@ -11,6 +11,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/norareit/sensordeck/internal/builtinthemes"
+	"github.com/norareit/sensordeck/internal/config"
 	"github.com/norareit/sensordeck/internal/themecompile"
 	"github.com/norareit/sensordeck/internal/themedump"
 	"github.com/norareit/sensordeck/internal/themefile"
@@ -80,7 +81,7 @@ func (current *session) themeCompileCommand() *cobra.Command {
 			if err := writeOutput(out, result.File); err != nil {
 				return err
 			}
-			if err := writeOutput(tags, themecompile.TagsFile(result.Tags)); err != nil {
+			if err := writeOutput(tags, themecompile.TagsFile(result.Tags, result.Alarms)); err != nil {
 				return err
 			}
 			current.say(fmt.Sprintf("wrote %s (%d bytes) and %s", out, len(result.File), tags))
@@ -104,8 +105,12 @@ func (current *session) themePreviewCommand() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("cannot read the compiled theme: %w", err)
 			}
+			hidden := make(map[int]int16, len(result.AlarmSlots))
+			for _, slot := range result.AlarmSlots {
+				hidden[slot] = config.HidingValue
+			}
 			var encoded bytes.Buffer
-			if err := png.Encode(&encoded, themeimage.Preview(theme)); err != nil {
+			if err := png.Encode(&encoded, themeimage.PreviewWithValues(theme, hidden)); err != nil {
 				return fmt.Errorf("cannot encode the preview: %w", err)
 			}
 			if err := writeOutput(args[1], encoded.Bytes()); err != nil {

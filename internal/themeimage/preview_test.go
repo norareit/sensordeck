@@ -340,3 +340,37 @@ func TestAStartupAndAnUnknownRecordAreNotDrawn(test *testing.T) {
 	builder.Slot(2, unknown)
 	expectColour(test, "startup", previewOf(test, builder), 0, 0, black)
 }
+
+// addAlarmNumber adds a left-aligned number of a box 10 wide whose glyph of the minus is transparent and as wide as the box.
+func addAlarmNumber(builder *faketheme.Builder, number int) {
+	widths := [12]uint16{2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 10}
+	masks := glyphMasks(10, 1, widths[:])
+	copy(masks[len(masks)-10:], make([]byte, 10))
+	slot := faketheme.Head(0x92, byte(number), 1, 30, 40, 10, 1)
+	slot[15] = 255
+	faketheme.Put16(&slot, 12, 0xffff)
+	faketheme.Put32(&slot, 16, builder.Resource(masks))
+	faketheme.Put16(&slot, 20, 1)
+	for glyph, glyphWidth := range widths {
+		faketheme.Put16(&slot, 22+2*glyph, glyphWidth)
+	}
+	builder.Slot(number, slot)
+}
+
+func TestAHidingValueDrawsNoPixelOfANumberWithAWideTransparentMinus(test *testing.T) {
+	builder := faketheme.New()
+	addAlarmNumber(builder, 1)
+	theme, _, err := themefile.Parse(builder.Bytes())
+	if err != nil {
+		test.Fatal(err)
+	}
+	hidden := themeimage.PreviewWithValues(theme, map[int]int16{1: -1})
+	for column := 25; column < 50; column++ {
+		expectColour(test, "hidden", hidden, column, 40, black)
+	}
+	shown := themeimage.PreviewWithValues(theme, map[int]int16{2: -1})
+	expectRedWithin(test, "a slot not in the map is drawn as 42", shown, 30, 40, 14)
+	if !bytes.Equal(shown.Pix, themeimage.Preview(theme).Pix) {
+		test.Error("Preview differs from PreviewWithValues with no value for the slot")
+	}
+}

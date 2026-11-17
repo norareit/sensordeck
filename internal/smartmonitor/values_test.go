@@ -79,3 +79,61 @@ func TestEncodeValuesEncodesDuplicateTagTwice(test *testing.T) {
 		test.Fatalf("got % X", reports[0][:8])
 	}
 }
+
+// reportTags gives the tags of the values of a report, in order.
+func reportTags(report Report) []int {
+	var tags []int
+	for pair := 0; pair < int(report[1]); pair++ {
+		tags = append(tags, int(report[2+pair*3]))
+	}
+	return tags
+}
+
+// singleUnits makes count units of one value with the tags 0 to count-1.
+func singleUnits(count int) [][]Value {
+	units := make([][]Value, count)
+	for index := range units {
+		units[index] = []Value{{Tag: uint8(index)}}
+	}
+	return units
+}
+
+func TestEncodeUnitsKeepsAUnitOfTwoInOneReport(test *testing.T) {
+	pair := []Value{{Tag: 100, Value: 1}, {Tag: 101, Value: -1}}
+	cases := []struct {
+		name       string
+		units      [][]Value
+		wantCounts []int
+	}{
+		{"19 singles and a pair", append(singleUnits(19), pair), []int{19, 2}},
+		{"18 singles and a pair", append(singleUnits(18), pair), []int{20}},
+		{"21 singles", singleUnits(21), []int{20, 1}},
+		{"no unit", nil, nil},
+	}
+	for _, each := range cases {
+		var gotCounts []int
+		for _, report := range EncodeUnits(each.units) {
+			gotCounts = append(gotCounts, int(report[1]))
+		}
+		if !reflect.DeepEqual(gotCounts, each.wantCounts) {
+			test.Errorf("%s: counts %v, want %v", each.name, gotCounts, each.wantCounts)
+		}
+	}
+	reports := EncodeUnits(append(singleUnits(19), pair))
+	if got := reportTags(reports[1]); !reflect.DeepEqual(got, []int{100, 101}) {
+		test.Errorf("the pair is in the tags %v", got)
+	}
+}
+
+func TestEncodeUnitsOfSinglesIsEncodeValues(test *testing.T) {
+	for _, count := range []int{1, 20, 21, 45} {
+		values := pairs(count)
+		units := make([][]Value, count)
+		for position := range values {
+			units[position] = []Value{values[position]}
+		}
+		if !reflect.DeepEqual(EncodeUnits(units), EncodeValues(values)) {
+			test.Errorf("%d values differ", count)
+		}
+	}
+}

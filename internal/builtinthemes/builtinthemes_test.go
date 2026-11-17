@@ -276,7 +276,7 @@ func TestEachThemeCompilesWithItsTags(test *testing.T) {
 			if !reflect.DeepEqual(result.Tags, want) {
 				test.Fatalf("tags %v", result.Tags)
 			}
-			if got := string(themecompile.TagsFile(result.Tags)); got != theme.tagsFile {
+			if got := string(themecompile.TagsFile(result.Tags, result.Alarms)); got != theme.tagsFile {
 				test.Fatalf("tags file %q", got)
 			}
 		})

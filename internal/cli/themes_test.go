@@ -86,7 +86,7 @@ func TestAnInstalledThemeIsCompiledByItsName(test *testing.T) {
 	if got := readFile(test, out); !reflect.DeepEqual(got, want.File) {
 		test.Error("the theme file differs from the one of the folder")
 	}
-	if got := readFile(test, tagsPath(out)); !reflect.DeepEqual(got, themecompile.TagsFile(want.Tags)) {
+	if got := readFile(test, tagsPath(out)); !reflect.DeepEqual(got, themecompile.TagsFile(want.Tags, want.Alarms)) {
 		test.Error("the tags file differs from the one of the folder")
 	}
 }
@@ -110,7 +110,7 @@ func TestABuiltInThemeIsCompiledByItsNameWithNoThemesDirectory(test *testing.T) 
 	if status := harness.run("theme", "compile", "minimal-dark", out); status != 0 {
 		test.Fatalf("status %d, stderr %q", status, harness.stderr.String())
 	}
-	if !reflect.DeepEqual(readFile(test, out), want.File) || !reflect.DeepEqual(readFile(test, tagsPath(out)), themecompile.TagsFile(want.Tags)) {
+	if !reflect.DeepEqual(readFile(test, out), want.File) || !reflect.DeepEqual(readFile(test, tagsPath(out)), themecompile.TagsFile(want.Tags, want.Alarms)) {
 		test.Error("the files differ from the compilation of the built-in folder")
 	}
 }

@@ -181,6 +181,23 @@ func TestWidgetCountAndFlashLimit(test *testing.T) {
 	}
 }
 
+func TestAnAlarmNumberCountsAsTwoWidgets(test *testing.T) {
+	alarm := "  - {type: number, font: body, metric: cpu.temp, x: 0, y: 0, alarm: {above: 80, color: \"#ff0000\"}}\n"
+	text := "  - {type: text, font: body, text: a, x: 0, y: 0}\n"
+	compileFiles(test, solidTheme+"widgets:\n"+strings.Repeat(text, 60)+alarm, nil)
+	for _, theme := range []string{strings.Repeat(text, 61) + alarm, alarm + strings.Repeat(text, 61)} {
+		got := compileError(test, solidTheme+"widgets:\n"+theme, nil)
+		want := "widgets: 63 widgets, more than the 62 that fit beside the background, an alarm number counting as two"
+		if got != want {
+			test.Errorf("got %q", got)
+		}
+	}
+	got := compileError(test, solidTheme+"widgets:\n"+strings.Repeat(text, 63), nil)
+	if want := "widgets: 63 widgets, more than the 62 that fit beside the background"; got != want {
+		test.Errorf("got %q", got)
+	}
+}
+
 func TestSameFolderGivesSameBytes(test *testing.T) {
 	first, err := Compile(roundTripFolder(test))
 	if err != nil {
@@ -236,7 +253,7 @@ func TestACustomMetricGetsATag(test *testing.T) {
 	if err != nil {
 		test.Fatal(err)
 	}
-	if tagOf(result.Tags, "water.temp") == 0 {
+	if plainTagOf(result.Tags, "water.temp") == 0 {
 		test.Fatalf("tags = %v", result.Tags)
 	}
 }

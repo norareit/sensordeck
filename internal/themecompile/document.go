@@ -50,6 +50,13 @@ type widgetSpec struct {
 	background    config.Colour // of a bar, the empty part
 	format        []byte        // compiled
 	file          string
+	alarm         *alarmSpec // of a number; nil without the key alarm
+}
+
+// alarmSpec is the key alarm of a number: when it is in the alarm state, and the colour it has then.
+type alarmSpec struct {
+	threshold config.Threshold
+	colour    config.Colour
 }
 
 var (
@@ -57,7 +64,7 @@ var (
 	fontKeys   = []string{"builtin", "color", "file", "size"}
 	widgetKeys = map[string][]string{
 		"text":     {"font", "text", "type", "x", "y"},
-		"number":   {"align", "digits", "font", "metric", "opacity", "thousands", "type", "x", "y"},
+		"number":   {"align", "alarm", "digits", "font", "metric", "opacity", "thousands", "type", "x", "y"},
 		"datetime": {"font", "format", "type", "x", "y"},
 		"image":    {"file", "type", "x", "y"},
 		"bar":      {"background", "color", "height", "metric", "type", "width", "x", "y"},
@@ -205,8 +212,8 @@ func readWidgets(node *yaml.Node, fonts []fontSpec) ([]widgetSpec, error) {
 	if node.Kind != yaml.SequenceNode {
 		return nil, problem("widgets", "want a list of widgets")
 	}
-	if len(node.Content) > maxWidgets {
-		return nil, problem("widgets", "%d widgets, more than the %d that fit beside the background", len(node.Content), maxWidgets)
+	if err := checkWidgetCount(node); err != nil {
+		return nil, err
 	}
 	var widgets []widgetSpec
 	for position, item := range node.Content {
@@ -217,6 +224,44 @@ func readWidgets(node *yaml.Node, fonts []fontSpec) ([]widgetSpec, error) {
 		widgets = append(widgets, widget)
 	}
 	return widgets, nil
+}
+
+// checkWidgetCount refuses a list with more records than fit, before any widget is read. An alarm number is two records.
+func checkWidgetCount(list *yaml.Node) error {
+	records, alarmNumbers := 0, 0
+	for _, item := range list.Content {
+		records++
+		if isAlarmNumber(resolve(item)) {
+			records++
+			alarmNumbers++
+		}
+	}
+	if records <= maxWidgets {
+		return nil
+	}
+	ending := ""
+	if alarmNumbers > 0 {
+		ending = ", an alarm number counting as two"
+	}
+	return problem("widgets", "%d widgets, more than the %d that fit beside the background%s", records, maxWidgets, ending)
+}
+
+// isAlarmNumber tells whether a widget of the list is a number with the key alarm, before it is read in full.
+func isAlarmNumber(node *yaml.Node) bool {
+	if node.Kind != yaml.MappingNode {
+		return false
+	}
+	isNumber, hasAlarm := false, false
+	for position := 0; position+1 < len(node.Content); position += 2 {
+		switch resolve(node.Content[position]).Value {
+		case "type":
+			value := resolve(node.Content[position+1])
+			isNumber = isString(value) && value.Value == "number"
+		case "alarm":
+			hasAlarm = true
+		}
+	}
+	return isNumber && hasAlarm
 }
 
 func widgetPlace(number int, kind string) string {
@@ -387,6 +432,61 @@ func readNumberKeys(widget *widgetSpec, values map[string]*yaml.Node, place stri
 		}
 		widget.digits = int(number)
 	}
+	if node, found := values["alarm"]; found {
+		return readAlarm(widget, values, node, place)
+	}
+	return nil
+}
+
+var alarmKeys = []string{"above", "below", "color"}
+
+// readAlarm reads the key alarm of a number, and makes the number left-aligned, which its method needs: a value that is
+// hidden must push its digits out of the box on the right.
+func readAlarm(widget *widgetSpec, values map[string]*yaml.Node, node *yaml.Node, place string) error {
+	where := join(place, "alarm")
+	if node.Kind != yaml.MappingNode {
+		return problem(where, "want a mapping with above, below and color")
+	}
+	fieldValues, err := fields(node, where, alarmKeys)
+	if err != nil {
+		return err
+	}
+	var alarm alarmSpec
+	for _, bound := range []struct {
+		key string
+		set func(value int16)
+	}{
+		{"above", func(value int16) { alarm.threshold.Above, alarm.threshold.HasAbove = value, true }},
+		{"below", func(value int16) { alarm.threshold.Below, alarm.threshold.HasBelow = value, true }},
+	} {
+		boundNode, found := fieldValues[bound.key]
+		if !found {
+			continue
+		}
+		number, err := readWholeNumber(boundNode, where, bound.key, math.MinInt16, math.MaxInt16)
+		if err != nil {
+			return err
+		}
+		bound.set(int16(number))
+	}
+	if !alarm.threshold.HasAbove && !alarm.threshold.HasBelow {
+		return problem(where, "want above, below or both")
+	}
+	colour, err := required(fieldValues, where, "color")
+	if err != nil {
+		return err
+	}
+	if alarm.colour, err = readColour(colour, where, "color"); err != nil {
+		return err
+	}
+	if _, found := values["align"]; found && widget.alignment != alignments["left"] {
+		return problem(join(place, "align"), "an alarm number is left-aligned, want left or no align")
+	}
+	if widget.thousands {
+		return problem(join(place, "thousands"), "an alarm number cannot show thousands")
+	}
+	widget.alignment = alignments["left"]
+	widget.alarm = &alarm
 	return nil
 }
 

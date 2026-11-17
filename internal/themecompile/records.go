@@ -52,25 +52,38 @@ type widgetInput struct {
 	font   loadedFont
 	folder fs.FS
 	tag    byte
-	slot   int
-	offset uint32 // where its resource starts in the file
+	// alarmTag is the tag of the alarm widget of an alarm number, which has two records.
+	alarmTag byte
+	slot     int
+	offset   uint32 // where its resource starts in the file
 }
 
-// buildWidget builds the record and the resource of one widget. The glyphs are checked, then the box against the
+// buildWidget builds the records and the resources of one widget, which are one for each kind but an alarm number, which
+// has two: the normal widget, then the alarm widget in the next slot. The glyphs are checked, then the box against the
 // screen, and the pixels or masks are made only after, so that a box outside the screen costs nothing.
-func buildWidget(input widgetInput) (built, error) {
+func buildWidget(input widgetInput) ([]built, error) {
 	place := widgetPlace(input.spec.number, input.spec.kind)
+	var widget built
+	var err error
 	switch input.spec.kind {
 	case "text":
-		return buildText(input, place)
+		widget, err = buildText(input, place)
 	case "number":
-		return buildNumber(input, place)
+		if input.spec.alarm != nil {
+			return buildAlarmNumber(input, place)
+		}
+		widget, err = buildNumber(input, place)
 	case "datetime":
-		return buildDatetime(input, place)
+		widget, err = buildDatetime(input, place)
 	case "bar":
-		return buildBar(input, place)
+		widget, err = buildBar(input, place)
+	default:
+		widget, err = buildImage(input, place)
 	}
-	return buildImage(input, place)
+	if err != nil {
+		return nil, err
+	}
+	return []built{widget}, nil
 }
 
 func (input widgetInput) index() byte { return byte(input.slot - 1) }
@@ -92,27 +105,61 @@ func buildText(input widgetInput, place string) (built, error) {
 }
 
 func buildNumber(input widgetInput, place string) (built, error) {
+	area, err := numberArea(input, place)
+	if err != nil {
+		return built{}, err
+	}
+	return numberRecord(input, area, input.tag, input.font.colour, false), nil
+}
+
+// numberArea checks the glyphs and the box of a number, and gives the box.
+func numberArea(input widgetInput, place string) (box, error) {
 	glyphs := input.font.glyphs
 	if err := checkGlyphs(place, input.font, themefile.NumberGlyphOrder); err != nil {
-		return built{}, err
+		return box{}, err
 	}
 	area := box{input.spec.x, input.spec.y, int64(input.spec.digits * glyphs.digitWidth), int64(glyphs.height)}
-	if err := checkBox(place, area); err != nil {
-		return built{}, err
+	return area, checkBox(place, area)
+}
+
+// buildAlarmNumber builds the two records of an alarm number. Both have the box, the glyphs and the options of the
+// number, and a transparent minus as wide as the box: a negative value then draws that minus first, which pushes its
+// digits out of the box, where the screen clips them, and so the widget shows nothing. They differ in their colours and
+// their tags, and each has a glyph set of its own, so that no two records share a resource.
+func buildAlarmNumber(input widgetInput, place string) ([]built, error) {
+	area, err := numberArea(input, place)
+	if err != nil {
+		return nil, err
 	}
-	record := themefile.Number{Head: area.head(themefile.TypeNumber, input.index(), input.tag), Alignment: input.spec.alignment,
-		Colour: input.font.colour, Opacity: input.spec.opacity, Offset: input.offset, GlyphHeight: uint16(glyphs.height)}
+	normal := numberRecord(input, area, input.tag, input.font.colour, true)
+	alarmColour := input.spec.alarm.colour
+	following := input
+	following.slot++
+	following.offset += uint32(len(normal.resource))
+	alarm := numberRecord(following, area, input.alarmTag, rgb565(alarmColour.Red, alarmColour.Green, alarmColour.Blue), true)
+	return []built{normal, alarm}, nil
+}
+
+// numberRecord writes the record of a number and its glyph set. With hidden set, the glyph of the minus is transparent
+// and as wide as the box.
+func numberRecord(input widgetInput, area box, tag byte, colour themefile.Colour, hidden bool) built {
+	glyphs := input.font.glyphs
+	record := themefile.Number{Head: area.head(themefile.TypeNumber, input.index(), tag), Alignment: input.spec.alignment,
+		Colour: colour, Opacity: input.spec.opacity, Offset: input.offset, GlyphHeight: uint16(glyphs.height)}
 	if input.spec.thousands {
 		record.ThousandsMode = 1
 	}
 	var resource []byte
 	for position, character := range themefile.NumberGlyphOrder {
 		mask, width := glyphs.glyphOf(character)
+		if hidden && character == '-' {
+			mask, width = glyphs.hiddenMinus(int(area.width)), int(area.width)
+		}
 		record.GlyphWidths[position] = uint16(width)
 		resource = append(resource, mask...)
 	}
 	record.Resource = resource
-	return built{record, resource}, nil
+	return built{record, resource}
 }
 
 // barSampleBytes are bytes 18-19 and 26-27 of every bar of the vendor sample. The device draws them, and changing them

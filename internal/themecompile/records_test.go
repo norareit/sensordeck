@@ -5,11 +5,16 @@ import (
 	"encoding/binary"
 	"image"
 	"image/color"
+	"reflect"
 	"strings"
 	"testing"
 	"testing/fstest"
 
+	"golang.org/x/image/font"
+	"golang.org/x/image/math/fixed"
+
 	"github.com/norareit/sensordeck/internal/faketheme"
+	"github.com/norareit/sensordeck/internal/themefile"
 )
 
 const (
@@ -224,5 +229,102 @@ func TestSecondWidgetHasIndex2(test *testing.T) {
 	result := compileFiles(test, solidTheme+"widgets:\n  - {type: text, font: body, text: a, x: 0, y: 0}\n  - {type: text, font: body, text: b, x: 0, y: 30}\n", nil)
 	if result.File[3*64+1] != 2 || result.File[2*64+1] != 1 {
 		test.Errorf("indexes %d, %d", result.File[2*64+1], result.File[3*64+1])
+	}
+}
+
+const alarmFolderTheme = solidTheme + "widgets:\n" +
+	"  - {type: text, font: body, text: hi, x: 0, y: 0}\n" +
+	"  - {type: number, font: body, metric: gpu.temp, digits: 4, x: 1, y: 2, opacity: 0.5, alarm: {above: 80, color: \"#ff3030\"}}\n" +
+	"  - {type: number, font: body, metric: cpu.temp, digits: 4, x: 1, y: 60}\n"
+
+// alarmSlot is a slot of an alarm number written by hand: left-aligned, the glyph of the minus as wide as the box.
+func alarmSlot(glyphs glyphFont, index, tag byte, colour, offset uint32) [64]byte {
+	slot := faketheme.Head(0x92, index, tag, 1, 2, uint16(4*glyphs.digitWidth), uint16(glyphs.height))
+	slot[15] = 128
+	faketheme.Put16(&slot, 12, uint16(colour))
+	faketheme.Put32(&slot, 16, offset)
+	faketheme.Put16(&slot, 20, uint16(glyphs.height))
+	for glyph := range 10 {
+		faketheme.Put16(&slot, 22+2*glyph, uint16(glyphs.digitWidth))
+	}
+	faketheme.Put16(&slot, 42, uint16(glyphs.advance('.')))
+	faketheme.Put16(&slot, 44, uint16(4*glyphs.digitWidth))
+	return slot
+}
+
+func TestAlarmNumberIsTwoRecords(test *testing.T) {
+	glyphs := newGlyphFont(regularFace(test, 20))
+	result := compileFiles(test, alarmFolderTheme, nil)
+	theme, _, err := themefile.Parse(result.File)
+	if err != nil || len(theme.Entries) != 5 {
+		test.Fatalf("%v, %d entries", err, len(theme.Entries))
+	}
+	textOffset := uint32(widgetOffset)
+	setSize := glyphs.height * (10*glyphs.digitWidth + glyphs.advance('.') + 4*glyphs.digitWidth)
+	normalOffset := textOffset + uint32(len(result.Records[1].(themefile.Text).Resource))
+	alarmOffset := normalOffset + uint32(setSize)
+	red := rgb565(0xff, 0x30, 0x30)
+	normal := alarmSlot(glyphs, 2, 2, uint32(rgb565(0xff, 0xff, 0xff)), normalOffset)
+	alarm := alarmSlot(glyphs, 3, 3, uint32(red), alarmOffset)
+	for slot, want := range map[int][64]byte{3: normal, 4: alarm} {
+		if got := [64]byte(result.File[slot*64 : slot*64+64]); got != want {
+			test.Errorf("slot %d: got %x\nwant %x", slot, got, want)
+		}
+	}
+	after := result.Records[4].(themefile.Number)
+	if after.Index != 4 || after.Tag != 1 || after.Offset != alarmOffset+uint32(setSize) || after.Alignment != 1 {
+		test.Errorf("the number after: %+v", after.Head)
+	}
+	if !reflect.DeepEqual(result.AlarmSlots, []int{4}) || len(result.Alarms) != 1 || result.Alarms[0].Normal != 2 || result.Alarms[0].Alarm != 3 {
+		test.Errorf("alarm slots %v, pairs %+v", result.AlarmSlots, result.Alarms)
+	}
+}
+
+func TestTheGlyphSetsOfAnAlarmNumberHideTheMinus(test *testing.T) {
+	glyphs := newGlyphFont(regularFace(test, 20))
+	result := compileFiles(test, alarmFolderTheme, nil)
+	normal, alarm := result.Records[2].(themefile.Number), result.Records[3].(themefile.Number)
+	if !bytes.Equal(normal.Resource, alarm.Resource) || normal.GlyphWidths != alarm.GlyphWidths {
+		test.Error("the two glyph sets differ")
+	}
+	plain := compileFiles(test, numberTheme(""), nil).Records[1].(themefile.Number)
+	masks, plainMasks := normal.Glyphs(), plain.Glyphs()
+	for position := range 12 {
+		if position == 11 {
+			continue
+		}
+		if !bytes.Equal(masks[position], plainMasks[position]) || normal.GlyphWidths[position] != plain.GlyphWidths[position] {
+			test.Errorf("glyph %d differs from that of a number without alarm", position)
+		}
+	}
+	if normal.GlyphWidths[11] != uint16(4*glyphs.digitWidth) || len(masks[11]) != 4*glyphs.digitWidth*glyphs.height ||
+		!bytes.Equal(masks[11], make([]byte, len(masks[11]))) {
+		test.Errorf("minus: width %d, %d bytes", normal.GlyphWidths[11], len(masks[11]))
+	}
+}
+
+func TestANumberWithoutAlarmHasNoAlarmSlots(test *testing.T) {
+	if result := compileFiles(test, numberTheme(""), nil); result.AlarmSlots != nil || result.Alarms != nil {
+		test.Errorf("%v, %v", result.AlarmSlots, result.Alarms)
+	}
+}
+
+// noMinus is a face without the glyph of the minus.
+type noMinus struct{ font.Face }
+
+func (face noMinus) GlyphAdvance(character rune) (fixed.Int26_6, bool) {
+	if character == '-' {
+		return 0, false
+	}
+	return face.Face.GlyphAdvance(character)
+}
+
+func TestAnAlarmNumberNeedsTheMinusGlyph(test *testing.T) {
+	spec := widgetSpec{number: 1, kind: "number", digits: 3, metric: "cpu.temp", alarm: &alarmSpec{}}
+	input := widgetInput{spec: spec, font: loadedFont{name: "body", glyphs: newGlyphFont(noMinus{regularFace(test, 20)})}, slot: 2}
+	_, err := buildWidget(input)
+	want := `widget 1 (number): the font body has no glyph for "-"`
+	if err == nil || err.Error() != want {
+		test.Errorf("got %v, want %q", err, want)
 	}
 }

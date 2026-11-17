@@ -38,16 +38,22 @@ const (
 // is there in the order of the slots. A number is clipped to its box and to the screen, and everything else to the screen
 // and not to its box.
 func Preview(theme themefile.Theme) *image.RGBA {
+	return PreviewWithValues(theme, nil)
+}
+
+// PreviewWithValues is Preview with the number of each slot in values drawn with that value, as the rules of drawNumber
+// place it, and every other number drawn as the sample.
+func PreviewWithValues(theme themefile.Theme, values map[int]int16) *image.RGBA {
 	screen := image.NewRGBA(image.Rect(0, 0, ScreenWidth, ScreenHeight))
 	draw.Draw(screen, screen.Bounds(), image.NewUniform(color.Black), image.Point{}, draw.Src)
 	for _, entry := range theme.Entries {
-		drawRecord(screen, entry.Record)
+		drawRecord(screen, entry, values)
 	}
 	return screen
 }
 
-func drawRecord(screen *image.RGBA, record themefile.Record) {
-	switch typed := record.(type) {
+func drawRecord(screen *image.RGBA, entry themefile.Entry, values map[int]int16) {
+	switch typed := entry.Record.(type) {
 	case themefile.Background:
 		if typed.Offset == 0 {
 			fill(screen, box(typed.Head), Expand(typed.FillColourGuess))
@@ -61,7 +67,7 @@ func drawRecord(screen *image.RGBA, record themefile.Record) {
 	case themefile.Text:
 		drawAt(screen, int(typed.X), int(typed.Y), Resources(typed)[0])
 	case themefile.Number:
-		drawNumber(screen, typed)
+		drawNumber(screen, typed, numberValue(typed, values, entry.Slot))
 	case themefile.Datetime:
 		widths := typed.GlyphWidths()
 		glyphs := glyphImages(typed.Glyphs(), widths[:], typed.GlyphHeight, typed.Colour)
@@ -102,12 +108,20 @@ func drawBar(screen *image.RGBA, bar themefile.Bar) {
 	fill(screen, image.Rect(inside.Min.X+filled, inside.Min.Y, inside.Max.X, inside.Max.Y), Expand(bar.EmptyColour))
 }
 
-// drawNumber draws the value of a number placed in its box by its alignment and clipped to the box and the screen.
-func drawNumber(screen *image.RGBA, number themefile.Number) {
-	value := SampleValue
-	if number.ThousandsMode != 0 {
-		value = thousandsValue
+// numberValue is the text a number is drawn with: the value of its slot when values holds one, and else the sample, or
+// the sample of the thousands mode.
+func numberValue(number themefile.Number, values map[int]int16, slot int) string {
+	if value, found := values[slot]; found {
+		return strconv.Itoa(int(value))
 	}
+	if number.ThousandsMode != 0 {
+		return thousandsValue
+	}
+	return SampleValue
+}
+
+// drawNumber draws the value of a number placed in its box by its alignment and clipped to the box and the screen.
+func drawNumber(screen *image.RGBA, number themefile.Number, value string) {
 	glyphs := glyphImages(number.Glyphs(), number.GlyphWidths[:], number.GlyphHeight, number.Colour)
 	for _, glyph := range glyphs {
 		fade(glyph, number.Opacity)

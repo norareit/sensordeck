@@ -157,3 +157,63 @@ func TestParseDocumentReadsABar(test *testing.T) {
 		test.Errorf("background %+v", plain.background)
 	}
 }
+
+func alarmWidget(keys string) string {
+	return "{type: number, font: body, metric: gpu.temp, x: 0, y: 0, " + keys + "}"
+}
+
+func TestParseDocumentReadsAnAlarmNumber(test *testing.T) {
+	red := config.Colour{Red: 0xff}
+	cases := []struct {
+		keys string
+		want config.Threshold
+	}{
+		{`alarm: {above: 80, color: "#ff0000"}`, config.Threshold{Above: 80, HasAbove: true}},
+		{`alarm: {below: -5, color: "#ff0000"}`, config.Threshold{Below: -5, HasBelow: true}},
+		{`alarm: {above: 80, below: 20, color: "#ff0000"}`, config.Threshold{Above: 80, Below: 20, HasAbove: true, HasBelow: true}},
+		{`alarm: {above: 32767, below: -32768, color: "#ff0000"}`, config.Threshold{Above: 32767, Below: -32768, HasAbove: true, HasBelow: true}},
+	}
+	for _, each := range cases {
+		widget := parseWidget(test, alarmWidget(each.keys))
+		if widget.alarm == nil || widget.alarm.threshold != each.want || widget.alarm.colour != red || widget.alignment != 0 {
+			test.Errorf("%q: got %+v, alignment %d", each.keys, widget.alarm, widget.alignment)
+		}
+	}
+	for _, keys := range []string{`align: left, `, `thousands: false, `, `align: left, thousands: false, `, `digits: 4, opacity: 0.5, `} {
+		widget := parseWidget(test, alarmWidget(keys+`alarm: {above: 80, color: "#ff0000"}`))
+		if widget.alarm == nil || widget.alignment != 0 || widget.thousands {
+			test.Errorf("%q: got %+v", keys, widget)
+		}
+	}
+	if plain := parseWidget(test, alarmWidget("digits: 3")); plain.alarm != nil || plain.alignment != 1 {
+		test.Errorf("a number without alarm: %+v", plain)
+	}
+}
+
+func TestParseDocumentRefusesAnAlarmNumberWrongly(test *testing.T) {
+	const place = "widget 1 (number): "
+	cases := []struct{ name, keys, want string }{
+		{"not a mapping", `alarm: 3`, place + "alarm: want a mapping with above, below and color"},
+		{"no threshold", `alarm: {color: "#ff0000"}`, place + "alarm: want above, below or both"},
+		{"decimal above", `alarm: {above: 80.5, color: "#ff0000"}`, place + "alarm: above: want a whole number from -32768 to 32767"},
+		{"string above", `alarm: {above: "80", color: "#ff0000"}`, place + "alarm: above: want a whole number from -32768 to 32767"},
+		{"big above", `alarm: {above: 40000, color: "#ff0000"}`, place + "alarm: above: want a whole number from -32768 to 32767"},
+		{"small above", `alarm: {above: -40000, color: "#ff0000"}`, place + "alarm: above: want a whole number from -32768 to 32767"},
+		{"decimal below", `alarm: {below: 0.5, color: "#ff0000"}`, place + "alarm: below: want a whole number from -32768 to 32767"},
+		{"string below", `alarm: {below: "1", color: "#ff0000"}`, place + "alarm: below: want a whole number from -32768 to 32767"},
+		{"big below", `alarm: {below: 40000, color: "#ff0000"}`, place + "alarm: below: want a whole number from -32768 to 32767"},
+		{"small below", `alarm: {below: -40000, color: "#ff0000"}`, place + "alarm: below: want a whole number from -32768 to 32767"},
+		{"no colour", `alarm: {above: 80}`, place + "alarm: the key color is missing"},
+		{"bad colour", `alarm: {above: 80, color: red}`, place + `alarm: color: "red" is not a colour such as "#1e1e2e"`},
+		{"unknown key", `alarm: {above: 80, color: "#ff0000", x: 1}`, place + `alarm: unknown key "x", the keys are above, below and color`},
+		{"centred", `align: center, alarm: {above: 80, color: "#ff0000"}`, place + "align: an alarm number is left-aligned, want left or no align"},
+		{"right", `align: right, alarm: {above: 80, color: "#ff0000"}`, place + "align: an alarm number is left-aligned, want left or no align"},
+		{"thousands", `thousands: true, alarm: {above: 80, color: "#ff0000"}`, place + "thousands: an alarm number cannot show thousands"},
+	}
+	for _, each := range cases {
+		err := parseError("name: a\nbackground: \"#000000\"\n" + goodFonts + "widgets:\n  - " + alarmWidget(each.keys) + "\n")
+		if err == nil || err.Error() != each.want {
+			test.Errorf("%s: got %v, want %q", each.name, err, each.want)
+		}
+	}
+}

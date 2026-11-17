@@ -38,12 +38,12 @@ func (current *session) loadConfig(path string, content []byte) (runConfig, erro
 	if err != nil {
 		return runConfig{}, fmt.Errorf("theme: %w", err)
 	}
-	for _, mapping := range compiled.Tags {
-		if !settings.IsMetric(mapping.Name) {
-			return runConfig{}, fmt.Errorf("theme: %s: the metric %q is neither built in nor defined under metrics", settings.Theme, mapping.Name)
+	settings.Mappings, settings.Alarms = compiled.Tags, compiled.Alarms
+	for _, name := range settings.MetricNames() {
+		if !settings.IsMetric(name) {
+			return runConfig{}, fmt.Errorf("theme: %s: the metric %q is neither built in nor defined under metrics", settings.Theme, name)
 		}
 	}
-	settings.Mappings = compiled.Tags
 	return runConfig{
 		settings: settings,
 		theme:    &configTheme{value: settings.Theme, file: compiled.File},

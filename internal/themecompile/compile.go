@@ -19,7 +19,10 @@ const FlashLimit = 4 << 20
 type Result struct {
 	File    []byte             // the bytes of the theme file
 	Records []themefile.Record // slots 1 and up in the order of the slots, each with its offset and resource
-	Tags    []config.Mapping   // ascending by tag
+	Tags    []config.Mapping   // the plain entries, ascending by tag
+	Alarms  []config.AlarmPair // ascending by normal tag
+	// AlarmSlots are the slots of the alarm widgets of the alarm numbers, in the numbering of themefile.Entry.Slot.
+	AlarmSlots []int
 }
 
 // Compile compiles the theme folder. Its error is "<place>: <problem>", or "<problem>" for a fault of theme.yaml as a
@@ -42,23 +45,32 @@ func Compile(folder fs.FS) (Result, error) {
 	if err != nil {
 		return Result{}, err
 	}
-	tags := assignTags(metricsOf(parsed.widgets))
+	tags, alarms := assignTags(parsed.widgets)
 	records := []built{buildBackground(parsed.background, picture)}
 	offset := backgroundOffset + len(records[0].resource)
+	var alarmSlots []int
 	for _, spec := range parsed.widgets {
-		widget, err := buildWidget(widgetInput{spec: spec, font: fontOf(fonts, spec), folder: folder, tag: tagOf(tags, spec.metric),
-			slot: len(records) + 1, offset: uint32(offset)})
+		input := widgetInput{spec: spec, font: fontOf(fonts, spec), folder: folder, tag: plainTagOf(tags, spec.metric),
+			slot: len(records) + 1, offset: uint32(offset)}
+		if spec.alarm != nil {
+			pair := pairOf(alarms, spec.metric, spec.alarm.threshold)
+			input.tag, input.alarmTag = pair.Normal, pair.Alarm
+			alarmSlots = append(alarmSlots, input.slot+1)
+		}
+		widgets, err := buildWidget(input)
 		if err != nil {
 			return Result{}, err
 		}
-		records = append(records, widget)
-		offset += len(widget.resource)
+		for _, widget := range widgets {
+			records = append(records, widget)
+			offset += len(widget.resource)
+		}
 	}
 	file := layout(records)
 	if len(file) > FlashLimit {
 		return Result{}, problem("widgets", "the compiled file is %d bytes, larger than the flash limit of %d bytes", len(file), FlashLimit)
 	}
-	result := Result{File: file, Tags: tags}
+	result := Result{File: file, Tags: tags, Alarms: alarms, AlarmSlots: alarmSlots}
 	for _, each := range records {
 		result.Records = append(result.Records, each.record)
 	}
@@ -103,24 +115,4 @@ func fontOf(fonts []loadedFont, spec widgetSpec) loadedFont {
 		return loadedFont{}
 	}
 	return fonts[spec.font]
-}
-
-func metricsOf(widgets []widgetSpec) []string {
-	var metrics []string
-	for _, spec := range widgets {
-		if spec.kind == "number" || spec.kind == "bar" {
-			metrics = append(metrics, spec.metric)
-		}
-	}
-	return metrics
-}
-
-// tagOf gives the tag of a metric, and 0 for a widget with no metric.
-func tagOf(tags []config.Mapping, metric string) byte {
-	for _, mapping := range tags {
-		if mapping.Name == metric {
-			return mapping.Tag
-		}
-	}
-	return 0
 }

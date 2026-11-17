@@ -191,7 +191,7 @@ func TestThemeCompileWritesTheThemeFileAndTheTagsFile(test *testing.T) {
 			}
 			gotFile, _ := os.ReadFile(outPath)
 			gotTags, _ := os.ReadFile(tagsPath)
-			if !bytes.Equal(gotFile, want.File) || !bytes.Equal(gotTags, themecompile.TagsFile(want.Tags)) {
+			if !bytes.Equal(gotFile, want.File) || !bytes.Equal(gotTags, themecompile.TagsFile(want.Tags, want.Alarms)) {
 				test.Errorf("%s: the files are not what the compiler gives", out)
 			}
 			if len(harness.opened) != 0 || harness.stderr.Len() != 0 {
@@ -235,6 +235,61 @@ func TestThemePreviewWritesThePreviewOfTheCompiledFile(test *testing.T) {
 	}
 	if entries, _ := os.ReadDir(directory); len(entries) != 1 {
 		test.Errorf("%d files written", len(entries))
+	}
+}
+
+const alarmPreviewTheme = `name: cli
+background: "#102030"
+fonts:
+  body: {file: body.ttf, size: 20, color: "#ffffff"}
+widgets:
+  - {type: number, font: body, metric: gpu.temp, x: 4, y: 40, alarm: {above: 80, color: "#ff0000"}}
+`
+
+// countColours counts the pixels that are nearly white and those that are nearly red.
+func countColours(picture image.Image) (white, red int) {
+	bounds := picture.Bounds()
+	for row := bounds.Min.Y; row < bounds.Max.Y; row++ {
+		for column := bounds.Min.X; column < bounds.Max.X; column++ {
+			red16, green16, blue16, _ := picture.At(column, row).RGBA()
+			shade, green, blue := red16>>8, green16>>8, blue16>>8
+			switch {
+			case shade > 200 && green > 200 && blue > 200:
+				white++
+			case shade > 200 && green < 100 && blue < 100:
+				red++
+			}
+		}
+	}
+	return white, red
+}
+
+func TestThemePreviewDrawsTheNormalStateOfAnAlarmNumber(test *testing.T) {
+	folder := writeThemeFolder(test, alarmPreviewTheme)
+	out := filepath.Join(test.TempDir(), "preview.png")
+	harness := newHarness()
+	if status := harness.run("theme", "preview", folder, out); status != 0 {
+		test.Fatalf("status %d, stderr %q", status, harness.stderr.String())
+	}
+	file, err := os.Open(out)
+	if err != nil {
+		test.Fatal(err)
+	}
+	defer file.Close()
+	picture, err := png.Decode(file)
+	if err != nil {
+		test.Fatal(err)
+	}
+	if white, red := countColours(picture); white == 0 || red != 0 {
+		test.Errorf("%d white pixels and %d red ones, want some white and no red", white, red)
+	}
+	theme, _, err := themefile.Parse(compileExpected(test, folder).File)
+	if err != nil {
+		test.Fatal(err)
+	}
+	// The preview of a file draws the alarm widget's 42 over the normal one, so the red covers the white.
+	if _, red := countColours(themeimage.Preview(theme)); red == 0 {
+		test.Errorf("the preview of the file has no red pixel")
 	}
 }
 

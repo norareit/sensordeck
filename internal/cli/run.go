@@ -86,7 +86,7 @@ func (current *session) prepareRun(named string) (preparedRun, error) {
 func (current *session) serveRun(stop context.Context, prepared preparedRun, opened transport, restarter screenRestarter, closeTransport func()) error {
 	settings := prepared.started.settings
 	sources := prepared.sources
-	current.say(fmt.Sprintf("running: %d metrics every %s", len(settings.Mappings), settings.Interval))
+	current.say(fmt.Sprintf("running: %d metrics every %s", len(settings.MetricNames()), settings.Interval))
 	observed := &observedTransport{transport: opened}
 	custom := custommetrics.NewSet(settings.Metrics, current.env.sysfsRoot, configDirectory(prepared.path), current.env.now, current.env.stderr)
 	feeding := &feeder{
@@ -240,12 +240,7 @@ type feeder struct {
 // probesMapped tells whether a metric of the controller is mapped now. The keeper asks it from the goroutine of the
 // feeder, which is the one that replaces the mappings.
 func (feeding *feeder) probesMapped() bool {
-	for _, mapping := range feeding.config.Mappings {
-		if sensors.IsCommanderTemperature(mapping.Name) {
-			return true
-		}
-	}
-	return false
+	return slices.ContainsFunc(feeding.config.MetricNames(), sensors.IsCommanderTemperature)
 }
 
 // feed works until stop is done, and gives an error only when the clock cannot be encoded. Besides its rounds it ticks
@@ -298,7 +293,7 @@ func (feeding *feeder) round(stop context.Context, start time.Time) error {
 	if written, err := feeding.writeClockWhenDue(stop, start); !written || err != nil {
 		return err
 	}
-	for _, report := range smartmonitor.EncodeValues(feeding.read(stop, start)) {
+	for _, report := range smartmonitor.EncodeUnits(feeding.read(stop, start)) {
 		if !feeding.write(stop, report) {
 			return nil
 		}
@@ -450,34 +445,26 @@ func (feeding *feeder) reload() {
 		_, _ = fmt.Fprintf(feeding.stderr, "config file %s: %s changed, restart run to apply it\n", feeding.watcher.path, key)
 	}
 	feeding.config.Mappings = reloaded.settings.Mappings
+	feeding.config.Alarms = reloaded.settings.Alarms
 	feeding.config.Metrics = reloaded.settings.Metrics
 	feeding.custom.Replace(reloaded.settings.Metrics)
 	feeding.holder.setTheme(reloaded.theme)
 }
 
-// read gives the pairs of the mapped metrics that have a value, in the order of their tags. The other sources are
+// read gives the units of the mapped metrics that have a value, in the order of their lowest tags. The other sources are
 // read now. The controller gives the readings of its last reading, which is made when the period has passed since the
 // start of the round that made the one before.
-func (feeding *feeder) read(stop context.Context, start time.Time) []smartmonitor.Value {
-	mapped := make(map[string]bool, len(feeding.config.Mappings))
-	for _, mapping := range feeding.config.Mappings {
-		mapped[mapping.Name] = true
-	}
-	readings := make(map[string]float64, len(mapped))
-	wanted := func(name string) bool { return mapped[name] }
+func (feeding *feeder) read(stop context.Context, start time.Time) [][]smartmonitor.Value {
+	names := feeding.config.MetricNames()
+	wanted := func(name string) bool { return slices.Contains(names, name) }
+	readings := make(map[string]float64, len(names))
 	for _, reading := range sensors.ReadAll(stop, feeding.others, wanted) {
 		readings[reading.Name] = reading.Value
 	}
 	for _, reading := range feeding.controller.readings(stop, start, wanted) {
 		readings[reading.Name] = reading.Value
 	}
-	var values []smartmonitor.Value
-	for _, mapping := range feeding.config.Mappings {
-		if value, found := readings[mapping.Name]; found {
-			values = append(values, smartmonitor.Value{Tag: mapping.Tag, Value: sensors.ToValue(value)})
-		}
-	}
-	return values
+	return roundUnits(feeding.config, readings)
 }
 
 // writeClock sets the clock of the screen to the current time. It tells whether the report was written.

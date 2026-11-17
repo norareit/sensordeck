@@ -83,3 +83,8 @@ func (glyphs glyphFont) glyphOf(character rune) ([]byte, int) {
 	}
 	return glyphs.separator(character)
 }
+
+// hiddenMinus gives the glyph of the minus of an alarm number: fully transparent, and as wide as the box of the number.
+func (glyphs glyphFont) hiddenMinus(width int) []byte {
+	return make([]byte, width*glyphs.height)
+}

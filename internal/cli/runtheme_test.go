@@ -279,3 +279,50 @@ func TestATickWritesNothingAndUploadsNothingWhileTheThemeIsNotOnTheScreen(test *
 		test.Errorf("stdout %q", harness.stdout.String())
 	}
 }
+
+const alarmTheme = `name: cli
+background: "#102030"
+fonts:
+  body: {file: body.ttf, size: 20, color: "#ffffff"}
+widgets:
+  - {type: number, font: body, metric: cpu.temp, x: 4, y: 40}
+  - {type: number, font: body, metric: cpu.temp, x: 4, y: 80, alarm: {above: 50, color: "#ff3030"}}
+`
+
+func TestRunWithAnAlarmNumberSendsTheValueToTheNormalTagAndTheHidingValueToTheAlarmTag(test *testing.T) {
+	folder := writeThemeFolder(test, alarmTheme)
+	harness := runningTheme(test, 1)
+	if status := harness.run("run", "--config", themeConfig(test, folder)); status != 0 {
+		test.Fatalf("status %d, stderr %q", status, harness.stderr.String())
+	}
+	if !strings.HasPrefix(harness.stdout.String(), "running: 1 metrics every 1s\n") {
+		test.Errorf("stdout %q", harness.stdout.String())
+	}
+	writes := harness.transport.writes
+	want := valueReport(smartmonitor.Value{Tag: 1, Value: 42}, smartmonitor.Value{Tag: 2, Value: 42}, smartmonitor.Value{Tag: 3, Value: -1})
+	if last := writes[len(writes)-1]; last != want {
+		test.Errorf("values % X, want % X", last[:12], want[:12])
+	}
+}
+
+func TestRunRefusesAnAlarmNumberOfAMetricThatIsNotDefined(test *testing.T) {
+	theme := strings.Replace(alarmTheme, "cpu.temp, x: 4, y: 80", "water.temp, x: 4, y: 80", 1)
+	folder := writeThemeFolder(test, theme)
+	path := themeConfig(test, folder)
+	harness := newHarness()
+	harness.expectFailure(test, "config file "+path+": theme: "+folder+": the metric \"water.temp\" is neither built in nor defined under metrics",
+		"run", "--config", path)
+}
+
+func TestRunWithTheKeyTagsSendsBothTagsOfAPair(test *testing.T) {
+	source := &fakeSource{names: []string{"cpu.temp"}, values: map[string]float64{"cpu.temp": 95}}
+	harness := runWith(source, 1)
+	config := "tags:\n  cpu.temp: {alarms: [{above: 80, normal: 7, alarm: 2}]}\n"
+	if status := harness.run("run", "--config", writeConfig(test, config)); status != 0 {
+		test.Fatalf("status %d, stderr %q", status, harness.stderr.String())
+	}
+	writes := harness.transport.writes
+	if want := valueReport(smartmonitor.Value{Tag: 7, Value: -1}, smartmonitor.Value{Tag: 2, Value: 95}); writes[len(writes)-1] != want {
+		test.Errorf("values % X", writes[len(writes)-1][:8])
+	}
+}
