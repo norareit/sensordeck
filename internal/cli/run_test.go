@@ -524,6 +524,9 @@ func TestRunWaitsAFullPeriodAfterAReadingThatGivesNothing(test *testing.T) {
 	if len(reports) != 60 || controller.readsAt != 1 {
 		test.Fatalf("%d value reports, %d reads of the controller", len(reports), controller.readsAt)
 	}
+	if harness.stderr.Len() != 0 {
+		test.Errorf("stderr %q", harness.stderr.String())
+	}
 	for round, report := range reports {
 		if report != valueReport(smartmonitor.Value{Tag: 1, Value: 42}) {
 			test.Errorf("round %d: % X", round, report[:8])

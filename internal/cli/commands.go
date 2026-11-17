@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/norareit/sensordeck/internal/devicelock"
 	"io"
 	"io/fs"
 	"net/url"
@@ -43,13 +44,27 @@ func (current *session) elapsed() time.Duration { return current.env.now().Sub(c
 func (current *session) open() (transport, screenRestarter, func(), error) {
 	opened, restarter, err := current.env.openTransport(current.env.sysfsRoot, current.env.devRoot, current.env.procRoot, current.options.device)
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, nil, current.screenRefusal(err)
 	}
 	var used transport = opened
 	if current.options.trace {
 		used = &tracingTransport{inner: opened, out: current.env.stderr, elapsed: current.elapsed}
 	}
 	return used, restarter, func() { _ = opened.Close() }, nil
+}
+
+// screenRefusal words the lock of the screen held by another sensordeck process, with how to stop the other process,
+// and gives every other error as it is.
+func (current *session) screenRefusal(err error) error {
+	var inUse *devicelock.InUseError
+	if !errors.As(err, &inUse) {
+		return err
+	}
+	stop := "stop the service with systemctl --user stop sensordeck"
+	if current.env.system == "windows" {
+		stop = "stop the startup task with sensordeck service uninstall"
+	}
+	return fmt.Errorf("the screen is %w, stop it first, or %s", err, stop)
 }
 
 func (current *session) say(line string) {
@@ -331,6 +346,10 @@ func (current *session) sensorsCommand() *cobra.Command {
 				sources.others = append(slices.Clip(sources.others), sources.monitor(address, monitored.keep))
 				monitored.address = address
 			}
+			var refusal controllerRefusal
+			if sources.reportController != nil {
+				sources.controller = sources.reportController(refusal.keep)
+			}
 			stop, cancel := current.env.notifyStop(context.Background())
 			readings := sensors.InTableOrder(sensors.ReadAll(stop, sources.all(), func(string) bool { return true }))
 			custom := custommetrics.ReadOnce(stop, settings.Metrics, current.env.sysfsRoot, configDirectory(path))
@@ -340,6 +359,7 @@ func (current *session) sensorsCommand() *cobra.Command {
 				return errors.New("interrupted")
 			}
 			monitored.say(current.env.stderr)
+			refusal.say(current.env.stderr)
 			current.listReadings(sources, readings, custom)
 			return nil
 		},

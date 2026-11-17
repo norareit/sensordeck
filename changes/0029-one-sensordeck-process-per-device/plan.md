@@ -209,36 +209,36 @@ The design decisions the spec leaves to the plan:
 
 ### 4. The lines of the commands
 
-- [ ] In `internal/cli/commands_test.go`, a table over `clock`, `values 1=2`, `upload <file>`, `listen`, `raw 01`,
+- [x] In `internal/cli/commands_test.go`, a table over `clock`, `values 1=2`, `upload <file>`, `listen`, `raw 01`,
   `run --config <file>` with `openErr` an `*devicelock.InUseError{Holder: " (process 42: sensordeck run)"}`, for
   `system` `linux` and `windows`: status 1, nothing on standard output, standard error exactly the line of R12 with
   ` (process 42: sensordeck run)` and the stop text of the system, and no write to the transport. For `run`, also no
   `running:`, no call to `startSession` and no reading of the controller (R12, R13, R20). An `openErr` that is not
   an `*InUseError` keeps its text as now
-- [ ] In `internal/cli/background_test.go`: a background run whose opening is refused writes
+- [x] In `internal/cli/background_test.go`: a background run whose opening is refused writes
   `sensordeck: the screen is in use by another sensordeck process (process 42: sensordeck run), stop it first, or stop
   the startup task with sensordeck service uninstall` and `starting again in 10s` to the log at each refused start,
   and runs once the opening succeeds (R13)
-- [ ] Write the mapping in `session.open` (R12, R13)
-- [ ] In `internal/cli/sensors_test.go`, with a set whose `reportController` gives a source that calls `refused` with
+- [x] Write the mapping in `session.open` (R12, R13)
+- [x] In `internal/cli/sensors_test.go`, with a set whose `reportController` gives a source that calls `refused` with
   `fmt.Errorf("the controller is %w", &devicelock.InUseError{Holder: " (process 42: sensordeck run)"})` and gives no
   reading: standard error is exactly
   `the controller is in use by another sensordeck process (process 42: sensordeck run), its probes are left out` once,
   standard output lists the other readings and the custom metrics as now, and the status is 0; with no other reading
   it writes that line and then `no sensor could be read` (R9, R20)
-- [ ] Add `reportController` to `sourceSet` and set it in `commanderSources`; in `sensorsCommand` use it when it is
+- [x] Add `reportController` to `sourceSet` and set it in `commanderSources`; in `sensorsCommand` use it when it is
   not nil, keep the refusal, and write its line after the line of the monitor and before `listReadings` (R9)
-- [ ] In `internal/cli/keeper_test.go`, with a start that gives the error of a refused controller with the holder
+- [x] In `internal/cli/keeper_test.go`, with a start that gives the error of a refused controller with the holder
   ` (process 42: sensordeck run)`: the line `controller setup failed: the controller is in use by another sensordeck
   process (process 42: sensordeck run)` is written once over three refused setups, the setups come 10, 20 and 40
   seconds apart, and a setup that then succeeds holds the session (R10, R20)
-- [ ] In `internal/cli/run_test.go`, check that a `run` without `commander_color` whose controller source gives no
+- [x] In `internal/cli/run_test.go`, check that a `run` without `commander_color` whose controller source gives no
   reading writes nothing to standard error and reads it again only after `commander_interval`; reuse the existing test
   of a reading that failed if it already checks both, and add the assertion it lacks otherwise (R11)
-- [ ] In `internal/cli/commands_test.go`, `devices` and `sensors` succeed with `openErr` an `*InUseError` and call
+- [x] In `internal/cli/commands_test.go`, `devices` and `sensors` succeed with `openErr` an `*InUseError` and call
   `openTransport` not at all; check that `session.open` is called only by `clock`, `values`, `upload`, `listen`,
   `raw`, `run` and `startRun`, so that the `theme` and `service` commands take no lock of the screen (R15)
-- [ ] Run the suite, and commit: `bugfix-0029 Refuse the commands while another sensordeck process has the device`
+- [x] Run the suite, and commit: `bugfix-0029 Refuse the commands while another sensordeck process has the device`
 
 ### 5. The end-to-end tests
 

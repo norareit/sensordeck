@@ -25,6 +25,10 @@ type sourceSet struct {
 	// session and what the setup did with the LED port configuration, which it gives on an error too, or
 	// errNoController when there is no controller. On an error the setup has ended.
 	startSession func(stop context.Context, colour config.Colour) (heldSession, setupNotice, error)
+	// reportController makes the source of the controller with refused called with the error of an opening that
+	// another sensordeck process holds. It is nil where nothing can be reported, and sensors uses it in place of
+	// controller.
+	reportController func(refused func(err error)) sensors.Source
 	// controllerProblem gives why a controller that seems to be there was not found, or nil.
 	controllerProblem func() error
 }
@@ -63,7 +67,10 @@ func commanderSources(finder commandercore.Finder) sourceSet {
 		return commanderSession{session: session}, notice, nil
 	}
 	return sourceSet{
-		controller:        commandercore.Source{Finder: finder, TimeLimit: commandercore.ReplyTimeLimit},
+		controller: commandercore.Source{Finder: finder, TimeLimit: commandercore.ReplyTimeLimit},
+		reportController: func(refused func(err error)) sensors.Source {
+			return commandercore.Source{Finder: finder, TimeLimit: commandercore.ReplyTimeLimit, Refused: refused}
+		},
 		startSession:      startSession,
 		controllerProblem: finder.Problem,
 	}
