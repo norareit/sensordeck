@@ -124,5 +124,11 @@ names of its menus and options, and nothing of it is copied into the project.
   paragraph that began "To turn on its web server" is replaced by a link to the quick start. On that tree `go test ./...`,
   `go vet ./...`, `gofmt -l .`, and `go build` and `go vet` with `GOOS=windows GOARCH=amd64` all succeeded. The steps
   were not tried on Windows, and the change check is not yet run
+- 2026-11-17T15:36:48Z [OpenCode, openai/gpt-6.1-sol] as the reviewer, completed a full review of unit
+  `0031-librehardwaremonitor-in-quick-start` at `c3b55c778c31f96534037b5d254cee62c48ecd80` against merge base
+  `688c1904f5ba0da8574fb5b7ef6f16facbe5abf4` with `origin/master`. No findings on spec conformance, plan fidelity
+  or code and documentation quality. The five suite commands, an additional uncached end-to-end run and the change
+  check passed. The Windows setup was not tried on a real Windows machine. The complete review is saved in
+  `.reviews/0031-librehardwaremonitor-in-quick-start/round-1-20261117T153615Z.md`. The status stays `in-progress`
 
 ## Amendments
