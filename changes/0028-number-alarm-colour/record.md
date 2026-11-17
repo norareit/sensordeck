@@ -16,3 +16,9 @@ timestamp: 2026-11-17T11:32:23Z
   list. The status stays `draft`
 
 ## Amendments
+- 2026-11-17T11:33:51Z [Claude Code, anthropic/claude-opus-5-5] read the spec under the delegation in `AGENTS.md`: its method is the
+  one demonstrated on the human's screen on 2026-11-17 (a white 47, a red 95 and a white 52), it refuses the options
+  that would keep a widget from being hidden, every existing `tags` block keeps its meaning, and every requirement can
+  be tested in the sandbox. Item 6 of "Beyond the request" was taken, because a pair split across two reports would
+  flicker every round, and the spec was amended for it; items 1 to 5 are declined. The device check is the human's and
+  the unit does not depend on it. The approval that follows is made under that delegation
