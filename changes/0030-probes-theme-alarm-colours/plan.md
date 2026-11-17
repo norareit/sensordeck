@@ -45,7 +45,7 @@ directory so that no installed theme of the same name on the machine replaces th
 - `README.md`: the section "Built-in themes"
 - `docs_test.go`: the expected preview hides the alarm slots, as the command does (added during the work)
 
-No other file changes. `internal/builtinthemes/themes/minimal-dark/`, `docs/minimal-dark.png`, `docs_test.go`,
+No other file changes. `internal/builtinthemes/themes/minimal-dark/`, `docs/minimal-dark.png`,
 `docs/theme-folder.md` and `internal/builtinthemes/themes/minimal-dark-probes/background.png` stay as they are.
 
 ## Tasks
