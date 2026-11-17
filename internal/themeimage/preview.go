@@ -4,6 +4,7 @@ import (
 	"image"
 	"image/color"
 	"image/draw"
+	"strconv"
 	"time"
 
 	"github.com/norareit/sensordeck/internal/themefile"
@@ -17,14 +18,25 @@ const (
 // SampleTime is the date and time that the preview shows in a datetime, and SampleValue the value of every number.
 var SampleTime = time.Date(2026, 11, 15, 9, 41, 7, 0, time.UTC)
 
-const SampleValue = "42"
+// SampleNumber is the value of every number, and of every bar as a share, so that a number and a bar of the same
+// metric show the same value.
+const SampleNumber = 42
 
-// barColour is a colour that no theme of the samples uses, so that a bar, whose fields are not decoded, shows at a
-// glance that it is a placeholder.
-var barColour = color.NRGBA{R: 255, G: 0, B: 255, A: 255}
+var SampleValue = strconv.Itoa(SampleNumber)
+
+// thousandsValue is what the preview draws for a number in the thousands mode: 1234 was seen to show it on the device.
+const thousandsValue = "1.2"
+
+// The values of byte 11 of a number.
+const (
+	alignLeft   = 0
+	alignRight  = 2
+	alignCentre = 1
+)
 
 // Preview composes the 480 x 320 image of the screen from the records alone: opaque black, then each record over what
-// is there in the order of the slots, clipped to the screen and not to its box.
+// is there in the order of the slots. A number is clipped to its box and to the screen, and everything else to the screen
+// and not to its box.
 func Preview(theme themefile.Theme) *image.RGBA {
 	screen := image.NewRGBA(image.Rect(0, 0, ScreenWidth, ScreenHeight))
 	draw.Draw(screen, screen.Bounds(), image.NewUniform(color.Black), image.Point{}, draw.Src)
@@ -49,18 +61,13 @@ func drawRecord(screen *image.RGBA, record themefile.Record) {
 	case themefile.Text:
 		drawAt(screen, int(typed.X), int(typed.Y), Resources(typed)[0])
 	case themefile.Number:
-		glyphs := glyphImages(typed.Glyphs(), typed.GlyphWidths[:], typed.GlyphHeight, typed.Colour)
-		var indexes []int
-		for _, character := range SampleValue {
-			indexes = append(indexes, indexOf(themefile.NumberGlyphOrder, character))
-		}
-		drawGlyphs(screen, int(typed.X), int(typed.Y), glyphs, indexes)
+		drawNumber(screen, typed)
 	case themefile.Datetime:
 		widths := typed.GlyphWidths()
 		glyphs := glyphImages(typed.Glyphs(), widths[:], typed.GlyphHeight, typed.Colour)
 		drawGlyphs(screen, int(typed.X), int(typed.Y), glyphs, datetimeGlyphs(typed.FormatText(), SampleTime))
 	case themefile.Bar:
-		drawOutline(screen, box(typed.Head))
+		drawBar(screen, typed)
 	}
 }
 
@@ -72,25 +79,70 @@ func fill(screen *image.RGBA, area image.Rectangle, colour color.NRGBA) {
 	draw.Draw(screen, area, image.NewUniform(colour), image.Point{}, draw.Over)
 }
 
-func drawAt(screen *image.RGBA, left, top int, picture *image.NRGBA) {
+func drawAt(screen draw.Image, left, top int, picture *image.NRGBA) {
 	target := image.Rectangle{Min: image.Pt(left, top), Max: image.Pt(left, top).Add(picture.Bounds().Size())}
 	draw.Draw(screen, target, picture, image.Point{}, draw.Over)
 }
 
-// drawOutline draws the inside edge of the box, one pixel wide. A box with no area draws nothing.
-func drawOutline(screen *image.RGBA, area image.Rectangle) {
+// drawBar draws the frame, the fill and the empty part of a bar at the sample value. That bytes 14-15 are the fill and
+// bytes 16-17 the frame, the rounding down of the fill and the fill from the left of a box of any shape are the
+// preview's own choices, which the device check did not settle.
+func drawBar(screen *image.RGBA, bar themefile.Bar) {
+	area := box(bar.Head)
 	if area.Empty() {
 		return
 	}
-	fill(screen, image.Rect(area.Min.X, area.Min.Y, area.Max.X, area.Min.Y+1), barColour)
-	fill(screen, image.Rect(area.Min.X, area.Max.Y-1, area.Max.X, area.Max.Y), barColour)
-	fill(screen, image.Rect(area.Min.X, area.Min.Y, area.Min.X+1, area.Max.Y), barColour)
-	fill(screen, image.Rect(area.Max.X-1, area.Min.Y, area.Max.X, area.Max.Y), barColour)
+	fill(screen, area, Expand(bar.FillOrFrameColour16))
+	inside := area.Inset(1)
+	if inside.Empty() {
+		return
+	}
+	filled := inside.Dx() * SampleNumber / 100
+	fill(screen, image.Rect(inside.Min.X, inside.Min.Y, inside.Min.X+filled, inside.Max.Y), Expand(bar.FillOrFrameColour14))
+	fill(screen, image.Rect(inside.Min.X+filled, inside.Min.Y, inside.Max.X, inside.Max.Y), Expand(bar.EmptyColour))
+}
+
+// drawNumber draws the value of a number placed in its box by its alignment and clipped to the box and the screen.
+func drawNumber(screen *image.RGBA, number themefile.Number) {
+	value := SampleValue
+	if number.ThousandsMode != 0 {
+		value = thousandsValue
+	}
+	glyphs := glyphImages(number.Glyphs(), number.GlyphWidths[:], number.GlyphHeight, number.Colour)
+	for _, glyph := range glyphs {
+		fade(glyph, number.Opacity)
+	}
+	var indexes []int
+	width := 0
+	for _, character := range value {
+		index := indexOf(themefile.NumberGlyphOrder, character)
+		indexes = append(indexes, index)
+		width += glyphs[index].Bounds().Dx()
+	}
+	area := box(number.Head)
+	left := area.Min.X
+	switch number.Alignment {
+	case alignRight:
+		left = area.Max.X - width
+	case alignCentre:
+		// An arithmetic shift rounds towards minus infinity, as a value wider than its box needs.
+		left = area.Min.X + (area.Dx()-width)>>1
+	}
+	clip := screen.SubImage(area).(*image.RGBA)
+	drawGlyphs(clip, left, area.Min.Y, glyphs, indexes)
+}
+
+// fade multiplies the alpha of every pixel of the picture by opacity over 255, rounded to the nearest whole number.
+// 255 is odd, so the quotient is never a half.
+func fade(picture *image.NRGBA, opacity byte) {
+	for position := 3; position < len(picture.Pix); position += 4 {
+		picture.Pix[position] = byte((int(picture.Pix[position])*int(opacity) + 127) / 255)
+	}
 }
 
 // drawGlyphs places the glyphs of the indexes side by side from left, each the next at the right edge of the one before,
 // with their tops at top.
-func drawGlyphs(screen *image.RGBA, left, top int, glyphs []*image.NRGBA, indexes []int) {
+func drawGlyphs(screen draw.Image, left, top int, glyphs []*image.NRGBA, indexes []int) {
 	for _, index := range indexes {
 		drawAt(screen, left, top, glyphs[index])
 		left += glyphs[index].Bounds().Dx()

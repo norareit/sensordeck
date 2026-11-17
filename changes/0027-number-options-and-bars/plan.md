@@ -189,7 +189,7 @@ Commit point 2.
 
 ### The preview
 
-- [ ] In `internal/themeimage/preview_test.go`, replace
+- [x] In `internal/themeimage/preview_test.go`, replace
   `TestANumberIsDrawnAs42FromTheLeftOfItsBoxWhateverItsAlignment` with tests at chosen pixels, with the glyph 4 and
   the glyph 2 two wide and a box of 10 at x 30 unless said otherwise (R13, R14, R15, R22):
     - `TestANumberIsAlignedAsByte11Says`: byte 11 0 gives the first column of `4` at 30 and black at 29; 2 gives it
@@ -208,7 +208,7 @@ Commit point 2.
       by its alpha 10 plus its index, `.` being index 10
   Give `addNumber` a parameter for each of the bytes 14 and 15 and a mask alpha, or a slot it fills further, as the
   tests need
-- [ ] In `internal/themeimage/preview_test.go`, replace `TestABarIsTheOutlineOfItsBoxInMagenta` with
+- [x] In `internal/themeimage/preview_test.go`, replace `TestABarIsTheOutlineOfItsBoxInMagenta` with
   `TestABarIsDrawnFilledTo42` and `TestABarTooSmallForAnInsideShowsItsFrame`, with a helper `addBar` that writes the
   head and the three colours: a box at 50,50 of 102 x 6 with bytes 12-13 `001f`, 14-15 `07e0` and 16-17 `f800` shows
   red at the four corners and at 50,52 and 151,52; the inside is 100 wide, so the fill is the columns 51 to 92 in
@@ -217,7 +217,7 @@ Commit point 2.
   a box of 1 x 1 is red. In `TestWhatPassesTheEdgeOfTheScreenIsClipped`, give the bar its colours and check its frame
   at 478,319 in the colour of bytes 16-17 and its inside at 479,319 in that of bytes 14-15, since the inside is 3 wide
   and 3 x 42 / 100 is 1 (R16, R22)
-- [ ] In `internal/themeimage/preview.go`:
+- [x] In `internal/themeimage/preview.go`:
     - add `SampleNumber = 42` and make `SampleValue` `strconv.Itoa(SampleNumber)`, with the comment that the bar takes
       the same value as a share (D11)
     - remove `barColour` and `drawOutline`'s magenta, and add `drawBar(screen, bar)`: the box, nothing for an empty
@@ -232,7 +232,7 @@ Commit point 2.
     - change the comment of `Preview` to say that numbers are clipped to their box and the screen and everything else
       to the screen
   (R13, R14, R15, R16, R17)
-- [ ] Run `go test ./internal/themeimage/... ./internal/themedump/...`, then draw the committed images again with
+- [x] Run `go test ./internal/themeimage/... ./internal/themedump/...`, then draw the committed images again with
   `go run . theme preview minimal-dark docs/minimal-dark.png` and `go run . theme preview minimal-dark-probes
   docs/minimal-dark-probes.png`, look at them to see the numbers centred in their boxes, and run `go test .` (R21)
 
@@ -340,6 +340,6 @@ Commit point 5.
 
 - [x] 1: `feature-0027 Name the bytes of a number and of a bar in the reader and the dump`
 - [x] 2: `feature-0027 Compile the number options and the bar widget`
-- [ ] 3: `feature-0027 Align, clip and fade numbers and draw bars in the preview`
+- [x] 3: `feature-0027 Align, clip and fade numbers and draw bars in the preview`
 - [ ] 4: `feature-0027 Cover the bar and the number options end to end`
 - [ ] 5: `feature-0027 Document the number options, the bar and the observations of the device`
