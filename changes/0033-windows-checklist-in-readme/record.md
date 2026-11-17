@@ -58,6 +58,20 @@ the README. It is a change of `README.md` only.
   `RestartOnFailure` makes one is not known
 * The section on Linux of `## Running as a service`, where systemd does restart the service after an error, stays as it
   is
+* The sentences of the README that say Windows has not been checked on a real machine say what was checked and what
+  was not, and no more. They are the last sentence of the second paragraph of the README, which begins "The Windows
+  transport, the sensors of Windows and the startup task have not yet been checked", the last line of
+  `## Windows: the sensors of the machine`, and the two sentences that open the part `### Windows` of
+  `## Running as a service`. What they say, each as far as its section concerns it:
+    * checked on a real Windows machine, on 2026-11-16 and 2026-11-17: `devices`; `sensors`, whose readings were listed
+      but not compared value by value; `run` in the foreground and as the startup task, with `minimal-dark-probes`
+      showing live values; the lock between sensordeck processes; a replug of the screen while `run` runs; and the
+      start of Windows after a boot from Linux
+    * not checked: the readings through LibreHardwareMonitor, and a comparison value by value of the natively read
+      readings or of those of `nvidia-smi` with the Task Manager
+  The sentence of `### Windows` that says the part is written from the documentation of Windows and that a wrong point
+  is to be corrected may stay where it still holds, or go where the check makes it false. This changes documentation
+  by the decision of the orchestrating session, which took the item under the delegation in `AGENTS.md`
 * Nothing else of the README, of `docs/` or of the code changes
 * The five commands of the suite in `AGENTS.md` succeed
 
@@ -68,19 +82,6 @@ the README. It is a change of `README.md` only.
 * No check of whether `RestartOnFailure` starts the task again after a `run` that ended with exit status 1
 * No instructions for a program other than iCUE, HWiNFO and LibreHardwareMonitor, and no menu names of iCUE or HWiNFO
 * No amendment of the units whose device checks on Windows the human answered with this checklist
-
-## Beyond the request
-
-1. Correct the sentences of the README that say Windows has not been checked on a real machine: the last sentence of the
-   second paragraph of the README ("The Windows transport, the sensors of Windows and the startup task have not yet been
-   checked on a real Windows machine"), the last line of `## Windows: the sensors of the machine`, and the two sentences
-   that open the part `### Windows` of `## Running as a service`, which say that none of it has been checked and that
-   it is written from the documentation of Windows. The checklist checked the transport, the natively read sensors and
-   the startup task, so these sentences are now false or stale, and for the sensors only partly so: whether the
-   sensors read through LibreHardwareMonitor and `nvidia-smi` were checked is not in what the human reported, and the
-   sentence on the sensors would say what was checked rather than go. It costs a few sentences, and changes or removes
-   documentation, which needs the human's approval. Without it a reader is told that what was checked was not, which
-   misleads but harms nothing
 
 ## Log
 
@@ -98,3 +99,7 @@ the README. It is a change of `README.md` only.
   `internal/cli/taskfile.go`. The task corrects one false statement of the README, that the task on Windows is started
   again after an error, and removes no fact. The sentences that say Windows has not been checked are left to item 1 of
   "Beyond the request". No test reads the README text. The status stays `draft`
+- 2026-11-17T22:09:06Z [Claude Code, anthropic/claude-opus-5-5] as the specifier, folded item 1 of "Beyond the request",
+  which the orchestrating session took, into the requirements: the sentences that say Windows has not been checked
+  are to say what was checked on 2026-11-16 and 2026-11-17 and what was not, as the orchestrating session listed it,
+  and no more. Removed the section "Beyond the request", which held nothing else. The status stays `draft`
