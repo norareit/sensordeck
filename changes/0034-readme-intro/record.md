@@ -58,3 +58,20 @@ and so drawn in red.
   on Windows moved out of the opening. The link of AgentRite and the photo were given by the human. The status is
   `draft`
 - 2026-11-19T22:07:51Z [human] approved the record. The status is `approved`
+- 2026-11-19T22:08:30Z [Claude Code, anthropic/claude-opus-5-5] as the implementer, began the work. The status is
+  `in-progress`
+- 2026-11-19T22:11:51Z [Claude Code, anthropic/claude-opus-5-5] as the implementer, changed `README.md` and added
+  `docs/screen-photo.png`, the photo of the human scaled to 800 pixels wide, in `3e0197b`. The opening is the headline
+  on Linux and Windows, the photo, a list of five points, a table of the two systems and a link to the quick start;
+  `## Built with AgentRite` follows it; the facts of the old opening that no later section held, and its account of
+  the checks on Windows, are in a new section `## Linux and Windows` after `## Supported devices`; the quick start is
+  three steps; the setup of LibreHardwareMonitor is the new part `### Setting up LibreHardwareMonitor` at the end of
+  `## Windows: the sensors of the machine`. Deviation: in the moved setup, its opening sentence is reworded to stand
+  as the start of a part rather than a step, and "sub-step 4" reads "step 4"; the six steps are otherwise unchanged.
+  Verified by reading the diff: every removed sentence of the opening is either kept in `## Linux and Windows` or
+  stated in `## Commands`, `## Built-in themes` or `## Showing sensor values on the screen`; the links to
+  `#quick-start` and `#setting-up-librehardwaremonitor` land on those headings. On `3e0197b`, with the toolchain
+  `go1.27.0`, `go test -count=1 ./...` passed in all 32 packages with tests, and `go vet ./...`, `gofmt -l .`,
+  `GOOS=windows GOARCH=amd64 go build ./...` and `GOOS=windows GOARCH=amd64 go vet ./...` reported nothing. A first run
+  of `go test ./...`, made while the toolchain and modules were still downloading, failed in `internal/notices`, which
+  passed alone and in the two full runs after it. Not done: a review. The status stays `in-progress`
