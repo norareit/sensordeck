@@ -1,44 +1,33 @@
 # sensordeck
 
-Turn a cheap USB "sensor panel" screen into a hardware-monitoring dashboard on **Linux**.
+Turn the cheap 3.5" USB "PC data monitor" screen, sold as "Windows only", into an open-source hardware dashboard on
+**Linux and Windows**.
 
-On Linux, sensordeck drives the screen with the low-level commands (`devices`, `clock`, `values`, `upload`, `listen`
-and `raw`), shows live hardware readings with `sensordeck run`, lists them with `sensordeck sensors`, and runs `run` as
-a systemd user service with `sensordeck service`. It also reads the temperature probes of a Corsair iCUE Commander Core
-XT. `sensordeck theme` works with themes and needs no screen: `use` sets the theme of the config file, which `run`
-uploads at its start, `compile` turns a theme, by name or folder, into a theme file, `preview` draws a
-theme as a PNG, `dump` reads a theme file and `list` lists the themes. The built-in themes `minimal-dark` and `minimal-dark-probes` are there.
+![A photo of the screen running the built-in theme minimal-dark-probes: tiles for the CPU, the GPU, the memory, the
+VRAM, two temperature probes and the network, and the time and the date. The tile GPU CABLE is past its threshold and
+shows its temperature in red](docs/screen-photo.png)
 
-On Windows the screen and the Commander Core XT work with the commands that open a device, with `sensors` and with
-`run`, and need no driver and no rule to install. The sensors of the machine are read on Windows too, natively for the
-CPU load, the memory and the network, and through `nvidia-smi` and LibreHardwareMonitor for the rest, as
-[Windows: the sensors of the machine](#windows-the-sensors-of-the-machine) says. `--device` takes a
-device path on Windows, as `devices` writes it. Corsair iCUE, or the software of the screen's vendor, may hold the
-device and make the opening fail, and running either at the same time as sensordeck is not supported. `sensordeck service`
-runs `run` on Windows as a startup task of the Task Scheduler that starts at your logon, as
-[Running as a service](#running-as-a-service) says. On a real Windows machine, on 2026-11-16 and 2026-11-17, `devices`; `sensors`,
-whose readings were listed but not compared value by value; `run` in the foreground and as the startup task, with
-`minimal-dark-probes` showing live values; the lock between sensordeck processes; a replug of the screen while `run`
-runs; and the start of Windows after a boot from Linux were checked. The readings through LibreHardwareMonitor were not,
-and neither was a comparison value by value of the natively read readings or of those of `nvidia-smi` with the Task
-Manager.
+* Shows live CPU and GPU temperature and load, RAM and VRAM usage, NVMe temperatures, network rates and a clock
+* Reads the temperature probes of a Corsair iCUE Commander Core XT, and turns a temperature red past its threshold
+* Uses themes that are plain folders (a `theme.yaml`, images and any TTF font), which you can preview as a PNG without
+  the screen
+* Runs in the background: as a systemd user service on Linux, as a startup task at logon on Windows
+* Is a single executable, with no driver and no vendor software to install
 
-![The preview of the built-in theme minimal-dark: tiles for the CPU, the GPU, the memory, the disk, the network and the
-clock, each with the number 42 as a sample value](docs/minimal-dark.png)
+| | Linux | Windows |
+|---|---|---|
+| Drive the screen | yes, through a udev rule | yes, nothing to install |
+| Sensors of the machine | hwmon, `nvidia-smi` | native, `nvidia-smi`, LibreHardwareMonitor |
+| Probes of the Commander Core XT | yes | yes |
+| Run as a service | systemd user service | Task Scheduler startup task |
 
-This image is the preview that `sensordeck theme preview` draws from the theme `minimal-dark` with sample values, and
-not a photo of the screen.
+Get started with the [quick start](#quick-start).
 
-Many small PC screens are sold as "Windows only" and depend on the vendor's own software. sensordeck is an open-source
-replacement that works on Linux:
+## Built with AgentRite
 
-- Show live hardware readings: CPU and GPU temperature and load, VRAM and RAM usage, NVMe temperatures, the
-  temperature probes of a Corsair iCUE Commander Core XT, network rates and a clock, as the table of metrics lists.
-- Use themes that are plain folders (a `theme.yaml` layout, images and any TTF font). sensordeck compiles a theme into
-  the device's format and uploads it. `run` uploads the theme at each start, and again when a reload changes it.
-- Let you preview a theme as a PNG on your PC, so you can design without flashing the device each time.
-- Run in the background as a service (a systemd user service on Linux, a startup task of the Task Scheduler on Windows).
-- Ship as a single executable with nothing else to install. Built-in themes are included.
+sensordeck was specified, planned, built and reviewed by AI agents working through
+[AgentRite](https://agentrite.dev). Every change has its own directory under [`changes/`](changes/), with what it had
+to make true, how it was planned, and what the reviews found and how each finding was decided.
 
 ## Supported devices
 
@@ -54,6 +43,27 @@ sensordeck drives this one screen:
 The one temperature controller whose probes sensordeck reads is the Corsair iCUE Commander Core XT, USB ID `1b1c:0c2a`.
 
 The architecture is generic, so other screens can be added later.
+
+## Linux and Windows
+
+On Linux, sensordeck reaches the screen and the Commander Core XT through hidraw and the udev rule of
+[Linux: access to the screen](#linux-access-to-the-screen), reads the sensors of the machine from hwmon and
+`nvidia-smi`, and runs as a systemd user service.
+
+On Windows the screen and the Commander Core XT work with the commands that open a device, with `sensors` and with
+`run`, and need no driver and no rule to install. The sensors of the machine are read natively for the CPU load, the
+memory and the network, and through `nvidia-smi` and LibreHardwareMonitor for the rest, as
+[Windows: the sensors of the machine](#windows-the-sensors-of-the-machine) says. `--device` takes a device path on
+Windows, as `devices` writes it. Corsair iCUE, or the software of the screen's vendor, may hold the device and make the
+opening fail, and running either at the same time as sensordeck is not supported. `sensordeck service` runs `run` on
+Windows as a startup task of the Task Scheduler that starts at your logon, as
+[Running as a service](#running-as-a-service) says.
+
+On a real Windows machine, on 2026-11-16 and 2026-11-17, `devices`; `sensors`, whose readings were listed but not
+compared value by value; `run` in the foreground and as the startup task, with `minimal-dark-probes` showing live
+values; the lock between sensordeck processes; a replug of the screen while `run` runs; and the start of Windows after
+a boot from Linux were checked. The readings through LibreHardwareMonitor were not, and neither was a comparison value
+by value of the natively read readings or of those of `nvidia-smi` with the Task Manager.
 
 ## Installing
 
@@ -111,39 +121,16 @@ CGO_ENABLED=0 go build -trimpath -o sensordeck .
 
 ## Quick start
 
-This takes you from nothing to the built-in theme `minimal-dark` on the screen. On Windows the sensors of the machine are
-read natively and through LibreHardwareMonitor, as [Windows: the sensors of the machine](#windows-the-sensors-of-the-machine)
-says. The first step is for Linux only and the second for Windows only.
+This takes you from nothing to the built-in theme `minimal-dark` on the screen.
 
-1. On Linux, install the udev rule of [Linux: access to the screen](#linux-access-to-the-screen)
-2. On Windows, set up [LibreHardwareMonitor](https://github.com/LibreHardwareMonitor/LibreHardwareMonitor). Without it
-   sensordeck has no CPU temperature, no CPU clock and no temperatures of the NVMe drives and the memory modules on
-   Windows: `cpu.temp`, `cpu.ccd<n>.temp`, `cpu.clock`, `ram.<n>.temp` and `nvme.<n>.temp` appear only with it, and the
-   CPU temperature tile and the disk tile of `minimal-dark` show nothing. sensordeck neither installs nor starts it, as
-   [Windows: the sensors of the machine](#windows-the-sensors-of-the-machine) says
-   1. Download the archive `LibreHardwareMonitor.zip` of the latest release from its
-      [release page](https://github.com/LibreHardwareMonitor/LibreHardwareMonitor/releases), at version 0.9.5 or newer,
-      which the temperatures of the memory modules need. Extract it to a folder where it stays, since its options are
-      kept in a file beside its executable and the startup of sub-step 4 names its path
-   2. Start `LibreHardwareMonitor.exe`. It runs as an administrator, which its driver needs, and Windows asks for that
-      consent. The groups CPU, RAM and Storage Devices of its Options menu must be on, as they are by default
-   3. Check Options > Remote Web Server > Run, which turns on the web server sensordeck reads
-   4. Check Options > Run On Windows Startup, which starts it with Windows at each logon, and Options > Start Minimized,
-      which with Options > Minimize To Tray, on by default, keeps its window out of the way in the notification area.
-      Check Options > Minimize On Close as well, so that closing its window hides it instead of ending it. It must keep
-      running for the readings to be there
-   5. Open `http://localhost:8085/data.json` in a browser on the same machine. It shows a JSON document. When it does
-      not load, the web server is not running, or its port, address or authentication was changed, and then the key
-      `librehardwaremonitor_url` of [the Windows section](#windows-the-sensors-of-the-machine) gives sensordeck the
-      address
-   6. Run `sensordeck.exe sensors`. It now lists `cpu.temp` and `cpu.clock`, and `nvme.<n>.temp`, `ram.<n>.temp` and
-      `cpu.ccd<n>.temp` where the machine has such drives, modules with a thermal sensor and CCDs. When it writes the
-      line `LibreHardwareMonitor cannot be read at <URL>` instead, the web server cannot be read, as
-      [the Windows section](#windows-the-sensors-of-the-machine) says
-3. Set the theme: `sensordeck theme use minimal-dark`. It writes the key `theme` into the config file, which it creates
+1. Install sensordeck as [Installing](#installing) says. On Linux, install the udev rule of
+   [Linux: access to the screen](#linux-access-to-the-screen). On Windows, set up LibreHardwareMonitor as
+   [Setting up LibreHardwareMonitor](#setting-up-librehardwaremonitor) says, without which there is no CPU temperature
+   and no disk temperature
+2. Set the theme: `sensordeck theme use minimal-dark`. It writes the key `theme` into the config file, which it creates
    when there is none, at the path that [Showing sensor values on the screen](#showing-sensor-values-on-the-screen)
    names
-4. Start `sensordeck run`. It uploads the theme to the screen at each start, which takes about 10 seconds and reboots
+3. Start `sensordeck run`. It uploads the theme to the screen at each start, which takes about 10 seconds and reboots
    the screen, and it sends the values after that
 
 The tiles show the CPU temperature and load, the GPU temperature and load, the share of RAM in use and the GiB used, the
@@ -371,7 +358,7 @@ driver that Windows does not give a program. `cpu.temp`, `cpu.ccd<n>.temp`, `cpu
 that has such a driver and serves its readings over HTTP. sensordeck neither installs nor starts it, and the native
 metrics do not depend on it.
 
-How to set LibreHardwareMonitor up is the Windows step of the [quick start](#quick-start).
+How to set it up is below, in [Setting up LibreHardwareMonitor](#setting-up-librehardwaremonitor).
 
 The key `librehardwaremonitor_url` of the config file is the address of its document. Its default is
 `http://localhost:8085/data.json`, which is right while the web server is left as it is. Set it when you changed the
@@ -419,6 +406,33 @@ On a real Windows machine, on 2026-11-16 and 2026-11-17, `sensors` listed its re
 by value, and `run` showed live values with `minimal-dark-probes`. The readings through LibreHardwareMonitor were not
 checked, and neither was a comparison value by value of the natively read readings or of those of `nvidia-smi` with the
 Task Manager.
+
+### Setting up LibreHardwareMonitor
+
+Without [LibreHardwareMonitor](https://github.com/LibreHardwareMonitor/LibreHardwareMonitor) sensordeck has no CPU
+temperature, no CPU clock and no temperatures of the NVMe drives and the memory modules on Windows: `cpu.temp`,
+`cpu.ccd<n>.temp`, `cpu.clock`, `ram.<n>.temp` and `nvme.<n>.temp` appear only with it, and the CPU temperature tile and
+the disk tile of `minimal-dark` show nothing. sensordeck neither installs nor starts it, so set it up once:
+
+1. Download the archive `LibreHardwareMonitor.zip` of the latest release from its
+   [release page](https://github.com/LibreHardwareMonitor/LibreHardwareMonitor/releases), at version 0.9.5 or newer,
+   which the temperatures of the memory modules need. Extract it to a folder where it stays, since its options are
+   kept in a file beside its executable and the startup of step 4 names its path
+2. Start `LibreHardwareMonitor.exe`. It runs as an administrator, which its driver needs, and Windows asks for that
+   consent. The groups CPU, RAM and Storage Devices of its Options menu must be on, as they are by default
+3. Check Options > Remote Web Server > Run, which turns on the web server sensordeck reads
+4. Check Options > Run On Windows Startup, which starts it with Windows at each logon, and Options > Start Minimized,
+   which with Options > Minimize To Tray, on by default, keeps its window out of the way in the notification area.
+   Check Options > Minimize On Close as well, so that closing its window hides it instead of ending it. It must keep
+   running for the readings to be there
+5. Open `http://localhost:8085/data.json` in a browser on the same machine. It shows a JSON document. When it does
+   not load, the web server is not running, or its port, address or authentication was changed, and then the key
+   `librehardwaremonitor_url` of [the Windows section](#windows-the-sensors-of-the-machine) gives sensordeck the
+   address
+6. Run `sensordeck.exe sensors`. It now lists `cpu.temp` and `cpu.clock`, and `nvme.<n>.temp`, `ram.<n>.temp` and
+   `cpu.ccd<n>.temp` where the machine has such drives, modules with a thermal sensor and CCDs. When it writes the
+   line `LibreHardwareMonitor cannot be read at <URL>` instead, the web server cannot be read, as
+   [the Windows section](#windows-the-sensors-of-the-machine) says
 
 ## Custom metrics
 
