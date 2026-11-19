@@ -1,6 +1,6 @@
 ---
 kind: task
-status: approved
+status: implemented
 timestamp: 2026-11-19T22:07:33Z
 ---
 
@@ -75,3 +75,7 @@ and so drawn in red.
   `GOOS=windows GOARCH=amd64 go build ./...` and `GOOS=windows GOARCH=amd64 go vet ./...` reported nothing. A first run
   of `go test ./...`, made while the toolchain and modules were still downloading, failed in `internal/notices`, which
   passed alone and in the two full runs after it. Not done: a review. The status stays `in-progress`
+- 2026-11-19T22:14:13Z [human] reviewed the change and accepted the new opening of the README as it is, with no
+  finding, in place of a review by the reviewer
+- 2026-11-19T22:14:13Z [Claude Code, anthropic/claude-opus-5-5] set the unit at the request of the human, with no open
+  finding and no plan. The status is `implemented`
