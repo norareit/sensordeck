@@ -1,6 +1,6 @@
 ---
 kind: task
-status: draft
+status: approved
 timestamp: 2026-11-19T22:07:33Z
 ---
 
@@ -57,3 +57,4 @@ and so drawn in red.
   linking `changes/`, the long Windows quick start moved into the Windows section, and the dated account of the checks
   on Windows moved out of the opening. The link of AgentRite and the photo were given by the human. The status is
   `draft`
+- 2026-11-19T22:07:51Z [human] approved the record. The status is `approved`
